@@ -175,7 +175,7 @@ function get_bank_window() {
   if (!bankWindow) {
     bankWindow = new JitterObject("jit.window", "m_bnk_" + uniqueID);
     bankWindow.floating = 1; bankWindow.visible = 0; bankWindow.border = 1;
-    bankWindow.grow = 0; bankWindow.title = "Set Bank";
+    bankWindow.grow = 0; bankWindow.title = "Palette Bank";
     bankListener = new JitterListener(bankWindow.name, bankWindowListenerCallback);
   }
   return bankWindow;
@@ -551,9 +551,9 @@ function draw_manager_strip(ctx, w, h, is_preview) {
   ctx.select_font_face(font_name, "normal", "bold");
   ctx.set_font_size(is_preview ? 10.5 : 9);
   ctx.set_source_rgba(showBankWindow ? [1, 1, 1, 1] : text_color);
-  var bankTm = ctx.text_measure("SET BANK");
+  var bankTm = ctx.text_measure("PALETTE BANK");
   ctx.move_to(bankBtnX + (topBtnW - bankTm[0]) * 0.5, row1Y + row1H * 0.5 + 3.5);
-  ctx.show_text("SET BANK");
+  ctx.show_text("PALETTE BANK");
 
   // [ RESYNC ]
   ctx.set_source_rgba(0.20, 0.21, 0.24, 0.8);
@@ -761,7 +761,7 @@ function draw_bank_window() {
   pCtx.set_font_size(9);
   pCtx.set_source_rgba(text_color);
   pCtx.move_to(24, 16.5);
-  pCtx.show_text("SET BANK (" + set_bank.length + " Sets)");
+  pCtx.show_text("PALETTE BANK (" + set_bank.length + " Sets)");
 
   pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.25);
   pCtx.set_line_width(0.6);
@@ -2049,7 +2049,7 @@ function set_sets_per_page(v) {
 }
 function get_sets_per_page() { return sets_per_page; }
 
-declareattribute("sets_per_page", { type: "int", label: "Sets Per Page", setter: "set_sets_per_page", getter: "get_sets_per_page", category: "Set Bank", embed: 1 });
+declareattribute("sets_per_page", { type: "int", label: "Sets Per Page", setter: "set_sets_per_page", getter: "get_sets_per_page", category: "Palette Bank", embed: 1 });
 
 function capture(v)   { capture_rig_to_palette(parseInt(v, 10) - 1); }
 function popup(v)     { toggle_settings_window(v); }
