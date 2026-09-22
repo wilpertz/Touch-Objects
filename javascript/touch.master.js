@@ -1661,10 +1661,15 @@ function notifydeleted() {
     presetMatrix = null;
 }
 
-// Initial Boot Sequence
-try {
-    presetDict.import_json(getPresetFilePath());
-} catch(e) {}
+// Initial Boot Sequence (Safe Check)
+var pPath = getPresetFilePath();
+var checkF = new File(pPath);
+if (checkF.isopen) {
+    checkF.close();
+    try {
+        presetDict.import_json(pPath);
+    } catch(e) {}
+}
 
 loadPresetsFromDict();
 syncThemeFromMaster(true);
