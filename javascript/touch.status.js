@@ -43,9 +43,7 @@ function get_states_dir() {
       var d2 = f2.foldername;
       f2.close();
       if (d2.charAt(d2.length - 1) !== "/") d2 += "/";
-      if (d2.indexOf("/misc/") !== -1) {
-        return d2.replace(/\/misc\/$/, "/states/");
-      }
+      
       return d2;
     }
   } catch(e) {}
