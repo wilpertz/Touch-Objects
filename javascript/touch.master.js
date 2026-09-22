@@ -26,15 +26,16 @@ if (!bus.subscribers || typeof bus.subscribers !== "object") {
 var themeDict = new Dict("touch_theme_store");
 var presetDict = new Dict("touch_theme_presets");
 
-// Resolve absolute path next to the current patcher file
 function getPresetFilePath() {
-    if (this.patcher && this.patcher.filepath) {
-        var fp = this.patcher.filepath;
-        var lastSlash = Math.max(fp.lastIndexOf("/"), fp.lastIndexOf("\\"));
-        if (lastSlash !== -1) {
-            return fp.substring(0, lastSlash + 1) + "touch_theme_presets.json";
+    try {
+        var f = new File("touch_theme_presets.json");
+        if (f.isopen) {
+            var full = f.foldername;
+            f.close();
+            if (full.charAt(full.length - 1) !== "/") full += "/";
+            return full + "touch_theme_presets.json";
         }
-    }
+    } catch(e) {}
     return "touch_theme_presets.json";
 }
 

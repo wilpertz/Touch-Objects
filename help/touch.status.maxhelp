@@ -221,7 +221,7 @@
                         [ "set_border_extension", 4.943820224719101 ],
                         [ "set_allow_popup", 1 ],
                         [ "set_show_settings_attrs", 1 ],
-                        [ "set_popup_mini_size", 270, 95 ],
+                        [ "set_popup_mini_size", 270, 90 ],
                         [ "set_mask_performance", 1 ],
                         [ "set_mask_labels", 1 ],
                         [ "set_mask_geometry", 1 ],
@@ -855,7 +855,7 @@
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
                         [ "set_slots_saved", "%5B%22Init%20Status%22%2C%22Clean%20Tone%22%2C%22Lead%2080s%22%2C%22Lead%2080s%22%5D" ],
-                        [ "msg_float", 4 ],
+                        [ "msg_float", 1.3906882591093117 ],
                         [ "allow_hold_edit", 1 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
@@ -893,7 +893,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 269.0, 350.0, 255.0, 57.0 ],
+                    "patching_rect": [ 269.0, 355.5, 255.0, 57.0 ],
                     "textfile": {
                         "filename": "touch.status.js",
                         "flags": 0,
@@ -905,21 +905,20 @@
             },
             {
                 "box": {
-                    "autorestore": "honey_chicken.json",
                     "id": "obj-33",
                     "maxclass": "newobj",
                     "numinlets": 1,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 269.0, 470.0, 196.0, 23.0 ],
+                    "patching_rect": [ 269.0, 470.0, 161.0, 23.0 ],
                     "saved_object_attributes": {
                         "client_rect": [ 3, 100, 416, 445 ],
                         "parameter_enable": 0,
                         "parameter_mappable": 0,
                         "storage_rect": [ 583, 69, 1034, 197 ]
                     },
-                    "text": "pattrstorage name @savemode 0",
-                    "varname": "honey_chicken"
+                    "text": "pattrstorage @savemode 0",
+                    "varname": "u917002845"
                 }
             },
             {
@@ -1036,7 +1035,7 @@
                         "t_umanu": [ 5 ],
                         "this_function": [ 0, 0, 0, 345.23809523809524, 0.4948453608247423, 0, 652.912328899171, 0.7741975875453899, -0.06000000000000005, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
                         "v8ui[1]": [ 0.9150326797385621 ],
-                        "v8ui_AF": [ 4 ]
+                        "v8ui_AF": [ 1.3906882591093117 ]
                     },
                     "text": "autopattr",
                     "varname": "u620003692"
