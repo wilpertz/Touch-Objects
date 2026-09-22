@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.statusmanager" module="jsui" category="GUI, Control, Presets">
+	<digest>Master rig controller, tablet inspector, set bank manager, and snapshot palette coordinator</digest>
+	<description>
+		Master orchestration interface and rig-wide snapshot coordinator for the Touch JSUI Suite in Cycling '74 Max 9 (v8ui / jsui). Discovers, monitors, and controls all active <o>touch.status</o> client modules across a shared zero-configuration wireless memory bus (<m>Global("touch_status_bus")</m>). Features an interactive tablet-ready touch chassis, multi-page Set Bank browser, rig-wide Snapshot Palette Deck with instant capture/morphing, slide-out module selection drawer, floating 50/50 Attrui parameter inspector with live morphable preview strip, and HSV color picker.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">GUI</metadata>
+		<metadata name="tag">Control</metadata>
+		<metadata name="tag">Presets</metadata>
+		<metadata name="tag">State</metadata>
+		<metadata name="tag">Manager</metadata>
+		<metadata name="tag">Morph</metadata>
+		<metadata name="tag">Touch</metadata>
+		<metadata name="tag">v8ui</metadata>
+		<metadata name="tag">jsui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="int / float / symbol / list / messages">
+			<digest>Active module recall, morph, palette recall, set bank selection, or control messages</digest>
+			<description>
+				Accepts integers (recalls 1-based slot index on active module), floating-point numbers (continuous spatial morphing on active module), palette commands (<m>palette</m>, <m>pal</m>), set selection (<m>set</m>), bank paging (<m>page</m>, <m>next_page</m>, <m>prev_page</m>), module targeting (<m>module</m>, <m>target</m>, <m>next</m>, <m>prev</m>), state snapshot triggers (<m>capture</m>), rig scanning (<m>resync</m>, <m>scan</m>), window toggles (<m>popup</m>, <m>bank</m>, <m>browse</m>), and configuration attributes.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="symbol">
+			<digest>Active Module / Set Bank / Palette name</digest>
+			<description>
+				Outputs the identifier string of the currently focused module, recalled Set Bank name, or active Palette snapshot. Connects to UI labels, text displays, or routing matrices.
+			</description>
+		</outlet>
+		<outlet id="1" type="int / float">
+			<digest>Status index / morph float / Palette index</digest>
+			<description>
+				Outputs the 1-based slot recall index or continuous float morph position of the active module, or the 1-based index / continuous fractional morph position of recalled snapshot palettes.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="int">
+			<arglist>
+				<arg name="slot_index" optional="0" type="int" />
+			</arglist>
+			<digest>Recall slot on active module</digest>
+			<description>
+				Triggers a 1-based preset recall on the currently selected module and outputs module name from Outlet 0 and slot number from Outlet 1.
+			</description>
+		</method>
+
+		<method name="float">
+			<arglist>
+				<arg name="morph_value" optional="0" type="float" />
+			</arglist>
+			<digest>Morph active module continuously</digest>
+			<description>
+				Interpolates the active module across its slot layout using continuous floating-point morphing values (from 1.0 to N).
+			</description>
+		</method>
+
+		<method name="module / target">
+			<arglist>
+				<arg name="module_identifier" optional="0" type="int / symbol" />
+			</arglist>
+			<digest>Select active client module</digest>
+			<description>
+				Focuses a specific client module either by 1-based discovered index or by unique symbol name (e.g. <m>module 1</m> or <m>module "Filter Rig"</m>).
+			</description>
+		</method>
+
+		<method name="next / prev">
+			<digest>Cycle through discovered modules</digest>
+			<description>
+				Steps the active module focus forward or backward through the discovered client table.
+			</description>
+		</method>
+
+		<method name="palette / pal">
+			<arglist>
+				<arg name="value" optional="0" type="int / float" />
+			</arglist>
+			<digest>Recall or morph set palettes</digest>
+			<description>
+				Recalls or interpolates rig-wide snapshot palettes within the current Set. Passing an integer recalls that palette snapshot across all mapped modules; passing a float continuously morphs all participating modules between adjacent palettes.
+			</description>
+		</method>
+
+		<method name="capture">
+			<arglist>
+				<arg name="palette_index" optional="0" type="int" />
+			</arglist>
+			<digest>Capture rig state to palette</digest>
+			<description>
+				Snapshots the current active slot configuration of every discovered client module and saves it into the specified 1-based palette index of the active Set.
+			</description>
+		</method>
+
+		<method name="set">
+			<arglist>
+				<arg name="identifier" optional="0" type="int / symbol" />
+			</arglist>
+			<digest>Select Set Bank</digest>
+			<description>
+				Recalls a Set from the set bank by 1-based index or by exact name string, and opens its corresponding Palette Deck window.
+			</description>
+		</method>
+
+		<method name="page">
+			<arglist>
+				<arg name="page_index" optional="0" type="int" />
+			</arglist>
+			<digest>Jump to Set Bank page</digest>
+			<description>
+				Switches the Set Bank browser view to the specified 1-based page number.
+			</description>
+		</method>
+
+		<method name="next_page / prev_page">
+			<digest>Cycle Set Bank pages</digest>
+			<description>
+				Navigates forward or backward through the Set Bank browser pages.
+			</description>
+		</method>
+
+		<method name="resync / scan">
+			<digest>Re-scan rig modules</digest>
+			<description>
+				Flushes the internal client table and broadcasts a ping signal to all <o>touch.status</o> instances across the wireless status bus, re-establishing two-way bidirectional binding with all active patcher modules. Also accepts aliases <m>clear</m> and <m>flush</m>.
+			</description>
+		</method>
+
+		<method name="bank">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle Set Bank window</digest>
+			<description>
+				Opens, closes, or toggles the floating paged Set Bank browser window.
+			</description>
+		</method>
+
+		<method name="browse">
+			<digest>Open module selection drawer</digest>
+			<description>
+				Opens the floating Quick-Picker Drawer displaying all discovered modules and their currently active preset slot tags.
+			</description>
+		</method>
+
+		<method name="popup">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle Master Status Inspector</digest>
+			<description>
+				Opens, closes, or toggles the floating Master Status Inspector window containing the live interactive preview chassis and 50/50 attribute parameter rows.
+			</description>
+		</method>
+
+		<method name="refresh / bang">
+			<digest>Force UI repaint</digest>
+			<description>
+				Triggers an immediate redraw of the main canvas and all open floating sub-windows.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+
+		<!-- CATEGORY: SET BANK -->
+		<attribute name="sets_per_page" get="1" set="1" type="int" size="1">
+			<digest>Sets Per Page</digest>
+			<description>
+				Number of Set Bank cards displayed per page in the floating Set Bank browser window (clamped between 2 and 20, default 5).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Set Bank" />
+				<attribute name="label" type="symbol" value="Sets Per Page" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: PERFORMANCE -->
+		<attribute name="hold_threshold" get="1" set="1" type="int" size="1">
+			<digest>Hold Time (ms)</digest>
+			<description>
+				Duration in milliseconds required to hold down on the module selector capsule before the floating Quick-Picker Drawer automatically opens (clamped between 150 ms and 1000 ms, default 350 ms).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Hold Time (ms)" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>
+				Base typography point size for slot numbers and preset names inside active grid cells (default 11 pt).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Font Size" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: GEOMETRY -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Border Radius</digest>
+			<description>
+				Corner curvature radius in pixels of the chassis body and reticle arc corners.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Radius" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Border Thickness</digest>
+			<description>
+				Stroke width in pixels of the outer corner reticle brackets.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Thickness" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Border Extension</digest>
+			<description>
+				Length in pixels of the corner bracket arms extending along chassis edges.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Extension" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: STATUS COLORS -->
+		<attribute name="bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Background Color</digest>
+			<description>
+				RGBA fill color of the main chassis background.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Background Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Border Color</digest>
+			<description>
+				RGBA stroke color of outer reticle corner brackets, section dividers, and inactive cell borders.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="highlight_color" get="1" set="1" type="rgba" size="4">
+			<digest>Highlight Color</digest>
+			<description>
+				RGBA accent color used for active slot fills, morph transitions, focus indicators, and navigation markers.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Highlight Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Text Color</digest>
+			<description>
+				RGBA color for slot labels, button titles, and module names.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Text Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Dot Color</digest>
+			<description>
+				RGBA color of the signature red inspector launcher dot in the upper-right corner.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Popup Dot Color" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP MASKS -->
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Allow Settings Dot</digest>
+			<description>
+				Enables or disables the red inspector launcher dot and ctrl-click access to the floating Master Status Inspector.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Allow Settings Dot" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Show Attributes List</digest>
+			<description>
+				Toggles between the clean mini tablet preview mode and full 50/50 Attrui parameter rows inside the inspector window.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Show Attributes List" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>1. Show Performance</digest>
+			<description>
+				Controls visibility of Sets Per Page, Hold Time, and Font Size controls inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="1. Show Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>2. Show Geometry</digest>
+			<description>
+				Controls visibility of Border Radius, Border Thickness, and Border Extension sliders inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="2. Show Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>3. Show Colors</digest>
+			<description>
+				Controls visibility of Chassis Background, Border, Highlight, Text, and Popup Dot color rows inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="3. Show Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>4. Show Popup Colors</digest>
+			<description>
+				Controls visibility of Inspector UI Theme Palette color rows (Popup BG, Attr BG, Attr Border, Attr Slider, Attr Text) inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="4. Show Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP COLORS -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup BG Color</digest>
+			<description>
+				Base background fill color for all floating sub-windows (Master Inspector, Set Bank, Palette Deck, Quick-Picker).
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Popup BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr BG Color</digest>
+			<description>
+				Background fill color for individual attribute rows and sub-window cards.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Border Color</digest>
+			<description>
+				Stroke color for attribute row dividers and sub-window item outlines.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Slider Color</digest>
+			<description>
+				Fill color for active slider gauges inside inspector parameter rows.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Slider Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Text Color</digest>
+			<description>
+				Font color for parameter titles, numerical readouts, and sub-window tags.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Text Color" />
+			</attributelist>
+		</attribute>
+
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.status" />
+		<seealso name="touch.master" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.mbutton" />
+		<seealso name="touch.pfunction" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="touch.panel" />
+		<seealso name="pattrstorage" />
+		<seealso name="preset" />
+		<seealso name="nodes" />
+		<seealso name="v8ui" />
+		<seealso name="jsui" />
+	</seealsolist>
+
+</c74object>
