@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.status" module="jsui" category="GUI, Control, Presets">
+	<digest>2D spatial preset morph grid and modular snapshot controller</digest>
+	<description>
+		Modern touch-first 2D spatial preset interpolator and state manager for Cycling '74 Max 9 (v8ui / jsui). Configurable as a 1D strip or 2D matrix (Cols/Rows) supporting continuous spatial morphing across snapshots, floating long-press slot name stamping palette, integrated 4-slider grid ticker sub-window, standardized 280 px dual-mode 50/50 Attrui parameter inspector, HSV color picker, and dynamic, zero-configuration auto-synchronization with <o>pattrstorage</o> and the package states repository.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">GUI</metadata>
+		<metadata name="tag">Control</metadata>
+		<metadata name="tag">Presets</metadata>
+		<metadata name="tag">State</metadata>
+		<metadata name="tag">Morph</metadata>
+		<metadata name="tag">Touch</metadata>
+		<metadata name="tag">pattr</metadata>
+		<metadata name="tag">v8ui</metadata>
+		<metadata name="tag">jsui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="int / float / symbol / list / messages">
+			<digest>Slot recall, float morph, text stamping, or configuration messages</digest>
+			<description>
+				Accepts integers (1-based slot recall), floating-point numbers (continuous 1D/2D interpolation across slots), slash-delimited topology strings (<m>4/1</m>, <m>2/2</m>, <m>1/8</m>), text renaming commands (<m>text</m>, <m>rename</m>, <m>names</m>), utility triggers (<m>popup</m>, <m>palette</m>), and all configuration attributes.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="various">
+			<digest>Commands to [pattrstorage] (recall, store, read, write, name)</digest>
+			<description>
+				Direct command bridge to <o>pattrstorage</o>. Outputs slot index integers, continuous float morph positions, 2D bilinear recall weights (<m>[recall slotA slotB ratio]</m>), snapshot store triggers (<m>[store N]</m>), and automatic absolute state disk operations (<m>name</m>, <m>read</m>, <m>write</m>).
+			</description>
+		</outlet>
+		<outlet id="1" type="list">
+			<digest>Active status information [set name]</digest>
+			<description>
+				Outputs <m>set [slot name]</m> whenever a slot is recalled, stamped, or renamed. Connects directly to message boxes, <o>comment</o>, or UI displays.
+			</description>
+		</outlet>
+		<outlet id="2" type="list">
+			<digest>Storage triggers and synchronization commands</digest>
+			<description>
+				Dedicated storage stream outputting targeted <m>name</m>, <m>read</m>, and <m>write</m> commands with full disk path resolution whenever module identity is updated or presets are saved.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="int">
+			<arglist>
+				<arg name="slot_index" optional="0" type="int" />
+			</arglist>
+			<digest>Recall slot by 1-based index</digest>
+			<description>
+				Recalls the specified slot, highlights the cell, and transmits the integer to <o>pattrstorage</o>.
+			</description>
+		</method>
+
+		<method name="float">
+			<arglist>
+				<arg name="morph_value" optional="0" type="float" />
+			</arglist>
+			<digest>Continuous spatial morph position</digest>
+			<description>
+				Interpolates smoothly across the slot array. In 1D mode, values from 1.0 to N morph linearly between adjacent snapshots. In 2D mode, normalizes across rows and columns.
+			</description>
+		</method>
+
+		<method name="grid / layout">
+			<arglist>
+				<arg name="cols_rows" optional="0" type="symbol" />
+			</arglist>
+			<digest>Set matrix layout (Cols/Rows)</digest>
+			<description>
+				Configures the slot layout topology. Accepts slash notation (e.g. <m>3/1</m>, <m>4/1</m>, <m>2/2</m>, <m>6/2</m>, <m>1/8</m>) or two integer arguments defining column and row counts.
+			</description>
+		</method>
+
+		<method name="text">
+			<arglist>
+				<arg name="label" optional="0" type="symbol" />
+			</arglist>
+			<digest>Stamp name to active slot</digest>
+			<description>
+				Renames the currently active slot, triggers a snapshot store command, and executes an auto-write to the module state file.
+			</description>
+		</method>
+
+		<method name="rename">
+			<arglist>
+				<arg name="index" optional="0" type="int" />
+				<arg name="new_name" optional="0" type="symbol" />
+			</arglist>
+			<digest>Update entry in Name Bank</digest>
+			<description>
+				Modifies an entry in the preset name bank library without stamping it immediately to an active slot.
+			</description>
+		</method>
+
+		<method name="rename_slot">
+			<arglist>
+				<arg name="index" optional="0" type="int" />
+				<arg name="new_name" optional="0" type="symbol" />
+			</arglist>
+			<digest>Rename and store specific slot</digest>
+			<description>
+				Directly renames slot <m>index</m>, stores the current parameter state into that slot, and triggers an auto-write.
+			</description>
+		</method>
+
+		<method name="names">
+			<arglist>
+				<arg name="name_list" optional="0" type="list" />
+			</arglist>
+			<digest>Populate full Name Bank</digest>
+			<description>
+				Replaces the entire floating palette name bank with a new list of name strings.
+			</description>
+		</method>
+
+		<method name="add_name">
+			<arglist>
+				<arg name="name" optional="0" type="symbol" />
+			</arglist>
+			<digest>Append name to Name Bank</digest>
+			<description>
+				Adds a single new name to the floating palette name library.
+			</description>
+		</method>
+
+		<method name="palette">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle Name Palette window</digest>
+			<description>
+				Opens or closes the floating 330x380 Name Palette picker window used for rapid slot stamping.
+			</description>
+		</method>
+
+		<method name="popup">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle Attrui inspector window</digest>
+			<description>
+				Opens, closes, or toggles the floating parameter inspector window.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme styling</digest>
+			<description>
+				Reloads and re-renders visual palettes from the global shared memory theme bus (<m>Global("touch_theme_bus")</m>). Also accepts aliases <m>theme_update</m>, <m>refresh</m>, and <m>refresh_theme</m>.
+			</description>
+		</method>
+
+		<method name="ping">
+			<digest>Re-broadcast module state</digest>
+			<description>
+				Forces the object to broadcast its slot names, topology, and active morph ratios to <o>touch.statusmanager</o> via the shared wireless bus. Also accepts alias <m>rebroadcast</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+
+		<!-- CATEGORY: STATUS CONFIG -->
+		<attribute name="name" get="1" set="1" type="symbol" size="1">
+			<digest>Module ID / State File Name</digest>
+			<description>
+				Defines the unique module identity for this object. When modified, automatically binds <o>pattrstorage</o> and auto-saves/reads the corresponding <m>&lt;name&gt;.json</m> file inside the package <m>/states</m> directory.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Status Config" />
+				<attribute name="label" type="symbol" value="Module ID / Name" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="grid" get="1" set="1" type="symbol" size="1">
+			<digest>Grid Layout (Cols/Rows)</digest>
+			<description>
+				Defines the slot matrix topology formatted as Columns/Rows (e.g. <m>3/1</m>, <m>4/1</m>, <m>2/2</m>, <m>1/8</m>).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Status Config" />
+				<attribute name="label" type="symbol" value="Grid Layout (Cols/Rows)" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="name_bank" get="1" set="1" type="symbol" size="1">
+			<digest>Available Name Bank</digest>
+			<description>
+				Comma-separated or quoted string defining the available preset names displayed inside the floating Name Palette stamping window.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Status Config" />
+				<attribute name="label" type="symbol" value="Available Name Bank" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: PERFORMANCE -->
+		<attribute name="allow_hold_edit" get="1" set="1" type="int" size="1">
+			<digest>Allow Hold to Edit</digest>
+			<description>
+				Enables or disables long-pressing a slot cell to launch the floating Name Palette picker.
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Allow Hold to Edit" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="hold_threshold" get="1" set="1" type="int" size="1">
+			<digest>Hold Time (ms)</digest>
+			<description>
+				The duration in milliseconds required to hold down on a slot cell before the Name Palette window opens (clamped $\ge 150$ ms).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Hold Time (ms)" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: TYPOGRAPHY -->
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Strip Label Style</digest>
+			<description>
+				Text abbreviation algorithm applied to slot labels:
+				<br />0 = <b>Full</b> (complete label string rendered)
+				<br />1 = <b>No Vowels</b> (strips inner vowels while preserving initial characters)
+				<br />2 = <b>Caps Only</b> (extracts capital letters and digits; falls back to initials)
+				<br />3 = <b>First Letter</b> (extracts the first letter of each word)
+				<br />4 = <b>No Text</b> (suppresses text rendering completely)
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" type="symbol" value="Typography" />
+				<attribute name="label" type="symbol" value="Strip Label Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Strip Case Style</digest>
+			<description>
+				Text capitalization normalization:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" type="symbol" value="Typography" />
+				<attribute name="label" type="symbol" value="Strip Case Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_style" get="1" set="1" type="int" size="1">
+			<digest>Font Style</digest>
+			<description>
+				Font posture and weight:
+				<br />0 = Regular
+				<br />1 = Bold
+				<br />2 = Italic
+				<br />3 = Bold Italic
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Regular Bold Italic &quot;Bold Italic&quot;" />
+				<attribute name="category" type="symbol" value="Typography" />
+				<attribute name="label" type="symbol" value="Font Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>Name of the font family used to render slot numbers and labels.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="font" />
+				<attribute name="category" type="symbol" value="Typography" />
+				<attribute name="label" type="symbol" value="Font Face" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>Base point size of rendered slot labels (clamped $\ge 8$ pt).</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Typography" />
+				<attribute name="label" type="symbol" value="Font Size" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: GEOMETRY -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Border Radius</digest>
+			<description>Curvature radius of the outer chassis body and corner reticle arcs.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Radius" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Border Thickness</digest>
+			<description>Stroke width in pixels of the outer corner reticle brackets.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Thickness" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Border Extension</digest>
+			<description>Length in pixels of the corner bracket arms extending along chassis edges.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Extension" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: STATUS COLORS -->
+		<attribute name="bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Background Color</digest>
+			<description>RGBA fill color of the main status chassis background.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Background Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Border Color</digest>
+			<description>RGBA color of the outer corner reticle brackets and slot cell outlines.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="highlight_color" get="1" set="1" type="rgba" size="4">
+			<digest>Highlight Color</digest>
+			<description>RGBA active fill color for recalled slots and continuous spatial morph interpolation.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Highlight Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Text Color</digest>
+			<description>RGBA typography color for slot names and index labels.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Text Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Dot Color</digest>
+			<description>RGBA color of the upper-right corner inspector launcher dot.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Status Colors" />
+				<attribute name="label" type="symbol" value="Popup Dot Color" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP MASKS -->
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Allow Settings Dot</digest>
+			<description>Enables or disables the red inspector launcher dot and ctrl-click access to the inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Allow Settings Dot" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Show Attributes List</digest>
+			<description>Master toggle to show or hide the 50/50 attribute list inside the pop-up inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Show Attributes List" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>1. Show Performance</digest>
+			<description>Toggles visibility of the Grid Matrix, Hold-to-Edit, and Hold Timing section in the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="1. Show Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>2. Show Labels</digest>
+			<description>Toggles visibility of Label Style, Case Style, and Font Styling in the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="2. Show Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>3. Show Geometry</digest>
+			<description>Toggles visibility of Border Radius, Reticle Thickness, and Extension controls in the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="3. Show Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>4. Show Colors</digest>
+			<description>Toggles visibility of Chassis Background, Border, Highlight, and Text Colors in the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="4. Show Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>5. Show Popup Colors</digest>
+			<description>Toggles visibility of the 5-color inspector UI theme palette section.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="5. Show Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP COLORS -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup BG Color</digest>
+			<description>Base background fill color for the floating inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Popup BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr BG Color</digest>
+			<description>Background fill color for individual 50/50 attribute rows.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Border Color</digest>
+			<description>Outline and slider trough stroke color inside inspector rows.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Slider Color</digest>
+			<description>Active fill color for attribute drag gauges and number ticker columns.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Slider Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attr Text Color</digest>
+			<description>Font color for parameter names and numerical values inside the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Text Color" />
+			</attributelist>
+		</attribute>
+
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.statusmanager" />
+		<seealso name="touch.master" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.mbutton" />
+		<seealso name="touch.pfunction" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="touch.panel" />
+		<seealso name="pattrstorage" />
+		<seealso name="preset" />
+		<seealso name="nodes" />
+		<seealso name="v8ui" />
+		<seealso name="jsui" />
+	</seealsolist>
+
+</c74object>

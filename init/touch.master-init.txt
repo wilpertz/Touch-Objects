@@ -1,0 +1,2 @@
+
+max define touch.master v8ui @filename touch.master.js;

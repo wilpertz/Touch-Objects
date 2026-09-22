@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.master" module="max" category="UI">
+	<digest>Global Theme Master and Preset Morphing Matrix for Touch Suite</digest>
+	<description>
+		The central theme and preset management hub for the Touch JSUI Suite. Broadcasts unified palettes, geometry dimensions, glass panel characteristics, and inspector styles in real time to all listening components (<o>touch.hslider</o>, <o>touch.vslider</o>, <o>touch.button</o>, <o>touch.numticker</o>, and <o>touch.ummanu</o>). Features an interactive 4-page canvas inspector, floating spectrum color picker, and a multi-row preset matrix with continuous interpolation morphing and external JSON storage.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">theme</metadata>
+		<metadata name="tag">master</metadata>
+		<metadata name="tag">preset</metadata>
+		<metadata name="tag">morph</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="bang/messages">
+			<digest>Trigger broadcast, preset controls, and attribute configuration</digest>
+			<description>
+				Accepts <m>bang</m> to force a theme sync and outlet dump, preset management messages (<m>presets</m>, <m>add_row</m>, <m>sub_row</m>), or configuration messages to set theme parameters.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="messages">
+			<digest>Theme Attribute Stream</digest>
+			<description>
+				Emits a formatted sequence of attribute messages when a theme is committed, recalled, or banged, allowing patch cords to update non-listening Max objects or record automation:
+				<br />- <b>Object Colors &amp; Geometry:</b> <m>bg_color</m>, <m>border_color</m>, <m>text_color</m>, <m>highlight_color</m>, <m>border_radius</m>, <m>border_thickness</m>, <m>border_extension</m>
+				<br />- <b>Glass Panel:</b> <m>panel_glass_inner</m>, <m>panel_glass_outer</m>, <m>panel_border_color</m>, <m>panel_border_radius</m>, <m>panel_border_size</m>, <m>panel_glass_spread</m>
+				<br />- <b>Special Elements:</b> <m>popup_dot_color</m>, <m>slider_rail_color</m>, <m>slider_handle_color</m>, <m>decimal_color</m>, <m>mode_color</m>, <m>slider_rail_breadth</m>
+				<br />- <b>Inspector Popups:</b> <m>pop_bgcolor</m>, <m>attr_bg_color</m>, <m>attr_border_color</m>, <m>attr_slider_color</m>, <m>attr_text_color</m>
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Synchronize and broadcast active theme</digest>
+			<description>
+				Commits all current styling variables, writes them to the persistent dictionary, updates all wireless bus subscribers immediately, and streams attribute messages out Outlet 0.
+			</description>
+		</method>
+
+		<method name="presets">
+			<digest>Toggle floating preset matrix</digest>
+			<description>
+				Opens, closes, or toggles the floating Theme Presets Matrix window. An optional argument of <m>1</m> or <m>0</m> explicitly opens or closes the window. Also accepts the alias <m>preset_popup</m>.
+			</description>
+		</method>
+
+		<method name="add_row">
+			<digest>Add preset matrix row</digest>
+			<description>
+				Appends an additional row of preset slots (with its own dedicated row morph slider) to the Presets Grid window (maximum 6 rows).
+			</description>
+		</method>
+
+		<method name="sub_row">
+			<digest>Remove preset matrix row</digest>
+			<description>
+				Removes the bottommost row from the Presets Grid window (minimum 1 row). Also accepts the alias <m>subtract_row</m>.
+			</description>
+		</method>
+
+		<method name="quick_tags">
+			<digest>Configure quick naming tags</digest>
+			<description>
+				Accepts a space-delimited list of words (e.g. <tt>quick_tags NEON DARK GLASS STAGE ACID</tt>) to populate the one-click category tag buttons inside the preset naming dialog.
+			</description>
+		</method>
+
+		<method name="embed_preset">
+			<digest>Inject preset slot data</digest>
+			<description>
+				Internal patcher persistence method. Takes a slot index integer followed by a serialized JSON string representing a complete theme snapshot.
+			</description>
+		</method>
+
+		<method name="clear_bus">
+			<digest>Flush wireless subscribers</digest>
+			<description>
+				Clears all registered subscriber function pointers from the global <tt>touch_theme_bus</tt> table.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Theme Master -->
+		<attribute name="active_page" get="1" set="1" type="int" size="1">
+			<digest>Active Inspector Page</digest>
+			<description>
+				Selects which category of theme controls is displayed on the main canvas:
+				<br />0 = <b>Objects</b> (Body, Border, Text, Highlight, Radii, Line Width)
+				<br />1 = <b>Panels</b> (Glass Inner, Glass Outer, Panel Border, Spread)
+				<br />2 = <b>Special</b> (Popup Dot, Slider Rail, Knob, Decimals, Mode Prefix)
+				<br />3 = <b>Popups</b> (Inspector Background, Attribute Cell BG, Borders, Sliders, Text)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Active Page" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Objects Panels Special Popups" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Theme Master" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="glide" get="1" set="1" type="int" size="1">
+			<digest>Touch Glide Easing</digest>
+			<description>
+				Global flag enabling velocity-sensitive proximity easing and glide physics across compatible Touch Suite sliders.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Touch Glide Easing" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Theme Master" />
+			</attributelist>
+		</attribute>
+
+		<!-- Preset Grid -->
+		<attribute name="preset_cols" get="1" set="1" type="int" size="1">
+			<digest>Preset Columns</digest>
+			<description>
+				Number of preset slot columns in the floating Presets Grid window (clamped between 2 and 8, default: 5).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Preset Columns" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Preset Grid" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="preset_rows" get="1" set="1" type="int" size="1">
+			<digest>Preset Rows</digest>
+			<description>
+				Number of preset slot rows in the floating Presets Grid window (clamped between 1 and 6, default: 1). Each row includes an independent horizontal morph slider.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Preset Rows" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Preset Grid" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="quick_tags" get="1" set="1" type="symbol" size="1">
+			<digest>Quick-Tag Names</digest>
+			<description>
+				Space-separated list of preset title suggestions displayed in the modal preset capture card.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Quick-Tag Names (Space-separated)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Preset Grid" />
+			</attributelist>
+		</attribute>
+
+		<!-- Sizes & Geometry -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Object Border Radius</digest>
+			<description>
+				Corner rounding radius in pixels broadcast to all Touch buttons, sliders, and tickers (0.0 to 25.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Object Border Thickness</digest>
+			<description>
+				Stroke line width in pixels for reticle brackets across all Touch objects (0.5 to 6.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Thickness" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Object Border Extension</digest>
+			<description>
+				Length in pixels of corner bracket extension arms (0.0 to 40.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Extension" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="panel_border_radius" get="1" set="1" type="float" size="1">
+			<digest>Panel Border Radius</digest>
+			<description>
+				Corner rounding radius in pixels broadcast to glass backdrop panels (0.0 to 50.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Panel Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="panel_border_size" get="1" set="1" type="float" size="1">
+			<digest>Panel Border Size</digest>
+			<description>
+				Stroke width in pixels for glass panel outlines (0.0 to 5.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Panel Border Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="panel_glass_spread" get="1" set="1" type="float" size="1">
+			<digest>Panel Glass Spread</digest>
+			<description>
+				Diffusion spread radius in pixels for multi-layered glass gradient fills (5.0 to 500.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Glass Spread" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="slider_rail_breadth" get="1" set="1" type="float" size="1">
+			<digest>Slider Rail Breadth</digest>
+			<description>
+				Guide wire stroke thickness in pixels broadcast to all Rail and Ribbon sliders (0.5 to 25.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Slider Rail Breadth" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Sizes" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.button" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="dict" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>

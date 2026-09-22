@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.numticker" module="max" category="UI">
+	<digest>High-Precision Numeric Touch and Mouse Controller</digest>
+	<description>
+		An interactive numerical display and precision controller canvas for Max. Features vertical digit dragging, directional tap and hold-repeat stepping, specialized labeling abbreviation engines, a 50/50 Attrui inspector, dual touch sub-interfaces (multi-column sliders and numeric keypad), and Theme Master wireless synchronization.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">ticker</metadata>
+		<metadata name="tag">numeric</metadata>
+		<metadata name="tag">touch</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="float/int/bang/anything">
+			<digest>Value input, bang, or configuration messages</digest>
+			<description>
+				Accepts numbers to set the value directly, <m>bang</m> to trigger output, or configuration/theme messages to update attributes.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="float">
+			<digest>Current clamped numeric value</digest>
+			<description>
+				Outputs the current floating-point value whenever it is modified via clicks, drags, hold stepping, or inbound messages.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Output current value</digest>
+			<description>
+				Outputs the current clamped numeric value through the outlet.
+			</description>
+		</method>
+
+		<method name="float">
+			<digest>Set value and output</digest>
+			<description>
+				Sets the numerical value, clamps it within integer and decimal digit limits, redraws the display, and outputs the result.
+			</description>
+		</method>
+
+		<method name="int">
+			<digest>Set integer value and output</digest>
+			<description>
+				Converted to float, clamped, redrawn, and output.
+			</description>
+		</method>
+
+		<method name="set">
+			<digest>Set value without output</digest>
+			<description>
+				Updates the internal value, clamps it, and redraws the canvas without firing an outlet message.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme from bus or persistent store</digest>
+			<description>
+				Forces the component to reload and re-render its visual styling from the global wireless theme bus or persistent dictionary store. Also accepts aliases <m>theme_update</m> and <m>refresh_theme</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Performance -->
+		<attribute name="mode" get="1" set="1" type="int" size="1">
+			<digest>Interaction Mode</digest>
+			<description>
+				Selects operational interaction mode:
+				<br />0 = <b>Mouse</b> (directional split tap, continuous hold-stepping, vertical digit dragging)
+				<br />1 = <b>Touch</b> (launches dedicated floating touch interface on canvas tap)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Interaction Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Mouse Touch" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="touch_type" get="1" set="1" type="int" size="1">
+			<digest>Touch Interface Style</digest>
+			<description>
+				Selects the layout of the touch window:
+				<br />0 = <b>Sliders</b> (individual vertical digit column touch faders)
+				<br />1 = <b>Pad</b> (full scientific numeric keypad with sign toggle, backspace, and clear)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Touch Interface Type" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Sliders Pad" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="step_size" get="1" set="1" type="float" size="1">
+			<digest>Step Increment</digest>
+			<description>
+				The amount added or subtracted per directional tap or hold step interval.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Step Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="hold_speed" get="1" set="1" type="float" size="1">
+			<digest>Hold Repeat Rate (ms)</digest>
+			<description>
+				Repeat interval in milliseconds when holding down the mouse button in Mouse mode (minimum: 5 ms).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Hold Speed (ms)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<!-- Setup -->
+		<attribute name="integer_digits" get="1" set="1" type="int" size="1">
+			<digest>Integer Digits</digest>
+			<description>
+				Number of integer digit positions rendered and clamped (clamped 1 to 12).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Integer Digits" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Setup" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="decimal_digits" get="1" set="1" type="int" size="1">
+			<digest>Decimal Digits</digest>
+			<description>
+				Number of fractional decimal places rendered and clamped (clamped 0 to 8).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Decimal Digits" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Setup" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="leading_zeros" get="1" set="1" type="int" size="1">
+			<digest>Pad Leading Zeros</digest>
+			<description>
+				Pads the integer portion with zeros up to the integer digit count when enabled.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Leading Zeros" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Setup" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Allow Settings Popup</digest>
+			<description>
+				Shows or hides the top-right launcher dot and enables right-click access to the floating parameter inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Allow Settings Popup" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Setup" />
+			</attributelist>
+		</attribute>
+
+		<!-- Labels -->
+		<attribute name="name_tag_on" get="1" set="1" type="int" size="1">
+			<digest>Name Tag Visible</digest>
+			<description>
+				Enables rendering of the integrated name tag tab protruding from or integrated with the ticker frame.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Name Tag Visible" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="name_tag_text" get="1" set="1" type="symbol" size="1">
+			<digest>Tag Text</digest>
+			<description>
+				Raw label text displayed inside the name tag.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Tag Text" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="tag_position" get="1" set="1" type="int" size="1">
+			<digest>Tag Position</digest>
+			<description>
+				Placement of the name tag relative to the ticker numbers:
+				<br />0 = Top tab
+				<br />1 = Bottom tab
+				<br />2 = Left inline prefix
+				<br />3 = Right inline suffix
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Tag Position" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Top Bottom Left Right" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix Case Style</digest>
+			<description>
+				Text capitalization normalization:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Prefix Case Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix Label Style</digest>
+			<description>
+				Controls abbreviation algorithms on the tag text:
+				<br />0 = <b>Full</b> (full string rendered)
+				<br />1 = <b>No Vowels</b> (strips inner vowels while preserving first letters)
+				<br />2 = <b>Caps Only</b> (extracts capital letters and digits; falls back to initials)
+				<br />3 = <b>First Letter</b> (extracts the initial of each word)
+				<br />4 = <b>No Text</b> (suppresses tag text completely)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Prefix Label Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="name_tag_x" get="1" set="1" type="float" size="1">
+			<digest>Tag X Offset</digest>
+			<description>
+				Horizontal fine-tuning offset in pixels for the name tag.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Tag X Offset" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="name_tag_y" get="1" set="1" type="float" size="1">
+			<digest>Tag Y Offset</digest>
+			<description>
+				Vertical fine-tuning offset in pixels for the name tag.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Tag Y Offset" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="name_tag_text_size" get="1" set="1" type="int" size="1">
+			<digest>Tag Font Size</digest>
+			<description>
+				Font size in points dedicated to the name tag text.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Tag Font Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<!-- Geometry -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Border Radius</digest>
+			<description>
+				Corner rounding radius of the ticker body and reticle corner brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Border Thickness</digest>
+			<description>
+				Stroke line width of the outer border brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Thickness" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Border Extension</digest>
+			<description>
+				Length in pixels of the straight tick arms extending from each reticle corner arc.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Extension" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<!-- Typography -->
+		<attribute name="font" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>
+				Name of the font family used for numerical digits and tag typography.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Face" />
+				<attribute name="style" get="1" set="1" type="symbol" value="font" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Canvas Font Size</digest>
+			<description>
+				Base point size of the rendered numerical digits (clamped $\ge 6$).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Canvas Font Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<!-- Colors -->
+		<attribute name="mode_color" get="1" set="1" type="rgba" size="4">
+			<digest>Mode / Tag Color</digest>
+			<description>
+				RGBA color dedicated to the name tag text and accent features.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Mode / Tag Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="background_color" get="1" set="1" type="rgba" size="4">
+			<digest>Background Color</digest>
+			<description>
+				RGBA fill color for the inner ticker body.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Background Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Border Color</digest>
+			<description>
+				RGBA color of the reticle corner brackets and center click dividers.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="textcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Text Color</digest>
+			<description>
+				RGBA color for the integer digits, negative sign, and decimal point separator.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Dot Color</digest>
+			<description>
+				RGBA color of the top-right launcher dot used to open the parameter inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup Dot Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="decimal_color" get="1" set="1" type="rgba" size="4">
+			<digest>Decimal Color</digest>
+			<description>
+				RGBA color dedicated to the fractional decimal digits, visually distinguishing fractions from integers.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Decimal Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="highlight_color" get="1" set="1" type="rgba" size="4">
+			<digest>Highlight Color</digest>
+			<description>
+				RGBA color of the active column underline indicator during dragging and mouse scrolling.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Highlight Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Popup Theme Colors -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Background Color</digest>
+			<description>
+				RGBA background color of the floating parameter inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Background Color</digest>
+			<description>
+				RGBA background fill color for individual 50/50 attribute rows.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Border Color</digest>
+			<description>
+				RGBA outline color for attribute row containers and value boxes.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Slider Fill Color</digest>
+			<description>
+				RGBA active fill color for sliders inside the 50/50 attribute inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Slider Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Typography Color</digest>
+			<description>
+				RGBA text color for attribute names and value labels inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Standardized 5-Tier Visibility Masks -->
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Show Attributes List</digest>
+			<description>
+				Master toggle to show or hide the 50/50 attribute list inside the pop-up inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Attributes List" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>Show Performance</digest>
+			<description>
+				Toggles visibility of the Value, Mode, Touch UI style, Step Size, and Hold Speed section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="1. Show Performance" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>Show Labels</digest>
+			<description>
+				Toggles visibility of the Tag Visibility, Position, and Prefix Label/Case Styling section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="2. Show Labels" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>Show Geometry</digest>
+			<description>
+				Toggles visibility of the Digits, Leading Zeros, Font Size, Radius, Thickness, and Extension section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="3. Show Geometry" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Colors</digest>
+			<description>
+				Toggles visibility of the Ticker Body, Border, Text, Decimal, Highlight, and Dot Colors section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="4. Show Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Popup Colors</digest>
+			<description>
+				Toggles visibility of the 5-color Inspector Theme Palette section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="5. Show Popup Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.button" />
+		<seealso name="touch.master" />
+		<seealso name="flonum" />
+		<seealso name="number" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>

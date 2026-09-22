@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.pfunction" module="jsui" category="GUI, Control, Audio">
+	<digest>Multi-breakpoint curve and envelope generator with oscilloscope reticle</digest>
+	<description>
+		Modernized touch-first breakpoint function generator for Cycling '74 Max 9 (v8ui / jsui). Features true exponential ease curves, linear segments, anchor latching, precision oscilloscope framing with an uncluttered L-frame graticule, a standardized 280 px dual-mode 50/50 Attrui inspector, modern HSV color picker, bound ticker, and wireless synchronization with touch.master via the shared spectrum theme bus.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">GUI</metadata>
+		<metadata name="tag">Control</metadata>
+		<metadata name="tag">Envelope</metadata>
+		<metadata name="tag">Function</metadata>
+		<metadata name="tag">Curve</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="messages / bang / list">
+			<digest>Control inlet</digest>
+			<description>
+				Accepts <m>bang</m> (outputs envelope stream), coordinate insertion messages (<m>point</m>, <m>setcurve</m>), envelope lists (<m>list</m>), utility triggers (<m>clear</m>, <m>dump</m>, <m>popup</m>), and any configuration attribute message.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="list">
+			<digest>Envelope stream (line~ / curve~ formatted)</digest>
+			<description>
+				Outputs delta-time formatted lists directly routable to <o>line~</o> (<m>[target_val delta_ms ...]</m>) or <o>curve~</o> (<m>[target_val delta_ms curve_factor ...]</m>).
+			</description>
+		</outlet>
+		<outlet id="1" type="bang">
+			<digest>Event bang</digest>
+			<description>
+				Emits a bang whenever a node handle is moved, created, deleted, or segment curvature is adjusted.
+			</description>
+		</outlet>
+		<outlet id="2" type="list">
+			<digest>Raw points list</digest>
+			<description>
+				Outputs absolute coordinate points: pairs <m>[x, y]</m> in line mode, or triplets <m>[x, y, curve]</m> in curve mode.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Output current envelope</digest>
+			<description>Calculates and transmits the line~ or curve~ delta-time list through Outlet 0, followed by the raw points through Outlet 2.</description>
+		</method>
+		<method name="dump">
+			<digest>Dump envelope coordinates</digest>
+			<description>Identical to sending a <m>bang</m>.</description>
+		</method>
+		<method name="point">
+			<arglist>
+				<arg name="index" optional="0" type="int" />
+				<arg name="x" optional="0" type="float" />
+				<arg name="y" optional="0" type="float" />
+				<arg name="curve" optional="1" type="float" />
+			</arglist>
+			<digest>Set or insert a coordinate point</digest>
+			<description>Sets coordinates for an existing point index or appends a new point. Curve values are clamped between -0.99 and +0.99.</description>
+		</method>
+		<method name="setcurve">
+			<arglist>
+				<arg name="index" optional="0" type="int" />
+				<arg name="curvature" optional="0" type="float" />
+			</arglist>
+			<digest>Set segment curvature</digest>
+			<description>Adjusts the exponential ease curvature of the segment preceding the specified point index.</description>
+		</method>
+		<method name="clear">
+			<digest>Reset envelope</digest>
+			<description>Clears all intermediate nodes, resetting the envelope to initial two-point boundary anchors.</description>
+		</method>
+		<method name="list">
+			<digest>Load envelope points list</digest>
+			<description>Populates the envelope with a flat list of coordinates (<m>[x0, y0, c0, x1, y1, c1...]</m> in curve mode, or <m>[x0, y0, x1, y1...]</m> in line mode).</description>
+		</method>
+		<method name="popup">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle inspector popup</digest>
+			<description>Opens or closes the floating Attrui inspector window without arguments, or sets visibility explicitly with 1 or 0.</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+
+		<!-- CATEGORY: ENVELOPE BEHAVIOR -->
+		<attribute name="curve_mode" get="1" set="1" type="int" size="1">
+			<digest>Curve vs Line mode</digest>
+			<description>Toggles between exponential ease curvature (<o>curve~</o>, state 1) and straight linear segments (<o>line~</o>, state 0).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="latch_first_point" get="1" set="1" type="int" size="1">
+			<digest>Lock first node to X min</digest>
+			<description>When set to 1, the first breakpoint remains fixed at <m>x_min</m>. When set to 0, point 0 floats freely in time.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="latch_last_point" get="1" set="1" type="int" size="1">
+			<digest>Lock last node to X max</digest>
+			<description>When set to 1, the final breakpoint remains fixed at <m>x_max</m>. When set to 0, the final point floats freely in time.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="raw_output_mode" get="1" set="1" type="int" size="1">
+			<digest>Output transmission timing</digest>
+			<description>0 = On Bang / Release (outputs on mouse release or explicit bang); 1 = Continuous (streams coordinate updates live on every drag pixel).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="x_min" get="1" set="1" type="float" size="1">
+			<digest>Minimum domain value (X)</digest>
+			<description>Left boundary anchor of the envelope domain in milliseconds or samples.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="x_max" get="1" set="1" type="float" size="1">
+			<digest>Maximum domain value (X)</digest>
+			<description>Right boundary anchor of the envelope domain in milliseconds or samples.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="y_min" get="1" set="1" type="float" size="1">
+			<digest>Minimum range value (Y)</digest>
+			<description>Bottom amplitude boundary anchor of the envelope range.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="y_max" get="1" set="1" type="float" size="1">
+			<digest>Maximum range value (Y)</digest>
+			<description>Top amplitude boundary anchor of the envelope range.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Envelope Behavior" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: LABELS & TYPOGRAPHY -->
+		<attribute name="display_value" get="1" set="1" type="int" size="1">
+			<digest>Coordinate text visibility</digest>
+			<description>1 = Always show node coordinate labels; 0 = Peek on drag only (keeps canvas uncluttered when resting).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix abbreviation algorithm</digest>
+			<description>0 = Full string; 1 = No Vowels; 2 = Caps Only; 3 = First Letter; 4 = No Text (suppresses prefix tag completely).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix casing style</digest>
+			<description>0 = First Cap (Title Case); 1 = All Cap (Uppercase); 2 = All Small (Lowercase).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_style" get="1" set="1" type="int" size="1">
+			<digest>Font posture &amp; weight</digest>
+			<description>0 = Regular; 1 = Bold; 2 = Italic; 3 = Bold Italic.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font face</digest>
+			<description>Typography typeface applied to coordinate readouts and prefix labels.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="font" />
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Canvas font point size</digest>
+			<description>Point size for coordinate numbers on the main canvas (6 to 42 pt).</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Labels &amp; Typography" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: GEOMETRY -->
+		<attribute name="axis_style" get="1" set="1" type="int" size="1">
+			<digest>Axis graticule framing</digest>
+			<description>0 = Off; 1 = X Base (baseline only); 2 = L-Frame (X baseline + left Y rail); 3 = L-Frame + Ticks (adds 3.5 px notches at 0.0, 0.5, and 1.0 without numbers).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Corner bracket arc radius</digest>
+			<description>Curvature radius of the 4 independent oscilloscope corner brackets.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Corner bracket line weight</digest>
+			<description>Stroke width of the reticle chassis corner brackets in pixels.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Corner bracket extension ticks</digest>
+			<description>Length in pixels of the straight reticle ticks extending from each corner arc along the chassis edges.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="line_size" get="1" set="1" type="float" size="1">
+			<digest>Connecting line stroke thickness</digest>
+			<description>Stroke width of the envelope curve wire connecting breakpoints.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="handle_size" get="1" set="1" type="float" size="1">
+			<digest>Breakpoint node diameter</digest>
+			<description>Diameter in pixels of the interactive circular breakpoint handles.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="track_margin" get="1" set="1" type="int" size="1">
+			<digest>Boundary margin inset</digest>
+			<description>Padding inset in pixels from the chassis border preventing node handles from colliding with corner brackets.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP MASKS -->
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Enable popup launcher</digest>
+			<description>Displays the red launcher dot in the upper-right corner and enables right-click / ctrl-click popup launch.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Attrui list collapse toggle</digest>
+			<description>1 = Full mode (displays 50/50 attribute rows, snaps to 280 px width); 0 = Mini mode (collapses rows, unlocks free XY elastic resizing).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>1. Show Performance Mask</digest>
+			<description>Collapsible mask for Tier 1: operational modes, latching, bounds, and output streams.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>2. Show Labels Mask</digest>
+			<description>Collapsible mask for Tier 2: value display rules, abbreviation algorithms, casing, and fonts.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>3. Show Geometry Mask</digest>
+			<description>Collapsible mask for Tier 3: graticules, reticle dimensions, handle scale, margins, and line weights.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>4. Show Envelope Colors Mask</digest>
+			<description>Collapsible mask for Tier 4: main component palette (chassis, brackets, wire, nodes, text).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>5. Show Popup Colors Mask</digest>
+			<description>Collapsible mask for Tier 5: the complete 5-color inspector UI theme suite.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: ENVELOPE COLORS -->
+		<attribute name="bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Chassis background color</digest>
+			<description>Background fill color of the main canvas and inspector preview chassis.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Reticle corner bracket color</digest>
+			<description>Color of the 4 oscilloscope corner arc brackets and graticule axes.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="range_color" get="1" set="1" type="rgba" size="4">
+			<digest>Connecting line color</digest>
+			<description>Color of the vector wire connecting envelope breakpoints.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="handle_color" get="1" set="1" type="rgba" size="4">
+			<digest>Handle node highlight color</digest>
+			<description>Color of circular breakpoint handles and curving arrowheads.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Coordinate text color</digest>
+			<description>Color of active numerical coordinate readouts.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mode_color" get="1" set="1" type="rgba" size="4">
+			<digest>Mode / prefix tag color</digest>
+			<description>Decoupled dedicated color applied to descriptive prefix labels and curving indicator frames.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup launcher dot color</digest>
+			<description>Color of the upper-right corner inspector launcher dot.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Envelope Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP COLORS -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector background fill</digest>
+			<description>Base background fill color for the floating inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute cell background</digest>
+			<description>Background fill for individual 50/50 attribute rows.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute cell border &amp; troughs</digest>
+			<description>Outline and slider trough stroke color inside inspector rows.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute interactive gauge fill</digest>
+			<description>Fill color for attribute drag gauges and number ticker columns.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute typography color</digest>
+			<description>Font color for parameter names and numerical values inside the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.master" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="touch.panel" />
+		<seealso name="function" />
+		<seealso name="curve~" />
+		<seealso name="line~" />
+	</seealsolist>
+
+</c74object>

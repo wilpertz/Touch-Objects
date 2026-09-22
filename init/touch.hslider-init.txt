@@ -1,0 +1,2 @@
+
+max define touch.hslider v8ui @filename touch.hslider.js;

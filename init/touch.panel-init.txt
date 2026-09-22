@@ -1,0 +1,2 @@
+
+max define touch.panel v8ui @filename touch.panel.js;

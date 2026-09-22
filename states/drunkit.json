@@ -1,0 +1,49 @@
+{
+    "pattrstorage": {
+        "name": "drunkit",
+        "slots": {
+            "1": {
+                "id": 1,
+                "data": {
+                    "sound1": [ 0 ],
+                    "wil.beatmaker_4[1]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[3]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
+                    "touch_status_712677": [ 1 ],
+                    "volume": [ 0.0056997066684734985 ]
+                }
+            },
+            "2": {
+                "id": 2,
+                "data": {
+                    "sound1": [ 1 ],
+                    "wil.beatmaker_4[1]::time_type": [ 1.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 1.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 8, 1, 0, 8, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 2, 2, 2, 2, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 1.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 8, 1, 0, 4, 0, 2000, 4000, 6000, 2, 2, 2, 2, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[3]::time_type": [ 1.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 2, 0, 2000, 2, 2, 2, 2 ],
+                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
+                    "touch_status_712677": [ 2 ],
+                    "volume": [ 0.7959586291181249 ]
+                }
+            }
+        }
+    }
+}

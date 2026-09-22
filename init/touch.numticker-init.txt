@@ -1,0 +1,2 @@
+
+max define touch.numticker v8ui @filename touch.numticker.js;

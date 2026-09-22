@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.ummanu" module="max" category="UI">
+	<digest>Touch-First Multi-Category Menu and Browser Component</digest>
+	<description>
+		A unified Max jsui/v8ui UI component designed for tactile hardware, touch screens, and mice. Operates by default as an immediate left/right touch picker with auto-repeat hold stepping and scrub gestures, or expands into a centered floating dropdown list. Supports multi-category preset/device browsing with a dedicated Max background data inlet.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">touch</metadata>
+		<metadata name="tag">menu</metadata>
+		<metadata name="tag">browser</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="int/float/bang/anything">
+			<digest>Control, Selection, and Configuration Inlet</digest>
+			<description>
+				Receives integers or floats to directly select item indices (0 to N-1) within the active category page. Receives <m>bang</m> to output the current selection. Also accepts configuration and theme attribute messages.
+			</description>
+		</inlet>
+		<inlet id="1" type="messages">
+			<digest>MultiMenu Background Data Stream Inlet</digest>
+			<description>
+				Dedicated background data feed. When <m>multimenu</m> and Menu dropdown mode are enabled, receives <m>append</m>, <m>set</m>, <m>clear</m>, <m>folder_menu</m>, or raw filename lists from <o>folder</o> to populate pages asynchronously without interfering with active selections.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="list/symbol">
+			<digest>Configured Selection Output</digest>
+			<description>
+				Outputs the selection formatted according to <m>output_type</m>:
+				<br />0 = <b>Prefix + Item</b> (Default list <tt>[Prefix Item]</tt>, formatted without trailing colons, ready for <o>route</o>).
+				<br />1 = <b>Raw File</b> (Raw target name, e.g. <tt>synth.patch.maxpat</tt> for <o>pcontrol</o>).
+				<br />2 = <b>Item Name</b> (Untouched display label string).
+				<br />3 = <b>Prefix + Index</b> (List <tt>[Prefix Index]</tt>).
+			</description>
+		</outlet>
+		<outlet id="1" type="int">
+			<digest>Local Item Index</digest>
+			<description>
+				Outputs the active menu item index (0 to N-1) within the current category page.
+			</description>
+		</outlet>
+		<outlet id="2" type="int">
+			<digest>Active Category / Page Index</digest>
+			<description>
+				Outputs the current category / menu page index (0 to M-1) to drive folder routers and subpatcher selectors.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Output current selection</digest>
+			<description>
+				Outputs the current selection through Outlet 0, local item index through Outlet 1, and active page index through Outlet 2.
+			</description>
+		</method>
+
+		<method name="int">
+			<digest>Select item or switch page</digest>
+			<description>
+				On Inlet 0: Selects the item index in the active menu and updates the canvas and open dropdown synchronously.
+				<br />On Inlet 1: Switches the active MultiMenu category page.
+			</description>
+		</method>
+
+		<method name="float">
+			<digest>Select item by float</digest>
+			<description>
+				Truncates float to integer and selects the item index on Inlet 0.
+			</description>
+		</method>
+
+		<method name="append">
+			<digest>Add item to active menu</digest>
+			<description>
+				Appends an item or filename to the active menu page (Inlet 1 in MultiMenu mode).
+			</description>
+		</method>
+
+		<method name="set">
+			<digest>Set item at index</digest>
+			<description>
+				Replaces item at the specified index with a new display and raw filename.
+			</description>
+		</method>
+
+		<method name="clear">
+			<digest>Clear active menu</digest>
+			<description>
+				Removes all items from the active category page.
+			</description>
+		</method>
+
+		<method name="menu">
+			<digest>Switch active category page</digest>
+			<description>
+				Switches the active category page to the specified index (0 to M-1). Also accepts the alias <m>page</m>.
+			</description>
+		</method>
+
+		<method name="folder_menu">
+			<digest>Populate menu page from list</digest>
+			<description>
+				Populates a designated page with a list of filenames or items streamed from <o>folder</o>.
+			</description>
+		</method>
+
+		<method name="clear_folders">
+			<digest>Reset all menus</digest>
+			<description>
+				Resets all dynamic folder menu pages back to their initial default items.
+			</description>
+		</method>
+
+		<method name="popup">
+			<digest>Toggle inspector window</digest>
+			<description>
+				Opens, closes, or toggles the floating parameter inspector window. An optional argument of <m>1</m> or <m>0</m> explicitly opens or closes the window.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme from bus or persistent store</digest>
+			<description>
+				Forces the component to reload and re-render its visual styling from the global wireless theme bus or persistent dictionary store. Also accepts aliases <m>theme_update</m> and <m>refresh_theme</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Performance -->
+		<attribute name="mode" get="1" set="1" type="int" size="1">
+			<digest>Interaction Mode</digest>
+			<description>
+				Selects operational interaction mode:
+				<br />0 = <b>Touch</b> (Default) — Click left half to decrement, right half to increment, scrub horizontally, hold to auto-repeat.
+				<br />1 = <b>Menu</b> — Spawns the floating centered dropdown list.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Interaction Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Touch Menu" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="multimenu" get="1" set="1" type="int" size="1">
+			<digest>Enable MultiMenu Paging</digest>
+			<description>
+				When enabled (1), activates multi-category browsing, pagination chevron arrows, vertical swipe paging, and Inlet 1 folder data reception. When disabled (0), behaves as a lean, single-category touch picker.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="MultiMenu Enabled" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="output_type" get="1" set="1" type="int" size="1">
+			<digest>Output Format Style</digest>
+			<description>
+				Determines how Outlet 0 formats data:
+				<br />0 = <b>Prefix + Item (Default)</b> — Outputs list <tt>[Prefix Item]</tt> formatted without trailing colons.
+				<br />1 = <b>Raw File (pcontrol)</b> — Outputs raw target filename.
+				<br />2 = <b>Item Name</b> — Outputs untouched display string.
+				<br />3 = <b>Prefix + Index</b> — Outputs list <tt>[Prefix Index]</tt>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Output Type" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;Prefix + Item (Default)&quot; &quot;Raw File (pcontrol)&quot; &quot;Item Name&quot; &quot;Prefix + Index&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="touch_output" get="1" set="1" type="int" size="1">
+			<digest>Touch Output Mode</digest>
+			<description>
+				Output trigger behavior in Touch mode:
+				<br />0 = <b>Instant (Scrub)</b> — Fires immediately upon each step or horizontal drag scrub.
+				<br />1 = <b>Staged (Safe for pcontrol)</b> — Arms selection visually with highlight underlay; only fires upon center tap confirmation.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Touch Output Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;Instant (Scrub)&quot; &quot;Staged (Safe for pcontrol)&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_markers" get="1" set="1" type="int" size="1">
+			<digest>Show Zone Markers</digest>
+			<description>
+				Displays subtle vertical divider notch marks (or zone gates in staged mode) indicating the separation between decrement and increment touch zones.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Zone Markers" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="hold_speed" get="1" set="1" type="float" size="1">
+			<digest>Touch Hold Speed (ms)</digest>
+			<description>
+				Repeat step interval in milliseconds when holding down the mouse button in Touch mode (after initial 350 ms hold gate).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Touch Hold Speed (ms)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_arrow" get="1" set="1" type="int" size="1">
+			<digest>Show Dropdown Arrow</digest>
+			<description>
+				Enables or disables the down-arrow chevron glyph displayed on the canvas when in Menu mode.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Dropdown Arrow" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<!-- Menu Config -->
+		<attribute name="selected" get="1" set="1" type="int" size="1">
+			<digest>Selected Item Index</digest>
+			<description>
+				Active item index within the currently loaded category page (0 to N-1).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Selected Index" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Menu Config" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="prefix" get="1" set="1" type="symbol" size="1">
+			<digest>Prefix / Category Names</digest>
+			<description>
+				Category titles (separated by spaces or commas). In MultiMenu mode, each title corresponds to a separate browseable page.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Prefix / Category Names" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Menu Config" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="modes" get="1" set="1" type="symbol" size="1">
+			<digest>Modes List / Items</digest>
+			<description>
+				Fallback item list for the menus. Supports unquoted space-delimited words and quoted multi-word strings (e.g. <tt>ItemA ItemB "Item C"</tt>). Pages are separated by commas.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Modes List / Items" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Menu Config" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Allow Settings Dot</digest>
+			<description>
+				Enables top-right launcher dot and right-click access to open the floating parameter inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Allow Settings Dot" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Menu Config" />
+			</attributelist>
+		</attribute>
+
+		<!-- Labels -->
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix Case Style</digest>
+			<description>
+				Text capitalization normalization:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Prefix Case Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Prefix Label Style</digest>
+			<description>
+				Controls text abbreviation algorithms for the prefix label:
+				<br />0 = <b>Full</b> (full string rendered)
+				<br />1 = <b>No Vowels</b> (removes inner vowels while preserving first letters)
+				<br />2 = <b>Caps Only</b> (extracts capital letters and digits; falls back to initials)
+				<br />3 = <b>First Letter</b> (extracts the initial letter of each word)
+				<br />4 = <b>No Text</b> (suppresses prefix text completely)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Prefix Label Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<!-- Geometry -->
+		<attribute name="corner_radius" get="1" set="1" type="float" size="1">
+			<digest>Border Radius</digest>
+			<description>
+				Rounding radius of the body container and reticle corner brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="bordersize" get="1" set="1" type="float" size="1">
+			<digest>Border Thickness</digest>
+			<description>
+				Stroke line width of the outer reticle corner brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Thickness" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Border Extension</digest>
+			<description>
+				Length in pixels of the straight bracket arms extending along edges from each corner arc.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Extension" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<!-- Typography -->
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>
+				Font family used for rendering button prefix labels, active items, and dropdown entries.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Face" />
+				<attribute name="style" get="1" set="1" type="symbol" value="font" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="fontsize" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>
+				Base point size of the rendered label and item text (clamped $\ge 6$).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<!-- Button Colors -->
+		<attribute name="bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Background Color</digest>
+			<description>
+				RGBA fill color of the main body container.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Background Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="bordercolor" get="1" set="1" type="rgba" size="4">
+			<digest>Border Color</digest>
+			<description>
+				RGBA stroke color of the reticle corner brackets and zone divider ticks.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="highlight_color" get="1" set="1" type="rgba" size="4">
+			<digest>Highlight Color</digest>
+			<description>
+				RGBA color of the dropdown active selection underlay, staged confirm bar, and chevron glyph.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Highlight Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mode_color" get="1" set="1" type="rgba" size="4">
+			<digest>Mode Prefix Color</digest>
+			<description>
+				RGBA color dedicated to the prefix category text, decoupled from the active item text color.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Mode Prefix Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="textcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Text Color</digest>
+			<description>
+				RGBA color of the primary menu item text on the canvas and in the dropdown list.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Dot Color</digest>
+			<description>
+				RGBA color of the top-right launcher dot used to open the parameter inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup Dot Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Popup Theme Colors -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Background Color</digest>
+			<description>
+				RGBA background color of the floating parameter inspector window and dropdown list.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Background Color</digest>
+			<description>
+				RGBA background fill color for individual 50/50 attribute rows.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Border Color</digest>
+			<description>
+				RGBA outline color for attribute row containers and value boxes.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Slider Fill Color</digest>
+			<description>
+				RGBA active fill color for sliders inside the 50/50 attribute inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Slider Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Typography Color</digest>
+			<description>
+				RGBA text color for attribute names and value labels inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Standardized 5-Tier Visibility Masks -->
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Show Attributes List</digest>
+			<description>
+				Master toggle to show or hide the 50/50 attribute list inside the pop-up inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Attributes List" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>Show Performance</digest>
+			<description>
+				Toggles visibility of the Mode, MultiMenu, Output Type, Touch Out, Markers, Hold Speed, and Arrow Glyph controls in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="1. Show Performance" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>Show Labels</digest>
+			<description>
+				Toggles visibility of the Prefix Label Style and Prefix Case Style controls in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="2. Show Labels" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>Show Geometry</digest>
+			<description>
+				Toggles visibility of the Border Radius, Border Thickness, and Border Extension sliders in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="3. Show Geometry" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Button Colors</digest>
+			<description>
+				Toggles visibility of the Background, Border, Highlight, Text, Mode Prefix, and Popup Dot color swatches in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="4. Show Button Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Popup Colors</digest>
+			<description>
+				Toggles visibility of the 5-color Inspector Theme Palette section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="5. Show Popup Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.button" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.master" />
+		<seealso name="umenu" />
+		<seealso name="folder" />
+		<seealso name="pcontrol" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>

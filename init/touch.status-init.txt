@@ -1,0 +1,2 @@
+
+max define touch.status v8ui @filename touch.status.js;

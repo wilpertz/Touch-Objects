@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.hslider" module="max" category="UI">
+	<digest>Horizontal Touch Slider Component</digest>
+	<description>
+		A modern horizontal interactive slider featuring proximity-easing dragging, discrete step incrementing, dual visual chassis styles (Ribbon and Rail), two-pass decoupled label typography, and an integrated 50/50 Attrui floating parameter inspector with bound tickers and spectrum color pickers.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">slider</metadata>
+		<metadata name="tag">touch</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="float/int/bang/anything">
+			<digest>Value input, bang, or configuration messages</digest>
+			<description>
+				Accepts numeric inputs to update the slider position, <m>bang</m> to trigger output, or configuration/theme messages to set attributes dynamically.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="float">
+			<digest>Current scaled slider value</digest>
+			<description>
+				Outputs the scaled floating-point value mapped linearly between <m>min_val</m> and <m>max_val</m>.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Output current value</digest>
+			<description>
+				Outputs the current scaled value through the outlet.
+			</description>
+		</method>
+
+		<method name="float">
+			<digest>Set value and output</digest>
+			<description>
+				Sets the slider position according to the scaled range (<m>min_val</m> to <m>max_val</m>) and outputs the resulting value.
+			</description>
+		</method>
+
+		<method name="int">
+			<digest>Set value and output</digest>
+			<description>
+				Converted to a float to set the slider position, triggering output.
+			</description>
+		</method>
+
+		<method name="set">
+			<digest>Set value without output</digest>
+			<description>
+				Sets the internal slider position without producing an output message.
+			</description>
+		</method>
+
+		<method name="popup">
+			<digest>Toggle inspector window</digest>
+			<description>
+				Opens, closes, or toggles the floating parameter inspector window. An optional argument of <m>1</m> or <m>0</m> explicitly opens or closes the window.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme from bus or persistent store</digest>
+			<description>
+				Forces the component to reload and re-render its visual styling from the global wireless theme bus or persistent dictionary store. Also accepts aliases <m>theme_update</m> and <m>refresh_theme</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Behavior -->
+		<attribute name="slider_style" get="1" set="1" type="int" size="1">
+			<digest>Visual Style</digest>
+			<description>
+				Selects between two chassis designs:
+				<br />
+				0 = <b>Ribbon</b> (rectangular body with reticle corner brackets, track wire, and crossbar needle)
+				<br />
+				1 = <b>Rail</b> (minimalist wire rail with floating solid orb knob)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Ribbon Rail" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mode" get="1" set="1" type="int" size="1">
+			<digest>Interaction Mode</digest>
+			<description>
+				Determines mouse and touch handling behavior:
+				<br />
+				0 = <b>Touch</b> (discrete stepping on tap, hold-repeat, proximity easing on drag)
+				<br />
+				1 = <b>Mouse</b> (direct absolute jump to cursor position)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Touch Mouse" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="min_val" get="1" set="1" type="float" size="1">
+			<digest>Minimum Output Value</digest>
+			<description>
+				Sets the lower boundary of the slider output range (default: 0.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Min Val" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="max_val" get="1" set="1" type="float" size="1">
+			<digest>Maximum Output Value</digest>
+			<description>
+				Sets the upper boundary of the slider output range (default: 1.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Max Val" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="step_amount" get="1" set="1" type="float" size="1">
+			<digest>Discrete Step Size</digest>
+			<description>
+				The numeric increment or decrement applied per discrete tap or hold interval in Touch mode.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Step Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="step_speed_ms" get="1" set="1" type="int" size="1">
+			<digest>Hold Repeat Rate (ms)</digest>
+			<description>
+				The interval in milliseconds between repeated discrete step increments when holding down in Touch mode.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Hold Timer (ms)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="slider_speed" get="1" set="1" type="float" size="1">
+			<digest>Drag Easing Speed</digest>
+			<description>
+				Multiplier controlling the rate of proximity acceleration during dragging in Touch mode.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Slider Drag Speed" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="curve_exponent" get="1" set="1" type="float" size="1">
+			<digest>Easing Curve Exponent</digest>
+			<description>
+				Exponential factor governing distance-dependent proximity drag easing.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Curve Exponent" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Behavior" />
+			</attributelist>
+		</attribute>
+
+		<!-- Typography & Labels -->
+		<attribute name="label_text" get="1" set="1" type="symbol" size="1">
+			<digest>Label Text</digest>
+			<description>
+				Descriptive text prefix displayed alongside the numerical value.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Label Text" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Label Display Style</digest>
+			<description>
+				Controls text abbreviation and visibility:
+				<br />0 = <b>Full</b> (full string rendered)
+				<br />1 = <b>No Vowels</b> (removes inner vowels while preserving first letters)
+				<br />2 = <b>Caps Only</b> (extracts capital letters and digits; falls back to initials if none exist)
+				<br />3 = <b>First Letter</b> (extracts the first letter of each word)
+				<br />4 = <b>No Text</b> (suppresses text rendering completely)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Label Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Casing Style</digest>
+			<description>
+				Text capitalization normalization:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Case Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>
+				Name of the font family used to render the value and label.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Face" />
+				<attribute name="style" get="1" set="1" type="symbol" value="font" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_size" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>
+				Point size of the rendered label and value text (clamped $\ge 6$).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_style" get="1" set="1" type="int" size="1">
+			<digest>Font Style</digest>
+			<description>
+				Font posture and weight:
+				<br />0 = Regular
+				<br />1 = Bold
+				<br />2 = Italic
+				<br />3 = Bold Italic
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Regular Bold Italic &quot;Bold Italic&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Typography" />
+			</attributelist>
+		</attribute>
+
+		<!-- Geometry -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Corner Radius</digest>
+			<description>
+				Corner rounding radius for the slider body and reticle corners.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Reticle Line Thickness</digest>
+			<description>
+				Stroke line width of the reticle corner brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Thickness" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Corner Bracket Extension</digest>
+			<description>
+				Pixel length of the reticle corner bracket arms extending along edges.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Extension" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="track_breadth" get="1" set="1" type="float" size="1">
+			<digest>Center Track Line Width</digest>
+			<description>
+				Stroke width of the horizontal center track wire.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Track Breadth" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="slider_breadth" get="1" set="1" type="float" size="1">
+			<digest>Crossbar Needle Span</digest>
+			<description>
+				Vertical height percentage (50% to 100%) of the sliding crossbar needle relative to total height.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Slider Breadth" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<!-- Slider Colors -->
+		<attribute name="bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Background Color</digest>
+			<description>
+				RGBA color of the inner slider body fill.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Background Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Reticle Border Color</digest>
+			<description>
+				RGBA color of the outer corner brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="track_color" get="1" set="1" type="rgba" size="4">
+			<digest>Track Wire Color</digest>
+			<description>
+				RGBA color of the center horizontal guide wire.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Track Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="handle_color" get="1" set="1" type="rgba" size="4">
+			<digest>Needle / Knob Color</digest>
+			<description>
+				RGBA color of the crossbar needle (Ribbon style) or orb knob (Rail style).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Needle / Knob Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Value Text Color</digest>
+			<description>
+				RGBA color of the rendered numerical value text.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mode_color" get="1" set="1" type="rgba" size="4">
+			<digest>Label / Mode Text Color</digest>
+			<description>
+				RGBA color dedicated to the text label prefix, decoupled from the value text color.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Mode / Label Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Launcher Dot Color</digest>
+			<description>
+				RGBA color of the top-right launcher dot used to open the parameter inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup Dot Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Slider Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Popup Theme Colors -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Background Color</digest>
+			<description>
+				RGBA background color of the floating parameter inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Background Color</digest>
+			<description>
+				RGBA background fill color for individual 50/50 attribute rows.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Row Border Color</digest>
+			<description>
+				RGBA outline color for attribute row containers and value boxes.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Slider Fill Color</digest>
+			<description>
+				RGBA active fill color for sliders inside the 50/50 attribute inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Slider Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Typography Color</digest>
+			<description>
+				RGBA text color for attribute names and value labels inside the inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Attr Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- Popup Configuration -->
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Enable Pop-Up Inspector</digest>
+			<description>
+				Enables or disables the top-right pop-up dot launcher and right-click access to the inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Allow Popup" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup" />
+			</attributelist>
+		</attribute>
+
+		<!-- Standardized 5-Tier Visibility Masks -->
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Show Attributes List</digest>
+			<description>
+				Master toggle to show or hide the 50/50 attribute list inside the pop-up inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Attributes List" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>Show Performance</digest>
+			<description>
+				Toggles visibility of the Operating Style, Mode, Range Bounds, Step Timing, and Drag Speed section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="1. Show Performance" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>Show Labels</digest>
+			<description>
+				Toggles visibility of the Label Style, Case Style, and Font Styling section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="2. Show Labels" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>Show Geometry</digest>
+			<description>
+				Toggles visibility of the Corner Radius, Border Size, Bracket Extension, Track Breadth, and Needle Span section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="3. Show Geometry" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Colors</digest>
+			<description>
+				Toggles visibility of the Slider Body, Reticle Border, Track Wire, Needle/Knob, and Decoupled Text Colors section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="4. Show Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>Show Popup Colors</digest>
+			<description>
+				Toggles visibility of the 5-color Inspector Theme Palette section in the pop-up inspector.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="5. Show Popup Colors" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Popup Masks" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.vslider" />
+		<seealso name="touch.button" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.master" />
+		<seealso name="slider" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>

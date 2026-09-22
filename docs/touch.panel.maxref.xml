@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.panel" module="max" category="UI">
+	<digest>Subpatch Background Chassis and Diffusion Glass Component</digest>
+	<description>
+		A soft-chassis backdrop and optical diffusion glass panel designed for Max jsui/v8ui patchers and subpatcher windows. Features a 16-stop cosine directional diffusion smear engine, real-time wireless synchronization with <o>touch.master</o> (Page 1: Panels), adjustable glass spread and border geometry, pass-through click transparency, and an optional window-drag mode to move borderless parent patchers.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">panel</metadata>
+		<metadata name="tag">glass</metadata>
+		<metadata name="tag">backdrop</metadata>
+		<metadata name="tag">chassis</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="bang/messages">
+			<digest>Theme sync or configuration messages</digest>
+			<description>
+				Receives <m>bang</m> or theme update messages to force re-synchronization with <o>touch.master</o>, or direct configuration messages to alter optical and geometry properties.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<!-- Component operates purely as a visual backdrop; no outlets are exposed -->
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Synchronize panel styling</digest>
+			<description>
+				Re-reads theme values from the global <tt>touch_theme_bus</tt> or persistent dictionary store and redraws the canvas.
+			</description>
+		</method>
+
+		<method name="theme_sync">
+			<digest>Sync with Theme Master</digest>
+			<description>
+				Forces an immediate reload of panel glass colors, spread, radius, and border thickness from <o>touch.master</o>.
+			</description>
+		</method>
+
+		<method name="theme_update">
+			<digest>Refresh theme broadcast</digest>
+			<description>
+				Direct alias for <m>theme_sync</m> to process live broadcast events from the theme bus.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme styling</digest>
+			<description>
+				General update message. Also accepts aliases <m>refresh</m> and <m>refresh_theme</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Panel Behavior -->
+		<attribute name="drag_patch" get="1" set="1" type="int" size="1">
+			<digest>Drag Patch Window Mode</digest>
+			<description>
+				Toggles mouse interaction logic:
+				<br />0 = <b>Pass-Through (Default)</b>: Sets <tt>box.ignoreclick = 1</tt>, allowing clicks, drags, and patch cords to pass through completely to background or foreground objects without obstruction.
+				<br />1 = <b>Window Drag</b>: Sets <tt>box.ignoreclick = 0</tt>, allowing the user to click anywhere on the panel to drag and reposition the parent patcher window on screen (ideal for borderless floating subpatchers).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Drag Patch Window" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Panel Behavior" />
+			</attributelist>
+		</attribute>
+
+		<!-- Optical Glass Properties -->
+		<attribute name="glass_inner" get="1" set="1" type="rgba" size="4">
+			<digest>Glass Inner Substrate Color</digest>
+			<description>
+				RGBA color defining the base substrate fill of the panel backdrop. Broadcast from <o>touch.master</o> as <m>panel_glass_inner</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Glass Inner" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Glass Optics" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="glass_outer" get="1" set="1" type="rgba" size="4">
+			<digest>Glass Outer Smear Color</digest>
+			<description>
+				RGBA color defining the 16-stop directional perimeter diffusion gradient. Broadcast from <o>touch.master</o> as <m>panel_glass_outer</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Glass Outer Smear" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Glass Optics" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="glass_spread" get="1" set="1" type="float" size="1">
+			<digest>Diffusion Smear Spread (px)</digest>
+			<description>
+				Distance in pixels that the 16-stop cosine diffusion gradient bleeds inward from the four perimeter edges (clamped $\ge 1.0$). Broadcast from <o>touch.master</o> as <m>panel_glass_spread</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Glass Spread" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Glass Optics" />
+			</attributelist>
+		</attribute>
+
+		<!-- Geometry -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Corner Rounding Radius</digest>
+			<description>
+				Radius in pixels of the rounded rectangle corners of the panel body and border outline. Broadcast from <o>touch.master</o> as <m>panel_border_radius</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_size" get="1" set="1" type="float" size="1">
+			<digest>Perimeter Stroke Thickness</digest>
+			<description>
+				Stroke width in pixels of the outer perimeter border outline. Broadcast from <o>touch.master</o> as <m>panel_border_size</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Perimeter Border Color</digest>
+			<description>
+				RGBA color of the outer perimeter border outline. Broadcast from <o>touch.master</o> as <m>panel_border_color</m>.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.master" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.button" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="panel" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>

@@ -1,0 +1,2 @@
+
+max define touch.vslider v8ui @filename touch.vslider.js;

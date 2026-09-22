@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./_c74_ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.mbutton" module="jsui" category="GUI, Control">
+	<digest>Multi-button 1D array strip with event routing and activity gate</digest>
+	<description>
+		Modernized touch-optimized multi-button strip for Cycling '74 Max 9 (v8ui / jsui). Configurable as a horizontal row or vertical column of buttons supporting both independent (multi-selection) and live (exclusive radio) group modes. Features per-button action modes (momentary, toggle, touch-hold), slash-delimited dual-state labels ("OffText/OnText"), loop-safe re-entrancy protection, targeted event streaming on Outlet 0 for direct pairing with <o>route</o>, a signum activity gate on Outlet 1, and real-time Theme Master synchronization.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">GUI</metadata>
+		<metadata name="tag">Control</metadata>
+		<metadata name="tag">Button</metadata>
+		<metadata name="tag">Array</metadata>
+		<metadata name="tag">Touch</metadata>
+		<metadata name="tag">Toggle</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="messages / list / int / bang">
+			<digest>Control and state input</digest>
+			<description>
+				Accepts index/state pairs (<m>[0 1]</m>, <m>[1 0]</m>), targeted button messages (<m>button_1 1</m>, <m>btn_2 bang</m>), direct tag messages (<m>edit 1</m>, <m>snap bang</m>), silent updates (<m>set 0 1</m>, <m>set 1 0 1 0</m>), full state lists, integers, <m>bang</m>, and all configuration attributes.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="list">
+			<digest>Event stream [name/index, state] for route</digest>
+			<description>
+				Transmits targeted event pairs: <m>[tag, state]</m> (e.g. <m>edit 1</m>, <m>snap 0</m>, <m>close 1</m>, or <m>0 1</m> if unlabeled). Designed to connect directly to <o>route</o> (<m>[route edit snap close]</m> or <m>[route 0 1 2]</m>) so that only the specific button that changed fires its respective outlet without triggering full-array list cascades.
+			</description>
+		</outlet>
+		<outlet id="1" type="int">
+			<digest>Signum Activity Gate (0 or 1)</digest>
+			<description>
+				Outputs a binary master activity gate: outputs <m>1</m> if any button in the strip is currently active (&gt;= 1), and <m>0</m> when all buttons are off. Replaces external lookup and unpack gate subpatches.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Re-emit current states</digest>
+			<description>
+				Re-transmits the targeted event state for all buttons through Outlet 0 and updates the activity gate on Outlet 1.
+			</description>
+		</method>
+
+		<method name="int">
+			<arglist>
+				<arg name="index" optional="0" type="int" />
+			</arglist>
+			<digest>Trigger button by index</digest>
+			<description>
+				Simulates a click/tap on the button at the specified zero-based index.
+			</description>
+		</method>
+
+		<method name="list">
+			<arglist>
+				<arg name="payload" optional="0" type="list" />
+			</arglist>
+			<digest>Set button state or full array</digest>
+			<description>
+				Accepts either a 2-element pair <m>[index, state]</m> (e.g. <m>0 1</m> to turn Button 0 ON) or a full state list matching the button count (e.g. <m>1 0 1 0</m>). Only broadcasts to outlets if a state change actually occurs.
+			</description>
+		</method>
+
+		<method name="set">
+			<arglist>
+				<arg name="payload" optional="0" type="list" />
+			</arglist>
+			<digest>Silent state update</digest>
+			<description>
+				Updates button states visually in memory without firing any output messages through Outlet 0 or Outlet 1. Accepts <m>set [index, state]</m> or <m>set [s0, s1, ...]</m>. Essential for feedback routing and preset restoration.
+			</description>
+		</method>
+
+		<method name="clear">
+			<digest>Reset all buttons</digest>
+			<description>
+				Resets all buttons in the array to state 0 and updates outputs.
+			</description>
+		</method>
+
+		<method name="button_N / btn_N">
+			<arglist>
+				<arg name="value" optional="1" type="int/symbol" />
+			</arglist>
+			<digest>Direct 1-based button message</digest>
+			<description>
+				Targeted addressing using 1-based indexing (e.g. <m>button_1 1</m>, <m>button_2 0</m>, <m>btn_3 bang</m>).
+			</description>
+		</method>
+
+		<method name="popup">
+			<arglist>
+				<arg name="state" optional="1" type="int" />
+			</arglist>
+			<digest>Toggle inspector popup</digest>
+			<description>
+				Opens, closes, or toggles the floating Attrui parameter inspector.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme styling</digest>
+			<description>
+				Reloads and re-renders visual palettes from the shared memory theme bus (<m>Global("touch_theme_bus")</m>) or persistent dictionary store. Also accepts aliases <m>theme_update</m> and <m>refresh_theme</m>.
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+
+		<!-- CATEGORY: PERFORMANCE -->
+		<attribute name="count" get="1" set="1" type="int" size="1">
+			<digest>Button Count</digest>
+			<description>
+				The number of button cells in the 1D strip (1 to 16, default: 1). Instantiating at 1 allows the component to function as a standalone button.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Button Count" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="direction" get="1" set="1" type="int" size="1">
+			<digest>Strip Orientation</digest>
+			<description>
+				0 = <b>Horizontal</b> (single row of tabs); 1 = <b>Vertical</b> (single column stack).
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Horizontal Vertical" />
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Strip Orientation" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="group_mode" get="1" set="1" type="int" size="1">
+			<digest>Group Routing Mode</digest>
+			<description>
+				0 = <b>Independent</b> (every button toggles/triggers on its own; multiple buttons can be active simultaneously); 1 = <b>Live</b> (exclusive radio group matching <o>live.tab</o>; activating one button turns all other buttons off).
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Independent Live" />
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Group Mode" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="modes" get="1" set="1" type="symbol" size="1">
+			<digest>Per-Button Modes String</digest>
+			<description>
+				Space-separated list defining the action mode for each button slot:
+				<br />0 = <b>Momentary</b> (flashes on click for the duration of <m>flash_time</m> then returns to 0)
+				<br />1 = <b>Toggle</b> (alternates between 0 and 1 on each press)
+				<br />2 = <b>Touch-Hold</b> (active 1 while mouse is held down, returns to 0 on release)
+				<br /><i>Example:</i> <m>modes "1 1 0 2"</m> configures two toggles, one momentary flash, and one touch-hold button.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Per-Button Modes (0=Mom, 1=Tog, 2=Hold)" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="flash_time" get="1" set="1" type="int" size="1">
+			<digest>Flash Duration (ms)</digest>
+			<description>
+				The duration in milliseconds that momentary buttons (mode 0) remain active before resetting to 0 (default: 100 ms).
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Performance" />
+				<attribute name="label" type="symbol" value="Flash Time (ms)" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: LABELS -->
+		<attribute name="labels" get="1" set="1" type="symbol" size="1">
+			<digest>Button Labels List</digest>
+			<description>
+				Space-separated or quoted string defining button labels. Supports slash-delimited dual-state text formatted as <m>"OffText/OnText"</m> (e.g. <m>"Touch/Hold"</m>, <m>"Mute/Active"</m>, or <m>"Off/On"</m>). Single-token names (e.g. <m>"Snap"</m>) remain static across both states. Unassigned slots automatically display dimmed <m>&lt;empty&gt;</m> text.
+			</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Labels List (use / for Off/On)" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Label Display Style</digest>
+			<description>
+				Text abbreviation algorithm applied to button labels:
+				<br />0 = <b>Full</b> (complete label string rendered)
+				<br />1 = <b>No Vowels</b> (strips inner vowels while preserving initial characters)
+				<br />2 = <b>Caps Only</b> (extracts capital letters and digits; falls back to initials)
+				<br />3 = <b>First Letter</b> (extracts the first letter of each word)
+				<br />4 = <b>No Text</b> (suppresses label text completely)
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Label Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Casing Style</digest>
+			<description>
+				Text capitalization normalization:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Case Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_style" get="1" set="1" type="int" size="1">
+			<digest>Font Style</digest>
+			<description>
+				Font posture and weight:
+				<br />0 = Regular
+				<br />1 = Bold
+				<br />2 = Italic
+				<br />3 = Bold Italic
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="Regular Bold Italic &quot;Bold Italic&quot;" />
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Font Style" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>Name of the font family used to render button labels.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="font" />
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Font Face" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>Point size of rendered button labels (clamped &gt;= 6 pt).</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Labels" />
+				<attribute name="label" type="symbol" value="Font Size" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: GEOMETRY -->
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Corner Radius</digest>
+			<description>Curvature radius of the outer chassis body and reticle corner arcs.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Radius" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Reticle Line Thickness</digest>
+			<description>Stroke width of the 4 outer corner reticle brackets in pixels.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Thickness" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Corner Bracket Extension</digest>
+			<description>Length in pixels of the straight tick arms extending from each corner arc along the chassis edges.</description>
+			<attributelist>
+				<attribute name="category" type="symbol" value="Geometry" />
+				<attribute name="label" type="symbol" value="Border Extension" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: BUTTON COLORS -->
+		<attribute name="text_color_mode" get="1" set="1" type="int" size="1">
+			<digest>Auto-Contrast Text Mode</digest>
+			<description>
+				0 = <b>Auto Luminance</b> (calculates background relative luminance and selects light or dark text dynamically); 1 = <b>Manual / Master</b> (strictly follows <m>text_color</m>).
+			</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="enumindex" />
+				<attribute name="enumvals" type="atom" value="&quot;Auto Luminance&quot; &quot;Manual / Master&quot;" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Text Color Mode" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="btn_color_off" get="1" set="1" type="rgba" size="4">
+			<digest>Inactive Body Color</digest>
+			<description>RGBA fill color of button cells in the inactive (0) state.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Btn Color Off" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="btn_color_on" get="1" set="1" type="rgba" size="4">
+			<digest>Active Highlight Color</digest>
+			<description>RGBA fill color of button cells in the active (1) state. Synchronized with <m>highlight_color</m> on the Theme Master bus.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Highlight (On)" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Reticle Border Color</digest>
+			<description>RGBA color of the outer corner reticle brackets and hairline cell dividers.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Button Label Text Color</digest>
+			<description>RGBA typography color for button labels when manual color mode is active.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Text Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Launcher Dot Color</digest>
+			<description>RGBA color of the upper-right corner inspector launcher dot.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Button Colors" />
+				<attribute name="label" type="symbol" value="Popup Dot Color" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP MASKS -->
+		<attribute name="allow_popup" get="1" set="1" type="int" size="1">
+			<digest>Enable Inspector Launcher</digest>
+			<description>Enables the red popup launcher dot and right-click / ctrl-click access to the inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Allow Popup" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_settings_attrs" get="1" set="1" type="int" size="1">
+			<digest>Attrui List Collapse Toggle</digest>
+			<description>1 = Full mode (displays 50/50 attribute rows, snaps to 280 px width); 0 = Mini mode (collapses rows, unlocks free XY elastic resizing).</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="Show Attributes List" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_performance" get="1" set="1" type="int" size="1">
+			<digest>1. Show Performance Mask</digest>
+			<description>Collapsible mask for Tier 1: button count, orientation, group mode, per-button modes, and flash duration.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="1. Show Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_labels" get="1" set="1" type="int" size="1">
+			<digest>2. Show Labels Mask</digest>
+			<description>Collapsible mask for Tier 2: label text, display abbreviations, casing, and font posture.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="2. Show Labels" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_geometry" get="1" set="1" type="int" size="1">
+			<digest>3. Show Geometry Mask</digest>
+			<description>Collapsible mask for Tier 3: reticle radius, border thickness, extensions, and typography size.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="3. Show Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_colors" get="1" set="1" type="int" size="1">
+			<digest>4. Show Button Colors Mask</digest>
+			<description>Collapsible mask for Tier 4: button cell fills, highlight on-state, reticle borders, and text.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="4. Show Button Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mask_popup_colors" get="1" set="1" type="int" size="1">
+			<digest>5. Show Popup Colors Mask</digest>
+			<description>Collapsible mask for Tier 5: the 5-color inspector UI theme palette.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="onoff" />
+				<attribute name="category" type="symbol" value="Popup Masks" />
+				<attribute name="label" type="symbol" value="5. Show Popup Colors" />
+			</attributelist>
+		</attribute>
+
+		<!-- CATEGORY: POPUP COLORS -->
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Window Background Fill</digest>
+			<description>Base background fill color for the floating parameter inspector window.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Popup BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute Row Background Fill</digest>
+			<description>Background fill color for individual 50/50 attribute rows.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr BG Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute Cell Outline Color</digest>
+			<description>Outline stroke color for attribute cells and slider troughs.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Border Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_slider_color" get="1" set="1" type="rgba" size="4">
+			<digest>Attribute Gauge Active Fill</digest>
+			<description>Fill color for attribute drag sliders inside the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Slider Color" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="attr_text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Inspector Typography Color</digest>
+			<description>Font color for parameter titles and numerical values inside the inspector.</description>
+			<attributelist>
+				<attribute name="style" type="symbol" value="rgba" />
+				<attribute name="category" type="symbol" value="Popup Colors" />
+				<attribute name="label" type="symbol" value="Attr Text Color" />
+			</attributelist>
+		</attribute>
+
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.master" />
+		<seealso name="touch.pfunction" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.numticker" />
+		<seealso name="touch.ummanu" />
+		<seealso name="touch.panel" />
+		<seealso name="live.tab" />
+		<seealso name="route" />
+		<seealso name="v8ui" />
+	</seealsolist>
+
+</c74object>
