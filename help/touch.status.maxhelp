@@ -16,14 +16,25 @@
             {
                 "box": {
                     "bubble": 1,
-                    "bubbleside": 0,
-                    "id": "obj-55",
-                    "linecount": 2,
+                    "id": "obj-6",
+                    "linecount": 5,
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 981.833333333333, 364.5833194255829, 141.0, 54.0 ],
-                    "text": "rename main slots and save on naming"
+                    "patching_rect": [ 1147.0, 205.0, 123.0, 82.0 ],
+                    "text": "remove scripting name is the best way to avoid accidental object saving"
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "bubbleside": 0,
+                    "id": "obj-55",
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 981.833333333333, 364.5833194255829, 117.0, 40.0 ],
+                    "text": "rename main slots "
                 }
             },
             {
@@ -50,16 +61,6 @@
             },
             {
                 "box": {
-                    "id": "obj-45",
-                    "maxclass": "message",
-                    "numinlets": 2,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "patching_rect": [ 1249.0, 354.0, 50.0, 23.0 ]
-                }
-            },
-            {
-                "box": {
                     "id": "obj-37",
                     "maxclass": "newobj",
                     "numinlets": 1,
@@ -76,7 +77,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "int" ],
-                    "patching_rect": [ 1091.3333333333333, 262.0, 29.5, 23.0 ],
+                    "patching_rect": [ 1078.0, 277.0, 29.5, 23.0 ],
                     "text": "+ 1"
                 }
             },
@@ -111,7 +112,7 @@
                     "outlettype": [ "", "int", "", "" ],
                     "parameter_enable": 0,
                     "patching_rect": [ 940.0, 186.5, 100.0, 50.0 ],
-                    "text": "wow"
+                    "text": "woo"
                 }
             },
             {
@@ -181,7 +182,7 @@
                         [ "pop_bgcolor", 0.12, 0.12, 0.15, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "prefix", "Slot Number" ],
-                        [ "selected", 2 ],
+                        [ "selected", 3 ],
                         [ "show_arrow", 1 ],
                         [ "show_markers", 1 ],
                         [ "show_settings_attrs", 1 ],
@@ -195,14 +196,13 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 1054.3333333333333, 221.0, 92.0, 24.0 ],
+                    "patching_rect": [ 1041.5, 241.0, 92.0, 24.0 ],
                     "textfile": {
                         "filename": "touch.ummanu.js",
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
-                    },
-                    "varname": "t_umanu[1]"
+                    }
                 }
             },
             {
@@ -300,7 +300,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 805.0, 785.0, 181.0, 30.0 ],
+                    "patching_rect": [ 783.0, 785.0, 181.0, 30.0 ],
                     "textfile": {
                         "filename": "touch.numticker.js",
                         "flags": 0,
@@ -320,7 +320,7 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 22.0, 462.0, 144.0, 39.0 ],
-                    "text": "This patch need autopattr not work!"
+                    "text": "This patch needs autopattr to work!"
                 }
             },
             {
@@ -899,8 +899,7 @@
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
-                    },
-                    "varname": "t_umanu"
+                    }
                 }
             },
             {
@@ -1049,8 +1048,8 @@
                         [ "set_attr_border_color", 0.28, 0.28, 0.32, 1 ],
                         [ "set_attr_slider_color", 0.5, 0.5, 0.5, 1 ],
                         [ "set_attr_text_color", 1, 1, 1, 1 ],
-                        [ "set_slot_names", "she, he, dow, wow" ],
-                        [ "set_slots_saved", "%5B%22she%22%2C%22he%22%2C%22dow%22%2C%22wow%22%5D" ],
+                        [ "set_slot_names", "she, he, dow, woo" ],
+                        [ "set_slots_saved", "%5B%22she%22%2C%22he%22%2C%22dow%22%2C%22woo%22%5D" ],
                         [ "msg_float", 4 ],
                         [ "accent_bar_color", 1, 1, 1, 1 ],
                         [ "allow_hold_save", 1 ],
@@ -1081,7 +1080,7 @@
                         [ "pop_bgcolor", 0.12, 0.12, 0.15, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "show_settings_attrs", 1 ],
-                        [ "slot_names", "she, he, dow, wow" ],
+                        [ "slot_names", "she, he, dow, woo" ],
                         [ "text_color", 0.92, 0.94, 0.98, 1 ],
                         [ "text_size", 11 ]
                     ],
@@ -1232,8 +1231,6 @@
                         "h_value": [ 0.041916167664670656 ],
                         "slid": [ 0.08496732026143794 ],
                         "t_slider": [ 6 ],
-                        "t_umanu": [ 5 ],
-                        "t_umanu[1]": [ 2 ],
                         "this_function": [ 0, 0, 0, 818.452380952381, 0.15463917525773196, 0, 907.7380952380952, 0.9175257731958762, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
                         "v8ui[1]": [ 0.034451580571881704 ],
                         "v8ui_AA": [ 120 ],
