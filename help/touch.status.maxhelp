@@ -9,10 +9,384 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 1482.0, 918.0 ],
+        "rect": [ 177.0, 133.0, 1482.0, 918.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
+            {
+                "box": {
+                    "id": "obj-57",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 1167.0, 177.08332657814026, 71.0, 23.0 ],
+                    "text": "loadmess 1"
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "bubbleside": 0,
+                    "id": "obj-55",
+                    "linecount": 2,
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 981.833333333333, 364.5833194255829, 139.0, 54.0 ],
+                    "presentation_linecount": 2,
+                    "text": "rename main slots and save on naming"
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "id": "obj-53",
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 503.0, 199.0, 139.0, 25.0 ],
+                    "text": "rename popup slots"
+                }
+            },
+            {
+                "box": {
+                    "embedstate": [
+                        [ "grid", "4/1" ],
+                        [ "set_name_bank_attr", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
+                        [ "set_name", "module_730181" ],
+                        [ "set_allow_hold_edit", 1 ],
+                        [ "set_hold_threshold", 450 ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_font_style", 0 ],
+                        [ "set_text_size", 11 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 320, 110 ],
+                        [ "set_mask_performance", 1 ],
+                        [ "set_mask_labels", 1 ],
+                        [ "set_mask_geometry", 1 ],
+                        [ "set_mask_colors", 1 ],
+                        [ "set_mask_popup_colors", 1 ],
+                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "set_border_color", 0, 0, 0, 1 ],
+                        [ "set_highlight_color", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
+                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "set_attr_bg_color", 0.22, 0.22, 0.22, 1 ],
+                        [ "set_attr_border_color", 0.28, 0.28, 0.32, 1 ],
+                        [ "set_attr_slider_color", 0.5, 0.5, 0.5, 1 ],
+                        [ "set_attr_text_color", 1, 1, 1, 1 ],
+                        [ "set_slots_saved", "%5B%22S1%22%2C%22S2%22%2C%22Lead%2080s%22%2C%22Lead%2080s%22%5D" ],
+                        [ "msg_float", 1 ],
+                        [ "allow_hold_edit", 1 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.22, 0.22, 0.22, 1 ],
+                        [ "attr_border_color", 0.28, 0.28, 0.32, 1 ],
+                        [ "attr_slider_color", 0.5, 0.5, 0.5, 1 ],
+                        [ "attr_text_color", 1, 1, 1, 1 ],
+                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "border_color", 0, 0, 0, 1 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_radius", 0 ],
+                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "case_mode", 0 ],
+                        [ "font_style", 0 ],
+                        [ "grid", "4/1" ],
+                        [ "highlight_color", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
+                        [ "hold_threshold", 450 ],
+                        [ "label_mode", 0 ],
+                        [ "mask_colors", 1 ],
+                        [ "mask_geometry", 1 ],
+                        [ "mask_labels", 1 ],
+                        [ "mask_performance", 1 ],
+                        [ "mask_popup_colors", 1 ],
+                        [ "name", "module_730181" ],
+                        [ "name_bank", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
+                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "text_size", 11 ]
+                    ],
+                    "filename": "touch.status.js",
+                    "id": "obj-51",
+                    "maxclass": "v8ui",
+                    "numinlets": 1,
+                    "numoutlets": 3,
+                    "outlettype": [ "", "", "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 1171.8749552965164, 469.7916487455368, 213.54165852069855, 31.208351254463196 ],
+                    "textfile": {
+                        "filename": "touch.status.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    },
+                    "varname": "touch_status_730181"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-46",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 2,
+                    "outlettype": [ "bang", "" ],
+                    "patching_rect": [ 328.0, 163.54166042804718, 33.0, 23.0 ],
+                    "text": "t b s"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-45",
+                    "maxclass": "message",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 1249.0, 354.0, 50.0, 23.0 ]
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-37",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 2,
+                    "outlettype": [ "bang", "" ],
+                    "patching_rect": [ 940.0, 277.0, 33.0, 23.0 ],
+                    "text": "t b s"
+                }
+            },
+            {
+                "box": {
+                    "embedstate": [
+                        [ "set_count", 1 ],
+                        [ "set_direction", 0 ],
+                        [ "set_group_mode", 0 ],
+                        [ "set_all_modes", 1 ],
+                        [ "set_flash_time", 100 ],
+                        [ "set_modes", "1" ],
+                        [ "set_labels", "Rename/Save" ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_font_style", 0 ],
+                        [ "set_font_name", "Arial" ],
+                        [ "set_text_size", 12 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 270, 90 ],
+                        [ "set_mask_performance", 1 ],
+                        [ "set_mask_labels", 1 ],
+                        [ "set_mask_geometry", 1 ],
+                        [ "set_mask_colors", 1 ],
+                        [ "set_mask_popup_colors", 1 ],
+                        [ "set_text_color_mode", 1 ],
+                        [ "set_btn_color_off", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "set_btn_color_on", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
+                        [ "set_border_color", 0, 0, 0, 1 ],
+                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "set_attr_bg_color", 0.22, 0.22, 0.22, 1 ],
+                        [ "set_attr_border_color", 0.28, 0.28, 0.32, 1 ],
+                        [ "set_attr_slider_color", 0.5, 0.5, 0.5, 1 ],
+                        [ "set_attr_text_color", 1, 1, 1, 1 ],
+                        [ "set", 1 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.22, 0.22, 0.22, 1 ],
+                        [ "attr_border_color", 0.28, 0.28, 0.32, 1 ],
+                        [ "attr_slider_color", 0.5, 0.5, 0.5, 1 ],
+                        [ "attr_text_color", 1, 1, 1, 1 ],
+                        [ "border_color", 0, 0, 0, 1 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_radius", 0 ],
+                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "btn_color_off", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "btn_color_on", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
+                        [ "case_mode", 0 ],
+                        [ "count", 1 ],
+                        [ "direction", 0 ],
+                        [ "flash_time", 100 ],
+                        [ "font_name", "Arial" ],
+                        [ "font_style", 0 ],
+                        [ "group_mode", 0 ],
+                        [ "label_mode", 0 ],
+                        [ "labels", "Rename/Save" ],
+                        [ "mask_colors", 1 ],
+                        [ "mask_geometry", 1 ],
+                        [ "mask_labels", 1 ],
+                        [ "mask_performance", 1 ],
+                        [ "mask_popup_colors", 1 ],
+                        [ "modes", "1" ],
+                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "text_color_mode", 1 ],
+                        [ "text_size", 12 ]
+                    ],
+                    "filename": "touch.mbutton.js",
+                    "id": "obj-32",
+                    "maxclass": "v8ui",
+                    "numinlets": 1,
+                    "numoutlets": 2,
+                    "outlettype": [ "", "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 1167.0, 221.0, 64.0, 64.0 ],
+                    "textfile": {
+                        "filename": "touch.mbutton.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    },
+                    "varname": "v8ui_AB"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-7",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "int" ],
+                    "patching_rect": [ 1091.3333333333333, 262.0, 29.5, 23.0 ],
+                    "text": "+ 1"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-9",
+                    "maxclass": "newobj",
+                    "numinlets": 4,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 940.0, 325.0, 246.0, 23.0 ],
+                    "text": "pack rename_slot_save s i i"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-10",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 2,
+                    "outlettype": [ "", "" ],
+                    "patching_rect": [ 940.0, 241.5, 63.0, 23.0 ],
+                    "text": "route text"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-17",
+                    "maxclass": "textedit",
+                    "numinlets": 1,
+                    "numoutlets": 4,
+                    "outlettype": [ "", "int", "", "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 940.0, 186.5, 100.0, 50.0 ],
+                    "text": "dow"
+                }
+            },
+            {
+                "box": {
+                    "embedstate": [
+                        [ "set_modes", "1 2 3 4 5 6 7 8 9 10 11 12" ],
+                        [ "set_prefix", "Slot Number" ],
+                        [ "set_mode", 0 ],
+                        [ "set_multimenu", 0 ],
+                        [ "set_output_type", 2 ],
+                        [ "set_touch_output", 0 ],
+                        [ "set_show_markers", 1 ],
+                        [ "set_show_arrow", 1 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_hold_speed", 90 ],
+                        [ "set_fontsize", 13 ],
+                        [ "set_font_name", "Arial" ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_bordersize", 1.6123595505617978 ],
+                        [ "set_corner_radius", 0 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_bgcolor", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "set_textcolor", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_bordercolor", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
+                        [ "set_highlight_color", 1, 0.6880000000000001, 0.21999999999999997, 0.5666666666666667 ],
+                        [ "set_mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
+                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_mask_performance", 1 ],
+                        [ "set_mask_labels", 1 ],
+                        [ "set_mask_geometry", 1 ],
+                        [ "set_mask_colors", 1 ],
+                        [ "set_mask_popup_colors", 1 ],
+                        [ "set_popup_mini_size", 270, 95 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
+                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "bgcolor", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "bordercolor", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
+                        [ "bordersize", 1.6123595505617978 ],
+                        [ "case_mode", 0 ],
+                        [ "corner_radius", 0 ],
+                        [ "font_name", "Arial" ],
+                        [ "fontsize", 13 ],
+                        [ "highlight_color", 1, 0.6880000000000001, 0.21999999999999997, 0.5666666666666667 ],
+                        [ "hold_speed", 90 ],
+                        [ "label_mode", 0 ],
+                        [ "mask_colors", 1 ],
+                        [ "mask_geometry", 1 ],
+                        [ "mask_labels", 1 ],
+                        [ "mask_performance", 1 ],
+                        [ "mask_popup_colors", 1 ],
+                        [ "mode", 0 ],
+                        [ "mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
+                        [ "modes", "1 2 3 4 5 6 7 8 9 10 11 12" ],
+                        [ "multimenu", 0 ],
+                        [ "output_type", 2 ],
+                        [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "prefix", "Slot Number" ],
+                        [ "selected", 2 ],
+                        [ "show_arrow", 1 ],
+                        [ "show_markers", 1 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "textcolor", 0.92, 0.94, 0.98, 1 ],
+                        [ "touch_output", 0 ]
+                    ],
+                    "filename": "touch.ummanu.js",
+                    "id": "obj-22",
+                    "maxclass": "v8ui",
+                    "numinlets": 2,
+                    "numoutlets": 3,
+                    "outlettype": [ "", "", "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 1054.3333333333333, 221.0, 92.0, 24.0 ],
+                    "textfile": {
+                        "filename": "touch.ummanu.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    },
+                    "varname": "t_umanu[1]"
+                }
+            },
             {
                 "box": {
                     "embedstate": [
@@ -108,13 +482,14 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 1058.0, 597.5, 181.0, 30.0 ],
+                    "patching_rect": [ 805.0, 785.0, 181.0, 30.0 ],
                     "textfile": {
                         "filename": "touch.numticker.js",
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
-                    }
+                    },
+                    "varname": "v8ui_AA"
                 }
             },
             {
@@ -162,7 +537,7 @@
                     "numinlets": 1,
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 832.0, 396.0, 103.0, 23.0 ],
+                    "patching_rect": [ 660.0, 665.0, 103.0, 23.0 ],
                     "restore": [ 0 ],
                     "saved_object_attributes": {
                         "parameter_enable": 0,
@@ -180,7 +555,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "int" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 874.0, 457.0, 24.0, 24.0 ],
+                    "patching_rect": [ 702.0, 726.0, 24.0, 24.0 ],
                     "varname": "toggle[1]"
                 }
             },
@@ -191,7 +566,7 @@
                     "numinlets": 1,
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 805.0, 549.0, 104.0, 23.0 ],
+                    "patching_rect": [ 481.0, 675.0, 104.0, 23.0 ],
                     "restore": [ 0, 0, 0 ],
                     "saved_object_attributes": {
                         "parameter_enable": 0,
@@ -279,7 +654,7 @@
                     "numoutlets": 2,
                     "outlettype": [ "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 848.0, 595.0, 118.0, 35.0 ],
+                    "patching_rect": [ 524.0, 721.0, 118.0, 35.0 ],
                     "textfile": {
                         "filename": "touch.mbutton.js",
                         "flags": 0,
@@ -296,7 +671,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "int" ],
-                    "patching_rect": [ 269.0, 144.0, 29.5, 23.0 ],
+                    "patching_rect": [ 472.0, 129.0, 29.5, 23.0 ],
                     "text": "+ 1"
                 }
             },
@@ -307,8 +682,8 @@
                     "numinlets": 3,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 269.0, 195.0, 91.0, 23.0 ],
-                    "text": "pak rename i s"
+                    "patching_rect": [ 328.0, 200.0, 163.0, 23.0 ],
+                    "text": "pack rename_pallet_slot s i"
                 }
             },
             {
@@ -318,7 +693,7 @@
                     "numinlets": 2,
                     "numoutlets": 2,
                     "outlettype": [ "", "" ],
-                    "patching_rect": [ 341.0, 151.0, 63.0, 23.0 ],
+                    "patching_rect": [ 328.0, 129.0, 63.0, 23.0 ],
                     "text": "route text"
                 }
             },
@@ -330,8 +705,8 @@
                     "numoutlets": 4,
                     "outlettype": [ "", "int", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 341.0, 96.0, 100.0, 50.0 ],
-                    "text": "s6"
+                    "patching_rect": [ 328.0, 74.83333539962769, 100.0, 50.0 ],
+                    "text": "willy"
                 }
             },
             {
@@ -367,7 +742,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 529.0, 78.0, 153.0, 68.0 ],
+                    "patching_rect": [ 708.5, 76.08333039283752, 153.0, 68.0 ],
                     "text": "dont need these antmore - everything is built in to touch.status"
                 }
             },
@@ -390,7 +765,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 748.0, 719.0, 150.0, 39.0 ],
+                    "patching_rect": [ 269.0, 665.0, 150.0, 39.0 ],
                     "text": "use pattr with max objects"
                 }
             },
@@ -401,7 +776,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 851.0, 775.0, 150.0, 25.0 ],
+                    "patching_rect": [ 550.0, 787.5, 150.0, 25.0 ],
                     "text": "no scripting name"
                 }
             },
@@ -414,7 +789,7 @@
                     "numoutlets": 2,
                     "outlettype": [ "", "bang" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 786.0, 776.0, 50.0, 23.0 ]
+                    "patching_rect": [ 485.0, 788.5, 50.0, 23.0 ]
                 }
             },
             {
@@ -424,7 +799,7 @@
                     "numinlets": 1,
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 650.0, 727.0, 82.0, 23.0 ],
+                    "patching_rect": [ 177.0, 673.0, 82.0, 23.0 ],
                     "restore": [ 0 ],
                     "saved_object_attributes": {
                         "parameter_enable": 0,
@@ -442,7 +817,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "int" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 681.0, 775.0, 24.0, 24.0 ],
+                    "patching_rect": [ 208.0, 721.0, 24.0, 24.0 ],
                     "varname": "toggle"
                 }
             },
@@ -453,7 +828,7 @@
                     "numinlets": 1,
                     "numoutlets": 1,
                     "outlettype": [ "bang" ],
-                    "patching_rect": [ 985.0, 62.0, 61.0, 23.0 ],
+                    "patching_rect": [ 1164.7499825954437, 53.12499797344208, 61.0, 23.0 ],
                     "text": "loadbang"
                 }
             },
@@ -465,7 +840,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 985.0, 86.0, 217.0, 66.0 ],
+                    "patching_rect": [ 1164.7499825954437, 77.08333039283752, 217.0, 66.0 ],
                     "text": "write \"Macintosh HD:/Users/wilpertz/Documents/Max 9/Packages/touch.objects/states/honey_chicken.json\""
                 }
             },
@@ -476,7 +851,7 @@
                     "numinlets": 1,
                     "numoutlets": 1,
                     "outlettype": [ "bang" ],
-                    "patching_rect": [ 710.0, 62.0, 61.0, 23.0 ],
+                    "patching_rect": [ 889.7499930858612, 53.12499797344208, 61.0, 23.0 ],
                     "text": "loadbang"
                 }
             },
@@ -488,7 +863,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 710.0, 86.0, 226.0, 66.0 ],
+                    "patching_rect": [ 889.7499930858612, 77.08333039283752, 226.0, 66.0 ],
                     "text": "read \"Macintosh HD:/Users/wilpertz/Documents/Max 9/Packages/touch.objects/misc/honey_chicken.json\""
                 }
             },
@@ -510,7 +885,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 985.0, 184.0, 152.0, 150.0 ],
+                    "patching_rect": [ 812.0, 448.0, 152.0, 150.0 ],
                     "text": "\"If you plan to morph between envelopes with different shapes, initialize all intermediate points on the line/axis in Preset 1 so they glide into place from where you want them, rather than peeling off from the end.\""
                 }
             },
@@ -609,7 +984,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 985.0, 345.0, 364.0, 125.0 ],
+                    "patching_rect": [ 812.0, 609.0, 364.0, 125.0 ],
                     "textfile": {
                         "filename": "touch.pfunction.js",
                         "flags": 0,
@@ -700,7 +1075,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 232.0, 103.0, 92.0, 24.0 ],
+                    "patching_rect": [ 434.5000014305115, 87.33333492279053, 92.0, 24.0 ],
                     "textfile": {
                         "filename": "touch.ummanu.js",
                         "flags": 0,
@@ -719,7 +1094,7 @@
                     "numoutlets": 2,
                     "outlettype": [ "", "bang" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 201.0, 144.0, 50.0, 23.0 ]
+                    "patching_rect": [ 34.0, 103.5, 50.0, 23.0 ]
                 }
             },
             {
@@ -811,7 +1186,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 411.0, 723.0, 167.0, 39.0 ],
+                    "patching_rect": [ 185.0, 775.0, 167.0, 39.0 ],
                     "textfile": {
                         "filename": "touch.hslider.js",
                         "flags": 0,
@@ -825,7 +1200,7 @@
                 "box": {
                     "embedstate": [
                         [ "grid", "4/1" ],
-                        [ "set_name_bank_attr", "s1, s2, s3, s4, s4, s, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
+                        [ "set_name_bank_attr", "s1, s2, s2, s2, s2, s2, john, john, john, willy, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
                         [ "set_name", "honey_chicken" ],
                         [ "set_allow_hold_edit", 1 ],
                         [ "set_hold_threshold", 450 ],
@@ -854,7 +1229,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set_slots_saved", "%5B%22Init%20Status%22%2C%22Clean%20Tone%22%2C%22Lead%2080s%22%2C%22Lead%2080s%22%5D" ],
+                        [ "set_slots_saved", "%5B%22she%22%2C%22he%22%2C%22dow%22%2C%22she%22%5D" ],
                         [ "msg_float", 1 ],
                         [ "allow_hold_edit", 1 ],
                         [ "allow_popup", 1 ],
@@ -879,7 +1254,7 @@
                         [ "mask_performance", 1 ],
                         [ "mask_popup_colors", 1 ],
                         [ "name", "honey_chicken" ],
-                        [ "name_bank", "s1, s2, s3, s4, s4, s, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
+                        [ "name_bank", "s1, s2, s2, s2, s2, s2, john, john, john, willy, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "show_settings_attrs", 1 ],
@@ -893,7 +1268,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 269.0, 355.5, 255.0, 57.0 ],
+                    "patching_rect": [ 269.0, 354.0, 255.0, 57.0 ],
                     "textfile": {
                         "filename": "touch.status.js",
                         "flags": 0,
@@ -905,6 +1280,7 @@
             },
             {
                 "box": {
+                    "autorestore": "honey_chicken.json",
                     "id": "obj-33",
                     "maxclass": "newobj",
                     "numinlets": 1,
@@ -918,7 +1294,7 @@
                         "storage_rect": [ 583, 69, 1034, 197 ]
                     },
                     "text": "pattrstorage @savemode 0",
-                    "varname": "u270002519"
+                    "varname": "honey_chicken"
                 }
             },
             {
@@ -1010,7 +1386,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 286.0, 568.0, 42.0, 153.0 ],
+                    "patching_rect": [ 107.0, 666.0, 42.0, 153.0 ],
                     "textfile": {
                         "filename": "touch.vslider.js",
                         "flags": 0,
@@ -1033,8 +1409,12 @@
                         "slid": [ 0.08496732026143794 ],
                         "t_slider": [ 6 ],
                         "t_umanu": [ 5 ],
+                        "t_umanu[1]": [ 2 ],
                         "this_function": [ 0, 0, 0, 29.76190476190476, 0.9896907216494846, 0, 125, 0.1958762886597938, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        "touch_status_730181": [ 1 ],
                         "v8ui[1]": [ 0.034451580571881704 ],
+                        "v8ui_AA": [ 120 ],
+                        "v8ui_AB": [ 1 ],
                         "v8ui_AF": [ 1 ]
                     },
                     "text": "autopattr",
@@ -1130,7 +1510,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 205.0, 568.0, 42.0, 153.0 ],
+                    "patching_rect": [ 38.0, 666.0, 42.0, 153.0 ],
                     "textfile": {
                         "filename": "touch.vslider.js",
                         "flags": 0,
@@ -1148,7 +1528,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 1,
-                    "patching_rect": [ 748.0, 563.0, 20.0, 140.0 ],
+                    "patching_rect": [ 438.0, 672.5, 20.0, 140.0 ],
                     "saved_attribute_attributes": {
                         "valueof": {
                             "parameter_linknames": 1,
@@ -1185,13 +1565,61 @@
                     "parameter_enable": 0,
                     "patching_rect": [ 30.0, 151.0, 150.0, 23.0 ]
                 }
+            },
+            {
+                "box": {
+                    "attr": "name_bank",
+                    "id": "obj-1",
+                    "maxclass": "attrui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 269.0, 34.0, 426.0, 23.0 ]
+                }
+            },
+            {
+                "box": {
+                    "attr": "label_mode",
+                    "id": "obj-36",
+                    "maxclass": "attrui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 485.0, 462.0, 150.0, 23.0 ]
+                }
             }
         ],
         "lines": [
             {
                 "patchline": {
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-1", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-37", 0 ],
+                    "source": [ "obj-10", 0 ]
+                }
+            },
+            {
+                "patchline": {
                     "destination": [ "obj-11", 0 ],
                     "source": [ "obj-13", 1 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-10", 0 ],
+                    "source": [ "obj-17", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-7", 0 ],
+                    "source": [ "obj-22", 1 ]
                 }
             },
             {
@@ -1210,6 +1638,30 @@
                 "patchline": {
                     "destination": [ "obj-33", 0 ],
                     "source": [ "obj-3", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-9", 3 ],
+                    "source": [ "obj-32", 1 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-36", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-9", 1 ],
+                    "source": [ "obj-37", 1 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-9", 0 ],
+                    "source": [ "obj-37", 0 ]
                 }
             },
             {
@@ -1238,7 +1690,7 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-43", 2 ],
+                    "destination": [ "obj-46", 0 ],
                     "source": [ "obj-41", 0 ]
                 }
             },
@@ -1246,6 +1698,18 @@
                 "patchline": {
                     "destination": [ "obj-39", 0 ],
                     "source": [ "obj-43", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-43", 1 ],
+                    "source": [ "obj-46", 1 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-43", 0 ],
+                    "source": [ "obj-46", 0 ]
                 }
             },
             {
@@ -1268,14 +1732,32 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-43", 1 ],
+                    "destination": [ "obj-43", 2 ],
                     "source": [ "obj-56", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-32", 0 ],
+                    "source": [ "obj-57", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-9", 2 ],
+                    "source": [ "obj-7", 0 ]
                 }
             },
             {
                 "patchline": {
                     "destination": [ "obj-39", 0 ],
                     "source": [ "obj-8", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-9", 0 ]
                 }
             }
         ],
