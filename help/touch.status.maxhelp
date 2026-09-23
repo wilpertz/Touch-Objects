@@ -9,7 +9,7 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 177.0, 133.0, 1482.0, 918.0 ],
+        "rect": [ 100.0, 100.0, 1482.0, 918.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
@@ -33,8 +33,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 981.833333333333, 364.5833194255829, 139.0, 54.0 ],
-                    "presentation_linecount": 2,
+                    "patching_rect": [ 981.833333333333, 364.5833194255829, 141.0, 54.0 ],
                     "text": "rename main slots and save on naming"
                 }
             },
@@ -47,88 +46,6 @@
                     "numoutlets": 0,
                     "patching_rect": [ 503.0, 199.0, 139.0, 25.0 ],
                     "text": "rename popup slots"
-                }
-            },
-            {
-                "box": {
-                    "embedstate": [
-                        [ "grid", "4/1" ],
-                        [ "set_name_bank_attr", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
-                        [ "set_name", "module_730181" ],
-                        [ "set_allow_hold_edit", 1 ],
-                        [ "set_hold_threshold", 450 ],
-                        [ "set_label_mode", 0 ],
-                        [ "set_case_mode", 0 ],
-                        [ "set_font_style", 0 ],
-                        [ "set_text_size", 11 ],
-                        [ "set_border_radius", 0 ],
-                        [ "set_border_thickness", 1.6123595505617978 ],
-                        [ "set_border_extension", 4.943820224719101 ],
-                        [ "set_allow_popup", 1 ],
-                        [ "set_show_settings_attrs", 1 ],
-                        [ "set_popup_mini_size", 320, 110 ],
-                        [ "set_mask_performance", 1 ],
-                        [ "set_mask_labels", 1 ],
-                        [ "set_mask_geometry", 1 ],
-                        [ "set_mask_colors", 1 ],
-                        [ "set_mask_popup_colors", 1 ],
-                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "set_border_color", 0, 0, 0, 1 ],
-                        [ "set_highlight_color", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
-                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "set_attr_bg_color", 0.22, 0.22, 0.22, 1 ],
-                        [ "set_attr_border_color", 0.28, 0.28, 0.32, 1 ],
-                        [ "set_attr_slider_color", 0.5, 0.5, 0.5, 1 ],
-                        [ "set_attr_text_color", 1, 1, 1, 1 ],
-                        [ "set_slots_saved", "%5B%22S1%22%2C%22S2%22%2C%22Lead%2080s%22%2C%22Lead%2080s%22%5D" ],
-                        [ "msg_float", 1 ],
-                        [ "allow_hold_edit", 1 ],
-                        [ "allow_popup", 1 ],
-                        [ "attr_bg_color", 0.22, 0.22, 0.22, 1 ],
-                        [ "attr_border_color", 0.28, 0.28, 0.32, 1 ],
-                        [ "attr_slider_color", 0.5, 0.5, 0.5, 1 ],
-                        [ "attr_text_color", 1, 1, 1, 1 ],
-                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "border_color", 0, 0, 0, 1 ],
-                        [ "border_extension", 4.943820224719101 ],
-                        [ "border_radius", 0 ],
-                        [ "border_thickness", 1.6123595505617978 ],
-                        [ "case_mode", 0 ],
-                        [ "font_style", 0 ],
-                        [ "grid", "4/1" ],
-                        [ "highlight_color", 1, 0.21999999999999997, 0.2499999999999999, 0.5666666666666667 ],
-                        [ "hold_threshold", 450 ],
-                        [ "label_mode", 0 ],
-                        [ "mask_colors", 1 ],
-                        [ "mask_geometry", 1 ],
-                        [ "mask_labels", 1 ],
-                        [ "mask_performance", 1 ],
-                        [ "mask_popup_colors", 1 ],
-                        [ "name", "module_730181" ],
-                        [ "name_bank", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
-                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "popup_dot_color", 1, 0, 0, 1 ],
-                        [ "show_settings_attrs", 1 ],
-                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "text_size", 11 ]
-                    ],
-                    "filename": "touch.status.js",
-                    "id": "obj-51",
-                    "maxclass": "v8ui",
-                    "numinlets": 1,
-                    "numoutlets": 3,
-                    "outlettype": [ "", "", "" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 1171.8749552965164, 469.7916487455368, 213.54165852069855, 31.208351254463196 ],
-                    "textfile": {
-                        "filename": "touch.status.js",
-                        "flags": 0,
-                        "embed": 0,
-                        "autowatch": 1
-                    },
-                    "varname": "touch_status_730181"
                 }
             },
             {
@@ -538,7 +455,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "patching_rect": [ 660.0, 665.0, 103.0, 23.0 ],
-                    "restore": [ 0 ],
+                    "restore": [ 1 ],
                     "saved_object_attributes": {
                         "parameter_enable": 0,
                         "parameter_mappable": 0
@@ -567,7 +484,7 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "patching_rect": [ 481.0, 675.0, 104.0, 23.0 ],
-                    "restore": [ 0, 0, 0 ],
+                    "restore": [ 1, 0, 1 ],
                     "saved_object_attributes": {
                         "parameter_enable": 0,
                         "parameter_mappable": 0
@@ -613,7 +530,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set", 0, 0, 0 ],
+                        [ "set", 1, 0, 1 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -934,7 +851,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "list", 0, 0, 0, 29.76190476190476, 0.9896907216494846, 0, 125, 0.1958762886597938, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        [ "list", 0, 0, 0, 345.23809523809524, 0.4948453608247423, 0, 652.912328899171, 0.7741975875453899, -0.06000000000000005, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1139,7 +1056,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.041916167664670656 ],
+                        [ "msg_float", 0.2038827163817766 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1230,7 +1147,7 @@
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
                         [ "set_slots_saved", "%5B%22she%22%2C%22he%22%2C%22dow%22%2C%22she%22%5D" ],
-                        [ "msg_float", 1 ],
+                        [ "msg_float", 4 ],
                         [ "allow_hold_edit", 1 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
@@ -1339,7 +1256,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.034451580571881704 ],
+                        [ "msg_float", 0.9150326797385621 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1405,17 +1322,16 @@
                     "outlettype": [ "", "", "", "" ],
                     "patching_rect": [ 177.0, 470.0, 61.0, 23.0 ],
                     "restore": {
-                        "h_value": [ 0.041916167664670656 ],
-                        "slid": [ 0.08496732026143794 ],
-                        "t_slider": [ 6 ],
+                        "h_value": [ 0.2038827163817766 ],
+                        "slid": [ 0.9084967320261438 ],
+                        "t_slider": [ 57 ],
                         "t_umanu": [ 5 ],
                         "t_umanu[1]": [ 2 ],
-                        "this_function": [ 0, 0, 0, 29.76190476190476, 0.9896907216494846, 0, 125, 0.1958762886597938, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
-                        "touch_status_730181": [ 1 ],
-                        "v8ui[1]": [ 0.034451580571881704 ],
+                        "this_function": [ 0, 0, 0, 345.23809523809524, 0.4948453608247423, 0, 652.912328899171, 0.7741975875453899, -0.06000000000000005, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        "v8ui[1]": [ 0.9150326797385621 ],
                         "v8ui_AA": [ 120 ],
                         "v8ui_AB": [ 1 ],
-                        "v8ui_AF": [ 1 ]
+                        "v8ui_AF": [ 4 ]
                     },
                     "text": "autopattr",
                     "varname": "u620003692"
@@ -1463,7 +1379,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.08496732026143794 ],
+                        [ "msg_float", 0.9084967320261438 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1577,18 +1493,6 @@
                     "parameter_enable": 0,
                     "patching_rect": [ 269.0, 34.0, 426.0, 23.0 ]
                 }
-            },
-            {
-                "box": {
-                    "attr": "label_mode",
-                    "id": "obj-36",
-                    "maxclass": "attrui",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 485.0, 462.0, 150.0, 23.0 ]
-                }
             }
         ],
         "lines": [
@@ -1644,12 +1548,6 @@
                 "patchline": {
                     "destination": [ "obj-9", 3 ],
                     "source": [ "obj-32", 1 ]
-                }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-39", 0 ],
-                    "source": [ "obj-36", 0 ]
                 }
             },
             {
