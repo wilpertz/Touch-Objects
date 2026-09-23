@@ -1,6 +1,7 @@
 // ============================================================================
 // touch.status.js - Max 9 v8ui / jsui
 // 2D Spatial Morph Grid (Cols/Rows) + Auto-States Management
+// Interaction: UP-Click=Recall | Long-Hold=Save | Double-Tap=Popup | Drag=Morph
 // ============================================================================
 
 autowatch = 1;
@@ -74,6 +75,7 @@ function trigger_auto_write() {
 // =============================================================
 let module_name = `module_${uniqueID}`;
 let active_slot = 0;
+let last_stored_slot = -1; // Stays illuminated until next gesture
 let morph_val   = 1.0;
 let morph_x     = 1.0;
 let morph_y     = 1.0;
@@ -96,9 +98,24 @@ let name_bank = [
   "Drum 2/4", "Mute / Cut", "Sub Bass", "FX Riser"
 ];
 
-let allow_hold_edit = 1;
-let allow_popup     = 1;
-let hold_threshold  = 450;
+// Gesture Lifecycle State
+let allow_hold_save       = 1;
+let hold_threshold        = 500; // ms for Long Press to Save
+let double_tap_threshold  = 320; // ms window for Double-Tap to Popup
+let last_tap_time         = 0;
+let last_tap_slot         = -1;
+
+let isMouseDown           = 0;
+let pendingSlot           = -1;
+let clickStartX           = 0;
+let clickStartY           = 0;
+let isDragging            = 0;
+let has_dragged           = 0;
+let has_saved_on_hold     = 0;
+let suppress_release_recall = 0;
+let holdTask              = null;
+
+let allow_popup           = 1;
 
 let label_mode       = 0;
 const label_mode_names = ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"];
@@ -116,12 +133,13 @@ let border_radius    = 4.0;
 let border_thickness = 1.2;
 let border_extension = 6.0;
 
-// Theme Colors
+// Theme Colors (Connected to touch.master.js)
 let bg_color          = [0.12, 0.12, 0.14, 0.95];
 let border_color      = [0.45, 0.45, 0.50, 1.0];
 let text_color        = [0.92, 0.94, 0.98, 1.0];
 let highlight_color   = [0.85, 0.52, 0.20, 1.0];
 let popup_dot_color   = [1.00, 0.00, 0.00, 1.0];
+let accent_bar_color  = [1.00, 1.00, 1.00, 1.0]; // Synced to Knob / Line color in touch.master
 
 let pop_bgcolor       = [0.10, 0.10, 0.12, 0.98];
 let attr_bg_color     = [0.14, 0.14, 0.16, 1.0];
@@ -221,19 +239,17 @@ let start_click_y = 0;
 
 let target_edit_slot = 0;
 
-let holdTask       = null;
-let isMouseDown    = 0;
-let pendingSlot    = -1;
-let clickStartX    = 0;
-let clickStartY    = 0;
-let isDragging     = 0;
-
-let popHoldTask    = null;
-let isPopMouseDown = 0;
-let popPendingSlot = -1;
-let popClickStartX = 0;
-let popClickStartY = 0;
-let isPopDragging  = 0;
+let popHoldTask          = null;
+let isPopMouseDown       = 0;
+let popPendingSlot       = -1;
+let popClickStartX       = 0;
+let popClickStartY       = 0;
+let isPopDragging        = 0;
+let pop_has_dragged      = 0;
+let pop_has_saved_on_hold = 0;
+let pop_suppress_recall  = 0;
+let pop_last_tap_time    = 0;
+let pop_last_tap_slot    = -1;
 
 let render_pending = 0;
 const render_task = new Task(() => {
@@ -299,6 +315,13 @@ function onThemeUpdate(theme) {
     if (theme.border_radius !== undefined) border_radius = Number(theme.border_radius);
     if (theme.border_thickness !== undefined) border_thickness = Number(theme.border_thickness);
     if (theme.border_extension !== undefined) border_extension = Number(theme.border_extension);
+
+    // Accent Bar links directly to touch.master Knob / Line color
+    if (theme.slider_handle_color) {
+      accent_bar_color = theme.slider_handle_color.slice(0);
+    } else if (theme.handle_color) {
+      accent_bar_color = theme.handle_color.slice(0);
+    }
 
     if (theme.pop_bgcolor) pop_bgcolor = theme.pop_bgcolor.slice(0);
     if (theme.attr_bg_color) attr_bg_color = theme.attr_bg_color.slice(0);
@@ -438,6 +461,9 @@ function get_grid() { return `${grid_cols}/${grid_rows}`; }
 // 5. 2D PURE SPATIAL MORPHING (HORIZ, VERT & DIAG)
 // =============================================================
 function apply_normalized_xy(normX, normY) {
+  // Clear persistent saved highlight once morphing is active
+  last_stored_slot = -1;
+
   const cols = Math.max(1, grid_cols);
   const rows = Math.max(1, grid_rows);
 
@@ -656,7 +682,16 @@ function tickerWindowListenerCallback(event) {
   if (event.eventname === "mouse") {
     const args = arrayfromargs(event.args);
     const mx = args[0], my = args[1], mbut = args[2];
-    if (mbut === 0) { active_ticker_column = -1; return; }
+    if (mbut === 0) {
+      // PREVIEW WINDOW: MOUSE UP / RELEASE
+      if (popPendingSlot !== -1 && !pop_has_dragged && !pop_has_saved_on_hold && !pop_suppress_recall) {
+        recall_slot(popPendingSlot);
+        draw_settings();
+      }
+      active_pop_target = -1;
+      stop_pop_hold_watchdog();
+      return;
+    }
 
     if (mbut) {
       if (mx < 24 && my < 24) { tickerWindow.visible = 0; active_ticker_column = -1; return; }
@@ -818,12 +853,30 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
     ctx.stroke();
 
+    // -------------------------------------------------------------
+    // ACCENT BAR: Feedback for recently stored slot
+    // Anchored at bottom edge, styled with touch.master Knob/Line
+    // -------------------------------------------------------------
+    if (i === last_stored_slot) {
+      const barH = 2.5;
+      const barMargin = 4.0;
+      const barY = sY + sH - barH - 1.5;
+      const barX = sX + barMargin;
+      const barW = Math.max(2, sW - barMargin * 2);
+
+      ctx.set_source_rgba(accent_bar_color);
+      ctx.rectangle_rounded(barX, barY, barW, barH, barH * 0.5, barH * 0.5);
+      ctx.fill();
+    }
+
+    // Slot Number
     ctx.select_font_face(font_name, "normal", "bold");
     ctx.set_font_size(Math.max(7, Math.min(10, sH * 0.28)));
     ctx.set_source_rgba(highlightAlpha > 0.4 ? [1, 1, 1, 0.9] : [0.55, 0.58, 0.64, 0.8]);
     ctx.move_to(sX + 4, sY + Math.max(8, sH * 0.28));
     ctx.show_text(String(i + 1));
 
+    // Slot Label
     let dispTxt = get_display_label(slots[i].name);
     const weightStr = (highlightAlpha > 0.4) ? "bold" : font_weights[font_style];
     ctx.select_font_face(font_name, font_slants[font_style], weightStr);
@@ -833,7 +886,8 @@ function draw_status_strip(ctx, w, h, is_preview) {
 
     dispTxt = fit_text_to_width(ctx, dispTxt, sW - 6);
     const tm = ctx.text_measure(dispTxt);
-    ctx.move_to(sX + (sW - tm[0]) * 0.5, sY + sH * 0.5 + curFontSize * 0.33);
+    const textOffsetY = (i === last_stored_slot) ? -1.5 : 0;
+    ctx.move_to(sX + (sW - tm[0]) * 0.5, sY + sH * 0.5 + curFontSize * 0.33 + textOffsetY);
     ctx.show_text(dispTxt);
   }
 
@@ -861,8 +915,8 @@ function get_visible_rows_map() {
 
   if (mask_performance === 1) {
     list.push({ name: "Grid (Cols/Rows)", val: get_grid(), is_ticker: true, target_id: 100 });
-    list.push({ name: "Hold to Edit", val: allow_hold_edit ? "ON" : "OFF", is_toggle: true, target_id: 101 });
-    list.push({ name: "Hold Time", val: `${hold_threshold}ms`, pct: (hold_threshold - 150) / 850.0, is_slider: true, target_id: 102 });
+    list.push({ name: "Hold to Save", val: allow_hold_save ? "ON" : "OFF", is_toggle: true, target_id: 101 });
+    list.push({ name: "Hold Time", val: `${hold_threshold}ms`, pct: (hold_threshold - 200) / 800.0, is_slider: true, target_id: 102 });
   }
 
   if (mask_labels === 1) {
@@ -884,6 +938,7 @@ function get_visible_rows_map() {
     list.push({ name: "Highlight", val: highlight_color, is_color: true, key: "highlight_color" });
     list.push({ name: "Text Color", val: text_color, is_color: true, key: "text_color" });
     list.push({ name: "Popup Dot", val: popup_dot_color, is_color: true, key: "popup_dot_color" });
+    list.push({ name: "Accent Bar", val: accent_bar_color, is_color: true, key: "accent_bar_color" });
   }
 
   if (mask_popup_colors === 1) {
@@ -1011,7 +1066,7 @@ function draw_settings_deferred() {
 
     const sY = divY + 8;
     const rowX = 12, rowW = w - 24;
-    const midX = rowX + rowW * 0.5;
+    const midX = 12 + rowW * 0.5;
     const valBoxX = midX + 4;
     const valBoxW = rowW * 0.5 - 8;
 
@@ -1104,7 +1159,7 @@ function draw_settings_deferred() {
 }
 
 function apply_slider_target(target_id, targetPct) {
-  if (target_id === 102) set_hold_threshold(Math.round(150 + targetPct * 850));
+  if (target_id === 102) set_hold_threshold(Math.round(200 + targetPct * 800));
   else if (target_id === 204) set_text_size(Math.round(8 + targetPct * 16));
   else if (target_id === 301) set_border_radius(targetPct * 25.0);
   else if (target_id === 302) set_border_thickness(targetPct * 10.0);
@@ -1116,6 +1171,9 @@ function stop_pop_hold_watchdog() {
   isPopMouseDown = 0;
   popPendingSlot = -1;
   isPopDragging = 0;
+  pop_has_dragged = 0;
+  pop_has_saved_on_hold = 0;
+  pop_suppress_recall = 0;
   if (popHoldTask) {
     try { popHoldTask.cancel(); } catch(e) {}
     popHoldTask = null;
@@ -1141,7 +1199,12 @@ function settingsWindowListenerCallback(event) {
     const has_rows = rows.length > 0;
     const pr = cached_preview_rect;
 
+    // PREVIEW STRIP: MOUSE UP / RELEASE
     if (mbut === 0) {
+      if (popPendingSlot !== -1 && !pop_has_dragged && !pop_has_saved_on_hold && !pop_suppress_recall) {
+        recall_slot(popPendingSlot);
+        draw_settings();
+      }
       is_resizing_window = 0;
       active_pop_target = -1;
       stop_pop_hold_watchdog();
@@ -1201,22 +1264,39 @@ function settingsWindowListenerCallback(event) {
         if (colHit >= 0 && colHit < cols && rowHit >= 0 && rowHit < rows_count) {
           const clickedIdx = rowHit * cols + colHit;
           if (clickedIdx >= 0 && clickedIdx < slots.length) {
-            recall_slot(clickedIdx);
-            if (showSettings) draw_settings();
+            const now = new Date().getTime();
 
-            if (allow_hold_edit === 1) {
+            // DOUBLE-TAP IN PREVIEW: Open Palette
+            if (now - pop_last_tap_time < double_tap_threshold && clickedIdx === pop_last_tap_slot) {
+              pop_last_tap_time = 0;
               stop_pop_hold_watchdog();
-              isPopMouseDown = 1;
-              popClickStartX = mx;
-              popClickStartY = my;
-              isPopDragging = 0;
-              popPendingSlot = clickedIdx;
+              pop_suppress_recall = 1;
+              open_palette_for_slot(clickedIdx);
+              return;
+            }
 
+            pop_last_tap_time = now;
+            pop_last_tap_slot = clickedIdx;
+
+            // Touch Down: Start Hold Timer (NO immediate recall)
+            stop_pop_hold_watchdog();
+            isPopMouseDown = 1;
+            popClickStartX = mx;
+            popClickStartY = my;
+            popPendingSlot = clickedIdx;
+            isPopDragging = 0;
+            pop_has_dragged = 0;
+            pop_has_saved_on_hold = 0;
+            pop_suppress_recall = 0;
+
+            if (allow_hold_save === 1) {
               popHoldTask = new Task(() => {
-                if (isPopMouseDown === 1 && popPendingSlot !== -1 && !isPopDragging) {
+                if (isPopMouseDown === 1 && popPendingSlot !== -1 && !isPopDragging && !pop_has_dragged) {
                   const target = popPendingSlot;
-                  stop_pop_hold_watchdog();
-                  open_palette_for_slot(target);
+                  pop_has_saved_on_hold = 1;
+                  pop_suppress_recall = 1;
+                  save_slot(target); // LONG PRESS == SAVE
+                  if (showSettings) draw_settings();
                 }
               }, this);
               popHoldTask.schedule(hold_threshold);
@@ -1224,9 +1304,11 @@ function settingsWindowListenerCallback(event) {
           }
         }
       } else if (mbut === 1) {
-        if (Math.abs(mx - popClickStartX) > 1 || Math.abs(my - popClickStartY) > 1) {
-          stop_pop_hold_watchdog();
+        if (Math.abs(mx - popClickStartX) > 2 || Math.abs(my - popClickStartY) > 2) {
+          if (popHoldTask) { try { popHoldTask.cancel(); } catch(e) {} popHoldTask = null; }
           isPopDragging = 1;
+          pop_has_dragged = 1;
+          pop_last_tap_time = 0;
         }
         calculate_2d_weights(localX, localY, pr.w, pr.h);
         if (showSettings) draw_settings();
@@ -1265,7 +1347,7 @@ function settingsWindowListenerCallback(event) {
           const tickPosY = settingsWindow.pos ? settingsWindow.pos[1] + sY + rIdx * 28 + 14 : 100;
           open_grid_ticker_window(tickPosX, tickPosY);
         }
-        else if (r.target_id === 101) set_allow_hold_edit(allow_hold_edit ? 0 : 1);
+        else if (r.target_id === 101) set_allow_hold_save(allow_hold_save ? 0 : 1);
         else if (r.target_id === 201) set_label_mode((label_mode + 1) % 5);
         else if (r.target_id === 202) set_case_mode((case_mode + 1) % 3);
         else if (r.target_id === 203) set_font_style((font_style + 1) % 4);
@@ -1296,6 +1378,7 @@ function get_color_target(name) {
   if (name === "highlight_color") return highlight_color;
   if (name === "text_color") return text_color;
   if (name === "popup_dot_color") return popup_dot_color;
+  if (name === "accent_bar_color") return accent_bar_color;
   if (name === "pop_bgcolor") return pop_bgcolor;
   if (name === "attr_bg_color") return attr_bg_color;
   if (name === "attr_border_color") return attr_border_color;
@@ -1558,6 +1641,10 @@ function paletteWindowListenerCallback(event) {
 // =============================================================
 function recall_slot(idx) {
   if (idx < 0 || idx >= slots.length) return;
+  if (idx !== last_stored_slot) {
+    last_stored_slot = -1; // Clear persistent saved bar on recalling a different slot
+  }
+
   active_slot = idx;
   target_edit_slot = idx;
   morph_val = active_slot + 1;
@@ -1586,6 +1673,41 @@ function recall_slot(idx) {
   broadcast_to_master();
 }
 
+// =============================================================
+// LONG PRESS TO SAVE / COMMIT FUNCTION
+// Commits to pattrstorage & lights up bottom Accent Bar
+// =============================================================
+function save_slot(idx) {
+  if (idx === undefined) idx = active_slot;
+  idx = parseInt(idx, 10);
+  if (isNaN(idx) || idx < 0 || idx >= slots.length) return;
+
+  active_slot = idx;
+  target_edit_slot = idx;
+  last_stored_slot = idx; // Activates persistent bottom Accent Bar!
+  morph_val = active_slot + 1;
+  is_morphing = 0;
+
+  morph_weights = new Array(slots.length).fill(0.0);
+  morph_weights[active_slot] = 1.0;
+
+  if (!is_transmitting) {
+    is_transmitting = true;
+    try {
+      outlet(0, ["store", active_slot + 1]);
+      outlet(1, ["set", slots[active_slot].name]);
+      trigger_auto_write(); // Auto-save JSON states to disk
+    } finally {
+      is_transmitting = false;
+    }
+  }
+
+  redraw_all();
+  broadcast_to_master();
+}
+function store_slot(idx) { save_slot(idx); }
+function two_finger_save(idx) { save_slot(idx); }
+
 function msg_float(v) {
   if (isDragging || isPopDragging) return;
 
@@ -1594,6 +1716,7 @@ function msg_float(v) {
   const totalSlots = slots.length;
   if (totalSlots < 1) return;
 
+  last_stored_slot = -1; // Clear persistence on morphing
   f = Math.max(1.0, Math.min(totalSlots, f));
   morph_val = f;
   is_morphing = 1;
@@ -1629,6 +1752,7 @@ function stamp_name_to_slot(slotIdx, chosenName) {
   slots[slotIdx].name = chosenName;
   active_slot = slotIdx;
   target_edit_slot = slotIdx;
+  last_stored_slot = slotIdx; // Highlight recently saved slot
   morph_val = slotIdx + 1;
   is_morphing = 0;
 
@@ -1640,7 +1764,7 @@ function stamp_name_to_slot(slotIdx, chosenName) {
     try {
       outlet(0, ["store", active_slot + 1]);
       outlet(1, ["set", chosenName]);
-      trigger_auto_write(); // Auto-save to states!
+      trigger_auto_write(); // Auto-save to JSON states!
     } finally {
       is_transmitting = false;
     }
@@ -1652,27 +1776,33 @@ function stamp_name_to_slot(slotIdx, chosenName) {
 }
 
 // =============================================================
-// 13. MOUSE & 2D DRAG MORPH (CANVAS)
+// 13. MOUSE & TOUCH GESTURE LIFECYCLE (CANVAS)
 // =============================================================
 function stop_hold_watchdog() {
   isMouseDown = 0;
   pendingSlot = -1;
   isDragging = 0;
+  has_dragged = 0;
+  has_saved_on_hold = 0;
+  suppress_release_recall = 0;
   if (holdTask) {
     try { holdTask.cancel(); } catch(e) {}
     holdTask = null;
   }
 }
 
-function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
+// TOUCH DOWN: Starts Hold Timer & Double-Tap detection
+// DOES NOT RECALL (Edit buffer stays 100% safe!)
+function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent) {
   const sz = mgraphics.size;
   const w = sz[0], h = sz[1];
 
+  // Check Settings Dot (Top-Right)
   if (allow_popup === 1) {
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
     const dotX = w - dotMargin, dotY = dotMargin;
     const distToDot = Math.sqrt((x - dotX) * (x - dotX) + (y - dotY) * (y - dotY));
-    if (distToDot <= 8.0 || ctrl === 1) {
+    if (distToDot <= 8.0) {
       showSettings = showSettings ? 0 : 1;
       update_settings_dimensions();
       return;
@@ -1692,37 +1822,71 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
   const clickedSlot = rowHit * cols + colHit;
   if (clickedSlot < 0 || clickedSlot >= slots.length) return;
 
-  recall_slot(clickedSlot);
+  const now = new Date().getTime();
 
-  if (allow_hold_edit !== 1) return;
+  // -----------------------------------------------------------
+  // GESTURE 1: DOUBLE-TAP TO OPEN PALETTE
+  // -----------------------------------------------------------
+  if (now - last_tap_time < double_tap_threshold && clickedSlot === last_tap_slot) {
+    last_tap_time = 0;
+    stop_hold_watchdog();
+    suppress_release_recall = 1;
+    open_palette_for_slot(clickedSlot);
+    return;
+  }
 
+  last_tap_time = now;
+  last_tap_slot = clickedSlot;
+
+  // -----------------------------------------------------------
+  // GESTURE 2: TOUCH DOWN (Wait for Release or Hold)
+  // -----------------------------------------------------------
   stop_hold_watchdog();
   isMouseDown = 1;
   isDragging = 0;
+  has_dragged = 0;
+  has_saved_on_hold = 0;
+  suppress_release_recall = 0;
   clickStartX = x;
   clickStartY = y;
   pendingSlot = clickedSlot;
 
-  holdTask = new Task(() => {
-    if (isMouseDown === 1 && pendingSlot !== -1 && !isDragging) {
-      const target = pendingSlot;
-      stop_hold_watchdog();
-      open_palette_for_slot(target);
-    }
-  }, this);
-  holdTask.schedule(hold_threshold);
+  // -----------------------------------------------------------
+  // GESTURE 3: LONG HOLD TO SAVE (Commits live tweak!)
+  // -----------------------------------------------------------
+  if (allow_hold_save === 1) {
+    holdTask = new Task(() => {
+      if (isMouseDown === 1 && pendingSlot !== -1 && !isDragging && !has_dragged) {
+        const target = pendingSlot;
+        has_saved_on_hold = 1;
+        suppress_release_recall = 1; // DO NOT recall on release!
+        save_slot(target); // LONG HOLD == SAVE & LIGHT ACCENT BAR!
+      }
+    }, this);
+    holdTask.schedule(hold_threshold);
+  }
 }
 
+// DRAG: Spatial Morphing (or Mouse Up Detection)
 function ondrag(x, y, button) {
+  // -----------------------------------------------------------
+  // TOUCH UP / RELEASE (UP-CLICK): Fires Preset Recall!
+  // -----------------------------------------------------------
   if (button === 0) {
+    if (pendingSlot !== -1 && !has_dragged && !has_saved_on_hold && !suppress_release_recall) {
+      recall_slot(pendingSlot); // UP-CLICK CHANGES SLOT!
+    }
     stop_hold_watchdog();
-    isDragging = 0;
     return;
   }
 
-  if (Math.abs(x - clickStartX) > 1 || Math.abs(y - clickStartY) > 1) {
-    stop_hold_watchdog();
+  // Active finger movement: Engages 2D morphing
+  if (Math.abs(x - clickStartX) > 2 || Math.abs(y - clickStartY) > 2) {
+    if (holdTask) { try { holdTask.cancel(); } catch(e) {} holdTask = null; }
     isDragging = 1;
+    has_dragged = 1;
+    last_tap_time = 0;     // Movement invalidates double-tap
+    last_stored_slot = -1; // Active morphing clears saved highlight
   }
 
   const sz = mgraphics.size;
@@ -1752,12 +1916,10 @@ function rename_pallet_slot() {
   const lastAsNum = parseInt(lastToken, 10);
   const firstAsNum = parseInt(firstToken, 10);
 
-  // Preferred order: <name...> <slot>
   if (!isNaN(lastAsNum) && lastAsNum >= 1) {
     slot_num = lastAsNum;
     name_tokens = args.slice(0, args.length - 1);
   } else if (!isNaN(firstAsNum) && firstAsNum >= 1) {
-    // Legacy support: <slot> <name...>
     slot_num = firstAsNum;
     name_tokens = args.slice(1);
   } else {
@@ -1776,42 +1938,34 @@ function rename_pallet_slot() {
   if (paletteWindow && paletteWindow.visible) draw_palette();
   if (typeof notifyclients === "function") notifyclients();
 }
-// Aliases for compatibility
 function rename_palette_slot() { rename_pallet_slot.apply(this, arguments); }
 function rename() { rename_pallet_slot.apply(this, arguments); }
 
-// Method 2: rename_slot_save <name...> <slot> <save_flag: 0/1/Save/Set/bang>
-// Directly renames the main strip slot. When save_flag=1, it saves to pattr & disk.
-function rename_slot_save() {
+// Method 2: rename_slot <name...> <slot> OR <slot> <name...>
+// Decoupled: Purely renames slot without requiring an extra 'save' flag argument!
+function rename_slot() {
   const args = arrayfromargs(arguments);
   if (args.length < 2) return;
 
-  let save_flag = 1; // Default to save if not specified
   let slot_num = NaN;
   let name_tokens = [];
 
   const lastToken = args[args.length - 1];
-  const lastStr = String(lastToken).toLowerCase().trim();
+  const firstToken = args[0];
 
-  // Detect whether the 3rd item is a toggle/flag (0, 1, "save", "set", "bang", etc.)
-  const isSaveFlag = (
-    lastToken === 0 || lastToken === 1 ||
-    lastStr === "0" || lastStr === "1" ||
-    lastStr === "save" || lastStr === "set" ||
-    lastStr === "true" || lastStr === "false" ||
-    lastStr === "bang"
-  );
+  const lastAsNum = parseInt(lastToken, 10);
+  const firstAsNum = parseInt(firstToken, 10);
 
-  if (args.length >= 3 && isSaveFlag) {
-    save_flag = (lastToken === 1 || lastStr === "1" || lastStr === "save" || lastStr === "true" || lastStr === "bang") ? 1 : 0;
-    slot_num = parseInt(args[args.length - 2], 10);
-    name_tokens = args.slice(0, args.length - 2);
-  } else {
-    slot_num = parseInt(lastToken, 10);
+  if (!isNaN(lastAsNum) && lastAsNum >= 1) {
+    slot_num = lastAsNum;
     name_tokens = args.slice(0, args.length - 1);
+  } else if (!isNaN(firstAsNum) && firstAsNum >= 1) {
+    slot_num = firstAsNum;
+    name_tokens = args.slice(1);
+  } else {
+    return;
   }
 
-  if (isNaN(slot_num) || slot_num < 1) return;
   const idx = slot_num - 1;
   const newName = name_tokens.join(" ").trim();
   if (!newName) return;
@@ -1823,25 +1977,13 @@ function rename_slot_save() {
       outlet(1, ["set", newName]);
     }
 
-    if (save_flag === 1) {
-      if (!is_transmitting) {
-        is_transmitting = true;
-        try {
-          outlet(0, ["store", idx + 1]);
-          trigger_auto_write(); // Auto-save to JSON states!
-        } finally {
-          is_transmitting = false;
-        }
-      }
-    }
-
     redraw_all();
     if (paletteWindow && paletteWindow.visible) draw_palette();
     broadcast_to_master();
     if (typeof notifyclients === "function") notifyclients();
   }
 }
-function rename_slot() { rename_slot_save.apply(this, arguments); }
+function rename_slot_save() { rename_slot.apply(this, arguments); } // Backward compatibility alias
 
 function text() {
   const args = arrayfromargs(arguments);
@@ -1853,6 +1995,7 @@ function text() {
   } else {
     if (slots[active_slot]) {
       slots[active_slot].name = str;
+      last_stored_slot = active_slot;
       if (!is_transmitting) {
         is_transmitting = true;
         try {
@@ -1912,12 +2055,14 @@ function broadcast_to_master() {
     cols: grid_cols,
     rows: grid_rows,
     active_slot: active_slot,
+    last_stored_slot: last_stored_slot,
     morph_val: morph_val,
     morph_x: morph_x,
     morph_y: morph_y,
     slot_names: exportedNames,
     recall: idx => { recall_slot(idx); },
-    morph: val => { msg_float(val); }
+    morph: val => { msg_float(val); },
+    store: idx => { save_slot(idx); }
   };
 
   if (statusBus.subscribers) {
@@ -1973,9 +2118,7 @@ function set_name(v) {
   sync_storage_identity();
 }
 function get_name() { return module_name; }
-// =============================================================
-// SLOT NAMES ATTRIBUTE (GETTER & SETTER FOR ATTRUI / INSPECTOR)
-// =============================================================
+
 function get_slot_names() {
   return slots.map(s => s.name).join(", ");
 }
@@ -2014,10 +2157,17 @@ function set_slot_names() {
   }
 }
 
-function set_allow_hold_edit(v) { allow_hold_edit = parseInt(v, 10) ? 1 : 0; redraw_all(); }
-function get_allow_hold_edit() { return allow_hold_edit; }
-function set_hold_threshold(v) { hold_threshold = Math.max(150, parseInt(v, 10)); }
+function set_allow_hold_save(v) { allow_hold_save = parseInt(v, 10) ? 1 : 0; redraw_all(); }
+function get_allow_hold_save() { return allow_hold_save; }
+function set_allow_hold_edit(v) { set_allow_hold_save(v); }
+function get_allow_hold_edit() { return get_allow_hold_save(); }
+
+function set_hold_threshold(v) { hold_threshold = Math.max(200, parseInt(v, 10)); }
 function get_hold_threshold() { return hold_threshold; }
+
+function set_double_tap_threshold(v) { double_tap_threshold = Math.max(150, parseInt(v, 10)); }
+function get_double_tap_threshold() { return double_tap_threshold; }
+
 function set_label_mode(v) { const p = parseInt(v, 10); if (!isNaN(p)) label_mode = Math.max(0, Math.min(4, p)); redraw_all(); }
 function get_label_mode() { return label_mode; }
 function set_case_mode(v) { const p = parseInt(v, 10); if (!isNaN(p)) case_mode = Math.max(0, Math.min(2, p)); redraw_all(); }
@@ -2061,6 +2211,9 @@ function set_text_color() { text_color = rgba_values(arguments, text_color); red
 function get_text_color() { return text_color; }
 function set_popup_dot_color() { popup_dot_color = rgba_values(arguments, popup_dot_color); redraw_all(); }
 function get_popup_dot_color() { return popup_dot_color; }
+function set_accent_bar_color() { accent_bar_color = rgba_values(arguments, accent_bar_color); redraw_all(); }
+function get_accent_bar_color() { return accent_bar_color; }
+
 function set_pop_bgcolor() { pop_bgcolor = rgba_values(arguments, pop_bgcolor); redraw_all(); }
 function get_pop_bgcolor() { return pop_bgcolor; }
 function set_attr_bg_color() { attr_bg_color = rgba_values(arguments, attr_bg_color); redraw_all(); }
@@ -2071,6 +2224,8 @@ function set_attr_slider_color() { attr_slider_color = rgba_values(arguments, at
 function get_attr_slider_color() { return attr_slider_color; }
 function set_attr_text_color() { attr_text_color = rgba_values(arguments, attr_text_color); redraw_all(); }
 function get_attr_text_color() { return attr_text_color; }
+
+
 function set_show_settings_attrs(v) { show_settings_attrs = parseInt(v, 10) ? 1 : 0; update_settings_dimensions(); }
 function get_show_settings_attrs() { return show_settings_attrs; }
 function set_mask_performance(v) { mask_performance = parseInt(v, 10) ? 1 : 0; update_settings_dimensions(); }
@@ -2099,8 +2254,13 @@ function anything() {
     return;
   }
 
-  if (rawMsg === "rename_slot_save" || rawMsg === "rename_slot") {
-    rename_slot_save.apply(this, args);
+  if (rawMsg === "save_slot" || rawMsg === "store_slot" || rawMsg === "two_finger_save") {
+    save_slot.apply(this, args);
+    return;
+  }
+
+  if (rawMsg === "rename_slot" || rawMsg === "rename_slot_save") {
+    rename_slot.apply(this, args);
     return;
   }
 
@@ -2128,6 +2288,7 @@ function anything() {
   if (name === "bordersize" || name === "border_size") name = "border_thickness";
   if (name === "font_color") name = "text_color";
   if (name === "dot_color") name = "popup_dot_color";
+  if (name === "knob_line_color" || name === "slider_handle_color") name = "accent_bar_color";
 
   if (typeof this[`set_${name}`] === "function") {
     this[`set_${name}`].apply(this, args);
@@ -2138,8 +2299,10 @@ function anything() {
 declareattribute("grid", { type: "symbol", label: "Grid Layout (Cols/Rows)", setter: "set_grid", getter: "get_grid", category: "Status Config", embed: 1 });
 declareattribute("name_bank", { type: "symbol", label: "Available Name Bank", setter: "set_name_bank_attr", getter: "get_name_bank_attr", category: "Status Config", embed: 1 });
 declareattribute("name", { type: "symbol", label: "Module ID / Name", setter: "set_name", getter: "get_name", category: "Status Config", embed: 1 });
-declareattribute("allow_hold_edit", { type: "int", style: "onoff", label: "Allow Hold to Edit", setter: "set_allow_hold_edit", getter: "get_allow_hold_edit", category: "Performance", embed: 1 });
-declareattribute("hold_threshold", { type: "int", label: "Hold Time (ms)", setter: "set_hold_threshold", getter: "get_hold_threshold", category: "Performance", embed: 1 });
+declareattribute("allow_hold_save", { type: "int", style: "onoff", label: "Allow Hold to Save", setter: "set_allow_hold_save", getter: "get_allow_hold_save", category: "Performance", embed: 1 });
+declareattribute("hold_threshold", { type: "int", label: "Hold Time to Save (ms)", setter: "set_hold_threshold", getter: "get_hold_threshold", category: "Performance", embed: 1 });
+declareattribute("double_tap_threshold", { type: "int", label: "Double Tap Window (ms)", setter: "set_double_tap_threshold", getter: "get_double_tap_threshold", category: "Performance", embed: 1 });
+
 declareattribute("label_mode", { type: "int", style: "enumindex", enumvals: ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"], label: "Strip Label Style", setter: "set_label_mode", getter: "get_label_mode", category: "Typography", embed: 1 });
 declareattribute("case_mode", { type: "int", style: "enumindex", enumvals: ["First Cap", "All Cap", "All Small"], label: "Strip Case Style", setter: "set_case_mode", getter: "get_case_mode", category: "Typography", embed: 1 });
 declareattribute("font_style", { type: "int", style: "enumindex", enumvals: ["Regular", "Bold", "Italic", "Bold Italic"], label: "Font Style", setter: "set_font_style", getter: "get_font_style", category: "Typography", embed: 1 });
@@ -2161,6 +2324,7 @@ declareattribute("border_color", { type: "rgba", style: "rgba", label: "Border C
 declareattribute("highlight_color", { type: "rgba", style: "rgba", label: "Highlight Color", setter: "set_highlight_color", getter: "get_highlight_color", category: "Status Colors", embed: 1 });
 declareattribute("text_color", { type: "rgba", style: "rgba", label: "Text Color", setter: "set_text_color", getter: "get_text_color", category: "Status Colors", embed: 1 });
 declareattribute("popup_dot_color", { type: "rgba", style: "rgba", label: "Popup Dot Color", setter: "set_popup_dot_color", getter: "get_popup_dot_color", category: "Status Colors", embed: 1 });
+declareattribute("accent_bar_color", { type: "rgba", style: "rgba", label: "Accent Bar Color", setter: "set_accent_bar_color", getter: "get_accent_bar_color", category: "Status Colors", embed: 1 });
 
 declareattribute("pop_bgcolor", { type: "rgba", style: "rgba", label: "Popup BG Color", setter: "set_pop_bgcolor", getter: "get_pop_bgcolor", category: "Popup Colors", embed: 1 });
 declareattribute("attr_bg_color", { type: "rgba", style: "rgba", label: "Attr BG Color", setter: "set_attr_bg_color", getter: "get_attr_bg_color", category: "Popup Colors", embed: 1 });
@@ -2176,12 +2340,14 @@ declareattribute("slot_names", {
   category: "Status Config", 
   embed: 1 
 });
+
 function save() {
   embedmessage("grid", get_grid());
   embedmessage("set_name_bank_attr", get_name_bank_attr());
   embedmessage("set_name", module_name);
-  embedmessage("set_allow_hold_edit", allow_hold_edit);
+  embedmessage("set_allow_hold_save", allow_hold_save);
   embedmessage("set_hold_threshold", hold_threshold);
+  embedmessage("set_double_tap_threshold", double_tap_threshold);
   embedmessage("set_label_mode", label_mode);
   embedmessage("set_case_mode", case_mode);
   embedmessage("set_font_style", font_style);
@@ -2205,6 +2371,7 @@ function save() {
   embedmessage("set_highlight_color", highlight_color[0], highlight_color[1], highlight_color[2], highlight_color[3]);
   embedmessage("set_text_color", text_color[0], text_color[1], text_color[2], text_color[3]);
   embedmessage("set_popup_dot_color", popup_dot_color[0], popup_dot_color[1], popup_dot_color[2], popup_dot_color[3]);
+  embedmessage("set_accent_bar_color", accent_bar_color[0], accent_bar_color[1], accent_bar_color[2], accent_bar_color[3]);
 
   embedmessage("set_pop_bgcolor", pop_bgcolor[0], pop_bgcolor[1], pop_bgcolor[2], pop_bgcolor[3]);
   embedmessage("set_attr_bg_color", attr_bg_color[0], attr_bg_color[1], attr_bg_color[2], attr_bg_color[3]);
