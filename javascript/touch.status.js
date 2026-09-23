@@ -1973,6 +1973,46 @@ function set_name(v) {
   sync_storage_identity();
 }
 function get_name() { return module_name; }
+// =============================================================
+// SLOT NAMES ATTRIBUTE (GETTER & SETTER FOR ATTRUI / INSPECTOR)
+// =============================================================
+function get_slot_names() {
+  return slots.map(s => s.name).join(", ");
+}
+
+function set_slot_names() {
+  const args = arrayfromargs(arguments);
+  const str = args.join(" ").trim();
+  if (!str) return;
+
+  const items = [];
+  if (str.indexOf(",") !== -1) {
+    const parts = str.split(",");
+    for (let i = 0; i < parts.length; i++) {
+      const t = parts[i].trim();
+      if (t.length > 0) items.push(t);
+    }
+  } else {
+    const re = /"([^"]+)"|'([^']+)'|([^\s",]+)/g;
+    let match;
+    while ((match = re.exec(str)) !== null) {
+      items.push(match[1] || match[2] || match[3]);
+    }
+  }
+
+  if (items.length > 0) {
+    for (let i = 0; i < items.length && i < slots.length; i++) {
+      slots[i].name = items[i];
+    }
+    if (slots[active_slot]) {
+      outlet(1, ["set", slots[active_slot].name]);
+    }
+    redraw_all();
+    if (paletteWindow && paletteWindow.visible) draw_palette();
+    broadcast_to_master();
+    if (typeof notifyclients === "function") notifyclients();
+  }
+}
 
 function set_allow_hold_edit(v) { allow_hold_edit = parseInt(v, 10) ? 1 : 0; redraw_all(); }
 function get_allow_hold_edit() { return allow_hold_edit; }
@@ -2068,6 +2108,10 @@ function anything() {
     rename_pallet_slot.apply(this, args);
     return;
   }
+  if (rawMsg === "slot_names" || rawMsg === "names") {
+    set_slot_names.apply(this, args);
+    return;
+  }
 
   const name = rawMsg.replace(/^set_?/, "").toLowerCase();
 
@@ -2124,6 +2168,14 @@ declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Att
 declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", setter: "set_attr_slider_color", getter: "get_attr_slider_color", category: "Popup Colors", embed: 1 });
 declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 1 });
 
+declareattribute("slot_names", { 
+  type: "symbol", 
+  label: "Slot Names", 
+  setter: "set_slot_names", 
+  getter: "get_slot_names", 
+  category: "Status Config", 
+  embed: 1 
+});
 function save() {
   embedmessage("grid", get_grid());
   embedmessage("set_name_bank_attr", get_name_bank_attr());
@@ -2159,7 +2211,8 @@ function save() {
   embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], attr_border_color[2], attr_border_color[3]);
   embedmessage("set_attr_slider_color", attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], attr_slider_color[3]);
   embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
-
+  embedmessage("set_slot_names", get_slot_names());
+  
   const sList = slots.map(s => s.name);
   embedmessage("set_slots_saved", encodeURIComponent(JSON.stringify(sList)));
 
