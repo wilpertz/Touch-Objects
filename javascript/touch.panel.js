@@ -1,7 +1,7 @@
 // ============================================================================
 // touch.panel.js - Max 9 v8ui / jsui
 // Soft Build - Subpatch Background Chassis & Diffusion Glass
-// Synchronized with touch.master (Panels Page)
+// Synchronized with touch.master (Panels Page) with Standalone Fallback
 // ============================================================================
 
 autowatch = 1;
@@ -72,9 +72,35 @@ if (!bus.subscribers || typeof bus.subscribers !== "object") {
 
 var themeDict = new Dict("touch_theme_store");
 
+// Helper: Checks if Master has published live theme data
+function hasThemeData(t) {
+    if (!t || typeof t !== "object") return false;
+    return !!(
+        t.panel_glass_inner || t.glass_inner ||
+        t.panel_glass_outer || t.glass_outer ||
+        t.panel_border_color || t.border_color ||
+        t.panel_glass_spread !== undefined || t.glass_spread !== undefined
+    );
+}
+
+// Helper: Checks if Master store Dict contains data
+function hasDictData(d) {
+    if (!d) return false;
+    try {
+        return (
+            d.contains("panel_glass_inner") || d.contains("glass_inner") ||
+            d.contains("panel_border_color") || d.contains("border_color")
+        );
+    } catch(e) {
+        return false;
+    }
+}
+
 function syncFromMasterTheme(themeObj) {
     var t = themeObj || (bus && bus.theme);
-    if (t) {
+
+    // Rule 1: Master is active -> Master takes full control
+    if (hasThemeData(t)) {
         if (t.panel_glass_inner)  glass_inner   = safeArray(t.panel_glass_inner, glass_inner);
         else if (t.glass_inner)   glass_inner   = safeArray(t.glass_inner, glass_inner);
 
@@ -87,15 +113,21 @@ function syncFromMasterTheme(themeObj) {
         if (t.panel_glass_spread !== undefined) glass_spread = Number(t.panel_glass_spread);
         else if (t.glass_spread !== undefined)  glass_spread = Number(t.glass_spread);
 
-        if (t.panel_border_size !== undefined)        border_size = Number(t.panel_border_size);
+        if (t.panel_border_size !== undefined)           border_size = Number(t.panel_border_size);
         else if (t.panel_border_thickness !== undefined) border_size = Number(t.panel_border_thickness);
-        else if (t.border_size !== undefined)         border_size = Number(t.border_size);
-        else if (t.border_thickness !== undefined)    border_size = Number(t.border_thickness);
+        else if (t.border_size !== undefined)            border_size = Number(t.border_size);
+        else if (t.border_thickness !== undefined)       border_size = Number(t.border_thickness);
 
         if (t.panel_border_radius !== undefined) border_radius = Number(t.panel_border_radius);
         else if (t.border_radius !== undefined)  border_radius = Number(t.border_radius);
         else if (t.corner_radius !== undefined)  border_radius = Number(t.corner_radius);
-    } else if (themeDict) {
+
+        mgraphics.redraw();
+        return;
+    } 
+    
+    // Check fallback Dict
+    if (hasDictData(themeDict)) {
         if (themeDict.contains("panel_glass_inner")) {
             glass_inner   = safeArray(themeDict.get("panel_glass_inner"), glass_inner);
             glass_outer   = safeArray(themeDict.get("panel_glass_outer"), glass_outer);
@@ -111,24 +143,20 @@ function syncFromMasterTheme(themeObj) {
             border_size   = Number(themeDict.get("border_size"));
             glass_spread  = Number(themeDict.get("glass_spread"));
         }
+        mgraphics.redraw();
+        return;
     }
+
+    // Rule 2: No Master active -> keep the last saved file state intact
     mgraphics.redraw();
 }
 
+// Rule 3: Master broadcasts later -> instant takeover
 function onLiveThemeBroadcast(t) {
     syncFromMasterTheme(t);
 }
 
 bus.subscribers[uniqueID] = onLiveThemeBroadcast;
-syncFromMasterTheme();
-
-function notifydeleted() {
-    try {
-        if (bus && bus.subscribers && bus.subscribers[uniqueID]) {
-            delete bus.subscribers[uniqueID];
-        }
-    } catch(e) {}
-}
 
 // =============================================================
 // 2. INCOMING MESSAGES & ROUTING
@@ -290,7 +318,7 @@ function onresize(w, h) {
 onresize.local = 1;
 
 // =============================================================
-// 6. WINDOW DRAG (Smooth Desktop Tracking)
+// 6. WINDOW DRAG (Direct Patcher Window Tracking)
 // =============================================================
 var dragLastX = 0;
 var dragLastY = 0;
@@ -337,8 +365,15 @@ function onmouseup() {
 }
 
 // =============================================================
-// 7. STATE PERSISTENCE (SAVE)
+// 7. LIFECYCLE & PERSISTENCE
 // =============================================================
+
+// Runs when patcher opens, AFTER Max restores saved file attributes
+function loadbang() {
+    syncFromMasterTheme();
+}
+
+// Saves fallback snapshot into the .maxpat file
 function save() {
     embedmessage("set_drag_patch", drag_patch);
     embedmessage("set_border_radius", border_radius);
@@ -349,4 +384,15 @@ function save() {
     embedmessage("set_glass_outer", glass_outer[0], glass_outer[1], glass_outer[2], glass_outer[3]);
 }
 
+// Clean up global subscriber list when deleted
+function notifydeleted() {
+    try {
+        if (bus && bus.subscribers && bus.subscribers[uniqueID]) {
+            delete bus.subscribers[uniqueID];
+        }
+    } catch(e) {}
+}
+
+// Immediate paint on script compile / file save
+syncFromMasterTheme();
 mgraphics.redraw();

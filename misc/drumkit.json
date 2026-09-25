@@ -20,7 +20,8 @@
                     "wil.beatmaker_4[3]::time_type": [ 0.0 ],
                     "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
                     "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ]
+                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "t.send.instancer.submaxpat::chans_out": [ 0, 0, 0, 0, 0, 0, 0, 0 ]
                 }
             },
             "2": {
@@ -41,7 +42,30 @@
                     "wil.beatmaker_4[3]::time_type": [ 0.0 ],
                     "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
                     "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ]
+                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "t.send.instancer.submaxpat::chans_out": [ 1, 1, 1, 1, 0, 0, 0, 0 ]
+                }
+            },
+            "3": {
+                "id": 3,
+                "data": {
+                    "sound1": [ 0 ],
+                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
+                    "touch_status_712677": [ 3 ],
+                    "volume": [ 0.522407463654784 ],
+                    "wil.beatmaker_4[1]::time_type": [ 1.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 2.0 ],
+                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 12, 1, 0, 12, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "wil.beatmaker_4[3]::time_type": [ 0.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
+                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
+                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
+                    "t.send.instancer.submaxpat::chans_out": [ 1, 1, 1, 1, 1, 1, 1, 1 ]
                 }
             }
         }
