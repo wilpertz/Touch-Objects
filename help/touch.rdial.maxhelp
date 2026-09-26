@@ -9,10 +9,87 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 1039.0, 625.0 ],
+        "rect": [ 140.0, 162.0, 1074.0, 811.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
+            {
+                "box": {
+                    "id": "obj-25",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 174.5, 461.0, 73.0, 23.0 ],
+                    "text": "loadmess 0"
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "id": "obj-24",
+                    "linecount": 2,
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 174.5, 573.5, 357.0, 39.0 ],
+                    "text": "this is an abstraction\n0-100 x [0.01] x [pow1.6] -> [$1 20]->[line~] -> [mc.*]"
+                }
+            },
+            {
+                "box": {
+                    "format": 6,
+                    "id": "obj-14",
+                    "maxclass": "flonum",
+                    "numinlets": 1,
+                    "numoutlets": 2,
+                    "outlettype": [ "", "bang" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 174.5, 514.0, 50.0, 23.0 ]
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-8",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 0,
+                    "patching_rect": [ 94.5, 671.0, 37.0, 23.0 ],
+                    "text": "dac~"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-4",
+                    "maxclass": "newobj",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "signal" ],
+                    "patching_rect": [ 94.5, 514.0, 72.0, 23.0 ],
+                    "text": "cycle~ 440"
+                }
+            },
+            {
+                "box": {
+                    "bgmode": 0,
+                    "border": 0,
+                    "clickthrough": 0,
+                    "enablehscroll": 0,
+                    "enablevscroll": 0,
+                    "id": "obj-3",
+                    "lockeddragscroll": 0,
+                    "lockedsize": 0,
+                    "maxclass": "bpatcher",
+                    "name": "touch.rdial~.maxpat",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "offset": [ 0.0, 0.0 ],
+                    "outlettype": [ "multichannelsignal" ],
+                    "patching_rect": [ 94.5, 562.0, 65.0, 62.0 ],
+                    "varname": "touch.rdial~",
+                    "viewvisibility": 1
+                }
+            },
             {
                 "box": {
                     "format": 6,
@@ -22,7 +99,7 @@
                     "numoutlets": 2,
                     "outlettype": [ "", "bang" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 856.0, 232.0, 50.0, 23.0 ]
+                    "patching_rect": [ 856.0, 188.0, 50.0, 23.0 ]
                 }
             },
             {
@@ -34,7 +111,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 271.0, 154.0, 209.0, 23.0 ]
+                    "patching_rect": [ 271.0, 110.0, 209.0, 23.0 ]
                 }
             },
             {
@@ -46,7 +123,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 523.0, 154.0, 209.0, 23.0 ]
+                    "patching_rect": [ 523.0, 110.0, 209.0, 23.0 ]
                 }
             },
             {
@@ -57,7 +134,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 762.0, 402.0, 50.0, 37.0 ],
+                    "patching_rect": [ 762.0, 358.0, 50.0, 37.0 ],
                     "text": "0.143919"
                 }
             },
@@ -68,8 +145,8 @@
                     "embedstate": [
                         [ "set_active_mask_tab", 2 ],
                         [ "set_borders", 1 ],
-                        [ "set_background", 1 ],
-                        [ "set_border_radius", 0 ],
+                        [ "set_show_background", 1 ],
+                        [ "set_border_radius", 7.303370786516854 ],
                         [ "set_border_thickness", 1.6123595505617978 ],
                         [ "set_border_extension", 4.943820224719101 ],
                         [ "set_dial_style", 0 ],
@@ -100,18 +177,19 @@
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
                         [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.12512077294685994, 0.5764573268921097, 0.6086956521739131, 1 ],
-                        [ "set_track_color", 0.9065700483091789, 0.9565217391304348, 0.20724637681159422, 0.8055555555555556 ],
-                        [ "set_handle_color", 0.8684057971014493, 0.9304347826086956, 0, 1 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 0 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.6052173913043478, 0.9391304347826087, 0.6831304347826087, 1 ],
+                        [ "set_mode_color", 0.85, 0.85, 0.9, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.0711111111111111, 0.07801610305958127, 0.27826086956521734, 0.5111111111111111 ],
-                        [ "set_attr_bg_color", 0.23130434782608697, 0.3473623188405799, 0.5478260869565217, 0.55 ],
-                        [ "set_attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
-                        [ "set_attr_slider_color", 0.20444444444444443, 0.4, 0.38696296296296295, 0.5111111111111111 ],
+                        [ "set_pop_bgcolor", 0.1298550724637681, 0.2683671497584541, 0.27826086956521734, 1 ],
+                        [ "set_attr_bg_color", 0.281256038647343, 0.7130434782608696, 0.684257648953301, 0.4888888888888889 ],
+                        [ "set_attr_border_color", 0.77, 0.77, 0.8608695652173913, 1 ],
+                        [ "set_attr_slider_color", 0.5911111111111111, 0.8, 0.7860740740740741, 0.4722222222222222 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.14391921639673533 ]
+                        [ "msg_float", 0.14391921639673533 ],
+                        [ "set_unit_mode", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-20",
@@ -120,7 +198,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 748.0, 273.0, 64.0, 64.0 ],
+                    "patching_rect": [ 748.0, 229.0, 64.0, 64.0 ],
                     "textfile": {
                         "filename": "touch.rdial.js",
                         "flags": 0,
@@ -139,7 +217,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 748.0, 200.0, 242.0, 23.0 ]
+                    "patching_rect": [ 748.0, 156.0, 242.0, 23.0 ]
                 }
             },
             {
@@ -149,19 +227,18 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 537.0, 402.0, 50.0, 23.0 ],
+                    "patching_rect": [ 537.0, 358.0, 50.0, 23.0 ],
                     "text": "0"
                 }
             },
             {
                 "box": {
-                    "background": 0,
                     "border": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 1 ],
                         [ "set_borders", 1 ],
-                        [ "set_background", 0 ],
-                        [ "set_border_radius", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 7.303370786516854 ],
                         [ "set_border_thickness", 1.6123595505617978 ],
                         [ "set_border_extension", 4.943820224719101 ],
                         [ "set_dial_style", 0 ],
@@ -192,18 +269,19 @@
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
                         [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.12512077294685994, 0.5764573268921097, 0.6086956521739131, 1 ],
-                        [ "set_track_color", 0.9065700483091789, 0.9565217391304348, 0.20724637681159422, 0.8055555555555556 ],
-                        [ "set_handle_color", 0.8684057971014493, 0.9304347826086956, 0, 1 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 0 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.6052173913043478, 0.9391304347826087, 0.6831304347826087, 1 ],
+                        [ "set_mode_color", 0.85, 0.85, 0.9, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.0711111111111111, 0.07801610305958127, 0.27826086956521734, 0.5111111111111111 ],
-                        [ "set_attr_bg_color", 0.23130434782608697, 0.3473623188405799, 0.5478260869565217, 0.55 ],
-                        [ "set_attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
-                        [ "set_attr_slider_color", 0.20444444444444443, 0.4, 0.38696296296296295, 0.5111111111111111 ],
+                        [ "set_pop_bgcolor", 0.1298550724637681, 0.2683671497584541, 0.27826086956521734, 1 ],
+                        [ "set_attr_bg_color", 0.281256038647343, 0.7130434782608696, 0.684257648953301, 0.4888888888888889 ],
+                        [ "set_attr_border_color", 0.77, 0.77, 0.8608695652173913, 1 ],
+                        [ "set_attr_slider_color", 0.5911111111111111, 0.8, 0.7860740740740741, 0.4722222222222222 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0 ]
+                        [ "msg_float", 0 ],
+                        [ "set_unit_mode", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-15",
@@ -212,7 +290,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 523.0, 273.0, 64.0, 64.0 ],
+                    "patching_rect": [ 523.0, 229.0, 64.0, 64.0 ],
                     "textfile": {
                         "filename": "touch.rdial.js",
                         "flags": 0,
@@ -229,19 +307,18 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 285.0, 402.0, 50.0, 23.0 ],
+                    "patching_rect": [ 285.0, 358.0, 50.0, 23.0 ],
                     "text": "0"
                 }
             },
             {
                 "box": {
-                    "background": 0,
                     "border": 0,
                     "embedstate": [
-                        [ "set_active_mask_tab", 0 ],
+                        [ "set_active_mask_tab", 2 ],
                         [ "set_borders", 0 ],
-                        [ "set_background", 0 ],
-                        [ "set_border_radius", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 7.303370786516854 ],
                         [ "set_border_thickness", 1.6123595505617978 ],
                         [ "set_border_extension", 4.943820224719101 ],
                         [ "set_dial_style", 0 ],
@@ -272,18 +349,19 @@
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
                         [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.12512077294685994, 0.5764573268921097, 0.6086956521739131, 1 ],
-                        [ "set_track_color", 0.9065700483091789, 0.9565217391304348, 0.20724637681159422, 0.8055555555555556 ],
-                        [ "set_handle_color", 0.8684057971014493, 0.9304347826086956, 0, 1 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 0 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.6052173913043478, 0.9391304347826087, 0.6831304347826087, 1 ],
+                        [ "set_mode_color", 0.85, 0.85, 0.9, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.0711111111111111, 0.07801610305958127, 0.27826086956521734, 0.5111111111111111 ],
-                        [ "set_attr_bg_color", 0.23130434782608697, 0.3473623188405799, 0.5478260869565217, 0.55 ],
-                        [ "set_attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
-                        [ "set_attr_slider_color", 0.20444444444444443, 0.4, 0.38696296296296295, 0.5111111111111111 ],
+                        [ "set_pop_bgcolor", 0.1298550724637681, 0.2683671497584541, 0.27826086956521734, 1 ],
+                        [ "set_attr_bg_color", 0.281256038647343, 0.7130434782608696, 0.684257648953301, 0.4888888888888889 ],
+                        [ "set_attr_border_color", 0.77, 0.77, 0.8608695652173913, 1 ],
+                        [ "set_attr_slider_color", 0.5911111111111111, 0.8, 0.7860740740740741, 0.4722222222222222 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0 ]
+                        [ "msg_float", 0 ],
+                        [ "set_unit_mode", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-12",
@@ -292,7 +370,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 271.0, 273.0, 64.0, 64.0 ],
+                    "patching_rect": [ 271.0, 229.0, 64.0, 64.0 ],
                     "textfile": {
                         "filename": "touch.rdial.js",
                         "flags": 0,
@@ -310,8 +388,8 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 102.0, 402.0, 50.0, 37.0 ],
-                    "text": "0.303992"
+                    "patching_rect": [ 102.0, 358.0, 50.0, 37.0 ],
+                    "text": "0.253992"
                 }
             },
             {
@@ -323,7 +401,7 @@
                     "numoutlets": 2,
                     "outlettype": [ "", "bang" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 107.0, 221.0, 50.0, 23.0 ]
+                    "patching_rect": [ 107.0, 177.0, 50.0, 23.0 ]
                 }
             },
             {
@@ -339,13 +417,12 @@
             },
             {
                 "box": {
-                    "background": 0,
                     "border": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 0 ],
                         [ "set_borders", 0 ],
-                        [ "set_background", 0 ],
-                        [ "set_border_radius", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 7.303370786516854 ],
                         [ "set_border_thickness", 1.6123595505617978 ],
                         [ "set_border_extension", 4.943820224719101 ],
                         [ "set_dial_style", 0 ],
@@ -376,18 +453,19 @@
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
                         [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.12512077294685994, 0.5764573268921097, 0.6086956521739131, 1 ],
-                        [ "set_track_color", 0.9065700483091789, 0.9565217391304348, 0.20724637681159422, 0.8055555555555556 ],
-                        [ "set_handle_color", 0.8684057971014493, 0.9304347826086956, 0, 1 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 0 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.6052173913043478, 0.9391304347826087, 0.6831304347826087, 1 ],
+                        [ "set_mode_color", 0.85, 0.85, 0.9, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.0711111111111111, 0.07801610305958127, 0.27826086956521734, 0.5111111111111111 ],
-                        [ "set_attr_bg_color", 0.23130434782608697, 0.3473623188405799, 0.5478260869565217, 0.55 ],
-                        [ "set_attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
-                        [ "set_attr_slider_color", 0.20444444444444443, 0.4, 0.38696296296296295, 0.5111111111111111 ],
+                        [ "set_pop_bgcolor", 0.1298550724637681, 0.2683671497584541, 0.27826086956521734, 1 ],
+                        [ "set_attr_bg_color", 0.281256038647343, 0.7130434782608696, 0.684257648953301, 0.4888888888888889 ],
+                        [ "set_attr_border_color", 0.77, 0.77, 0.8608695652173913, 1 ],
+                        [ "set_attr_slider_color", 0.5911111111111111, 0.8, 0.7860740740740741, 0.4722222222222222 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.3039917630419209 ]
+                        [ "msg_float", 0.2539917630419209 ],
+                        [ "set_unit_mode", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-1",
@@ -396,7 +474,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 88.0, 279.0, 64.0, 64.0 ],
+                    "patching_rect": [ 88.0, 235.0, 64.0, 64.0 ],
                     "textfile": {
                         "filename": "touch.rdial.js",
                         "flags": 0,
@@ -415,7 +493,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 271.0, 200.0, 194.0, 23.0 ]
+                    "patching_rect": [ 271.0, 156.0, 194.0, 23.0 ]
                 }
             },
             {
@@ -427,7 +505,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 523.0, 200.0, 209.0, 23.0 ]
+                    "patching_rect": [ 523.0, 156.0, 209.0, 23.0 ]
                 }
             },
             {
@@ -439,7 +517,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 88.0, 167.0, 150.0, 23.0 ]
+                    "patching_rect": [ 88.0, 123.0, 150.0, 23.0 ]
                 }
             }
         ],
@@ -454,6 +532,12 @@
                 "patchline": {
                     "destination": [ "obj-10", 1 ],
                     "source": [ "obj-12", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-3", 1 ],
+                    "source": [ "obj-14", 0 ]
                 }
             },
             {
@@ -502,6 +586,32 @@
                 "patchline": {
                     "destination": [ "obj-12", 0 ],
                     "source": [ "obj-23", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-14", 0 ],
+                    "source": [ "obj-25", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-8", 1 ],
+                    "order": 0,
+                    "source": [ "obj-3", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-8", 0 ],
+                    "order": 1,
+                    "source": [ "obj-3", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-3", 0 ],
+                    "source": [ "obj-4", 0 ]
                 }
             },
             {

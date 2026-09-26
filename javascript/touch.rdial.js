@@ -95,6 +95,10 @@ var font_style_names = ["Regular", "Bold", "Italic", "Bold Italic"];
 
 var text_y_offset = 0;
 
+// Unit Suffix Engine: 0 = None (Data Dial), 1 = %, 2 = dB, 3 = ms
+var unit_mode = 0; 
+var unit_mode_names = ["None", "%", "dB", "ms"];
+
 // =============================================================
 // 3. GEOMETRY, CORNER BORDERS & PALETTES
 // =============================================================
@@ -738,14 +742,41 @@ function draw_dial_face(ctx, w, h, is_preview) {
   }
 
   // Typography Engine
+  // Typography Engine
   var valTm = ctx.text_measure(valStr);
   var valW = valTm ? valTm[0] : (curFontSize * 1.8);
 
+  // Squeezed Unit Suffix (renders at 65% scale)
+  var unitStr = (unit_mode === 1) ? "%" : (unit_mode === 2) ? "dB" : (unit_mode === 3) ? "ms" : "";
+  var unitFontSize = Math.max(6, Math.round(curFontSize * 0.65));
+  var unitW = 0;
+  
+  if (unitStr.length > 0) {
+    ctx.set_font_size(unitFontSize);
+    var uTm = ctx.text_measure(unitStr);
+    unitW = uTm ? (uTm[0] + 1.5) : 6.0;
+    ctx.set_font_size(curFontSize); // restore base font size
+  }
+
+  var totalValueW = valW + unitW;
+
   if (is_preview) {
     var centY = cy + fontAscent * 0.35 + (text_y_offset * 0.1);
+    var startValX = cx - totalValueW * 0.5;
+
+    // Draw Number
     ctx.set_source_rgba(text_color);
-    ctx.move_to(cx - valW * 0.5, centY);
+    ctx.move_to(startValX, centY);
     ctx.show_text(valStr);
+
+    // Draw Squeezed Micro-Unit
+    if (unitStr.length > 0) {
+      ctx.set_font_size(unitFontSize);
+      ctx.set_source_rgba(mode_color); // Tint unit with mode color or text color
+      ctx.move_to(startValX + valW + 1.0, centY - fontAscent * 0.25); // Superscript offset
+      ctx.show_text(unitStr);
+      ctx.set_font_size(curFontSize);
+    }
 
     if (hasLabel) {
       var lblTm = ctx.text_measure(dispLbl);
@@ -756,6 +787,8 @@ function draw_dial_face(ctx, w, h, is_preview) {
       ctx.show_text(dispLbl);
     }
   } else {
+    var startValX2 = cx - totalValueW * 0.5;
+
     if (hasLabel) {
       var lblTm2 = ctx.text_measure(dispLbl);
       var lblW2 = lblTm2 ? lblTm2[0] : (curFontSize * 1.5);
@@ -766,14 +799,32 @@ function draw_dial_face(ctx, w, h, is_preview) {
       ctx.move_to(cx - lblW2 * 0.5, baseY);
       ctx.show_text(dispLbl);
 
+      // Value Number
       ctx.set_source_rgba(text_color);
-      ctx.move_to(cx - valW * 0.5, baseY + fontHeight * 0.95);
+      ctx.move_to(startValX2, baseY + fontHeight * 0.95);
       ctx.show_text(valStr);
+
+      // Squeezed Unit
+      if (unitStr.length > 0) {
+        ctx.set_font_size(unitFontSize);
+        ctx.set_source_rgba(mode_color);
+        ctx.move_to(startValX2 + valW + 1.0, (baseY + fontHeight * 0.95) - fontAscent * 0.25);
+        ctx.show_text(unitStr);
+        ctx.set_font_size(curFontSize);
+      }
     } else {
       var singleY = cy + fontAscent * 0.35 + (text_y_offset * 0.1);
       ctx.set_source_rgba(text_color);
-      ctx.move_to(cx - valW * 0.5, singleY);
+      ctx.move_to(startValX2, singleY);
       ctx.show_text(valStr);
+
+      if (unitStr.length > 0) {
+        ctx.set_font_size(unitFontSize);
+        ctx.set_source_rgba(mode_color);
+        ctx.move_to(startValX2 + valW + 1.0, singleY - fontAscent * 0.25);
+        ctx.show_text(unitStr);
+        ctx.set_font_size(curFontSize);
+      }
     }
   }
 
@@ -2317,6 +2368,20 @@ function get_attr_slider_color() { return attr_slider_color; }
 function set_attr_text_color() { attr_text_color = rgba_values(arguments, attr_text_color); redraw_all(); }
 function get_attr_text_color() { return attr_text_color; }
 
+function set_unit_mode(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) unit_mode = clamp(p, 0, 3);
+  else if (typeof v === "string") {
+    var s = v.toLowerCase();
+    if (s.indexOf("%") !== -1 || s.indexOf("percent") !== -1) unit_mode = 1;
+    else if (s.indexOf("db") !== -1) unit_mode = 2;
+    else if (s.indexOf("ms") !== -1) unit_mode = 3;
+    else unit_mode = 0;
+  }
+  redraw_all();
+}
+function get_unit_mode() { return unit_mode; }
+
 function anything() {
   var args = arrayfromargs(arguments);
   var name = messagename.replace(/^set_?/, "").toLowerCase();
@@ -2407,7 +2472,7 @@ declareattribute("attr_bg_color", { type: "rgba", style: "rgba", label: "Attr BG
 declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Attr Border Color", setter: "set_attr_border_color", getter: "get_attr_border_color", category: "Popup Colors", embed: 0 });
 declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", setter: "set_attr_slider_color", getter: "get_attr_slider_color", category: "Popup Colors", embed: 0 });
 declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 0 });
-
+declareattribute("unit_mode", { type: "int", style: "enumindex", enumvals: ["None", "%", "dB", "ms"], label: "Unit Suffix", setter: "set_unit_mode", getter: "get_unit_mode", category: "Labels", embed: 0 });
 // =============================================================
 // 17. WIRELESS THEME BUS SUBSCRIBER
 // =============================================================
@@ -2547,6 +2612,8 @@ function save() {
   embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
 
   embedmessage("msg_float", getScaledValue());
+
+  embedmessage("set_unit_mode", unit_mode);
 }
 
 function notifydeleted() {
