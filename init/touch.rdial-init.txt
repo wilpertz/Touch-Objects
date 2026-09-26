@@ -1,0 +1,2 @@
+
+max define touch.rdial v8ui @filename touch.rdial.js;

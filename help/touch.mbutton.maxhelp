@@ -9,7 +9,7 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 1325.0, 892.0 ],
+        "rect": [ 407.0, 262.0, 950.0, 892.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
@@ -21,7 +21,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "patching_rect": [ 851.0, 651.0, 50.0, 23.0 ],
-                    "text": "1 0 0"
+                    "text": "0 0 0"
                 }
             },
             {
@@ -200,7 +200,7 @@
                         [ "set_attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
                         [ "set_attr_slider_color", 0.20444444444444443, 0.4, 0.38696296296296295, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set", 1, 0, 0 ],
+                        [ "set", 0, 0, 0 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.23130434782608697, 0.3473623188405799, 0.5478260869565217, 0.55 ],
                         [ "attr_border_color", 0.08333333333333337, 0.9388888888888891, 1, 0.5555555555555556 ],
@@ -273,7 +273,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "patching_rect": [ 629.0, 517.0, 50.0, 37.0 ],
-                    "text": "Touch 1"
+                    "text": "Touch 0"
                 }
             },
             {
@@ -398,8 +398,8 @@
                         [ "set_flash_time", 100 ],
                         [ "set_modes", "2" ],
                         [ "set_labels", "Touch/Hold" ],
-                        [ "set_label_mode", 0 ],
-                        [ "set_case_mode", 0 ],
+                        [ "set_label_mode", 3 ],
+                        [ "set_case_mode", 1 ],
                         [ "set_font_style", 0 ],
                         [ "set_font_name", "Arial" ],
                         [ "set_text_size", 12 ],
@@ -437,14 +437,14 @@
                         [ "border_thickness", 1.6123595505617978 ],
                         [ "btn_color_off", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
                         [ "btn_color_on", 0.7207729468599033, 0.8695652173913043, 0.463768115942029, 0.5666666666666667 ],
-                        [ "case_mode", 0 ],
+                        [ "case_mode", 1 ],
                         [ "count", 1 ],
                         [ "direction", 0 ],
                         [ "flash_time", 100 ],
                         [ "font_name", "Arial" ],
                         [ "font_style", 0 ],
                         [ "group_mode", 0 ],
-                        [ "label_mode", 0 ],
+                        [ "label_mode", 3 ],
                         [ "labels", "Touch/Hold" ],
                         [ "mask_colors", 1 ],
                         [ "mask_geometry", 1 ],
@@ -487,7 +487,7 @@
                         [ "set_flash_time", 100 ],
                         [ "set_modes", "2" ],
                         [ "set_labels", "Touch/Hold" ],
-                        [ "set_label_mode", 0 ],
+                        [ "set_label_mode", 1 ],
                         [ "set_case_mode", 0 ],
                         [ "set_font_style", 0 ],
                         [ "set_font_name", "Arial" ],
@@ -533,7 +533,7 @@
                         [ "font_name", "Arial" ],
                         [ "font_style", 0 ],
                         [ "group_mode", 0 ],
-                        [ "label_mode", 0 ],
+                        [ "label_mode", 1 ],
                         [ "labels", "Touch/Hold" ],
                         [ "mask_colors", 1 ],
                         [ "mask_geometry", 1 ],
@@ -819,7 +819,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "patching_rect": [ 502.0, 517.0, 50.0, 23.0 ],
-                    "text": "1"
+                    "text": "0"
                 }
             },
             {

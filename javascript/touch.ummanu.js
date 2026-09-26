@@ -701,7 +701,7 @@ function clear_folders() {
 }
 
 // =============================================================
-// 7. SCREEN RESOLVER (ZERO "BAD OBJECT" CRASHES)
+// 7. SCREEN RESOLVER (BULLETPROOF MAIN, BPATCHER & SUBPATCHERS)
 // =============================================================
 function getBoxScreenPos() {
     var cur_box = this.box;
@@ -729,6 +729,18 @@ function getBoxScreenPos() {
         return { x: r[0], y: r[1], w: r[2] - r[0], h: r[3] - r[1], isPres: false };
     }
 
+    // Helper: Returns true ONLY if the box is genuinely a bpatcher
+    function isBPatcher(box) {
+        if (!box) return false;
+        if (box.maxclass === "bpatcher") return true;
+        try {
+            if (box.getattr && (box.getattr("offset") !== null || box.getattr("bgmode") !== null)) {
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
+
     var rThis = resolveLayerBox(cur_box, cur_patcher);
     var cur_x = rThis.x;
     var cur_y = rThis.y;
@@ -741,13 +753,18 @@ function getBoxScreenPos() {
         cur_y -= cur_patcher.scrolloffset[1];
     }
 
+    // Traverse upwards ONLY while the container box is an embedded bpatcher!
     var pWalk = cur_patcher;
     while (pWalk && pWalk.parentpatcher) {
-        var pParent = pWalk.parentpatcher;
         var pBox = null;
         try { pBox = pWalk.box; } catch(e) {}
-        if (!pBox) break;
+        
+        // If the container is a subpatcher [p] (not a bpatcher), stop walking!
+        if (!pBox || !isBPatcher(pBox)) {
+            break;
+        }
 
+        var pParent = pWalk.parentpatcher;
         var rBpatcher = resolveLayerBox(pBox, pParent);
 
         var b_off = [0, 0];
@@ -769,6 +786,7 @@ function getBoxScreenPos() {
         pWalk = pParent;
     }
 
+    // pWalk is the true host window (main patcher OR the open subpatcher [p])
     var top_win = [0, 0];
     if (pWalk && pWalk.wind && pWalk.wind.location) {
         top_win = [pWalk.wind.location[0], pWalk.wind.location[1]];
