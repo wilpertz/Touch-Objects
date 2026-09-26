@@ -1,7 +1,7 @@
 // ============================================================================
 // touch.rdial.js - Max 9 v8ui / jsui
-// Modern Rotary Dial with Balanced 3x13 Inspector (13 Performance, 13 Geo/Labels, 13 Colors),
-// Outer Corner Borders, Theme Bus Sync, and Precision Ticker Engine.
+// High-Performance Rotary Dial with Lazy-Loaded Jitter Windows, Zero-Lag Launch,
+// Balanced 3x13 Inspector, Outer Corner Borders, & Precision Ticker Engine.
 // ============================================================================
 
 autowatch = 1;
@@ -99,7 +99,7 @@ var text_y_offset = 0;
 // 3. GEOMETRY, CORNER BORDERS & PALETTES
 // =============================================================
 var borders = 0;             // 0 = Off, 1 = Outer Edge Corner Borders ON
-var show_background = 0;          // 0 = Off (Transparent), 1 = Background Plate ON
+var show_background = 0;     // 0 = Off (Transparent), 1 = Background Plate ON
 
 var border_radius = 8.0;
 var border_thickness = 1.2;
@@ -133,7 +133,7 @@ var mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 
 var showSettings = 0;
 var popup_window_width = 280;
-var popup_window_fixed_h = 580; // Sized to fit exactly 13 rows without clipping
+var popup_window_fixed_h = 580; // Sized for 13 rows without jumping
 var popup_mini_w       = 190;
 var popup_mini_h       = 190;
 var start_resize_w     = 190;
@@ -141,34 +141,15 @@ var start_resize_h     = 190;
 var is_resizing_window = 0;
 
 // =============================================================
-// 4. JITTER SUB-WINDOWS & RECYCLING
+// 4. ON-DEMAND (LAZY-LOADED) JITTER SUB-WINDOWS
 // =============================================================
-var popupWindow = new JitterObject("jit.window", "dial_set_" + uniqueID);
-popupWindow.floating = 1;
-popupWindow.visible = 0;
-popupWindow.border = 1;
-popupWindow.grow = 0;
-popupWindow.title = "Touch Dial Inspector";
-
-var colorWindow = new JitterObject("jit.window", "dial_col_" + uniqueID);
-colorWindow.floating = 1;
-colorWindow.visible = 0;
-colorWindow.border = 1;
-colorWindow.grow = 0;
-colorWindow.title = "Color Picker";
-colorWindow.size = [200, 240];
-
-var tickerWindow = new JitterObject("jit.window", "dial_num_" + uniqueID);
-tickerWindow.floating = 1;
-tickerWindow.visible = 0;
-tickerWindow.border = 1;
-tickerWindow.grow = 0;
-tickerWindow.title = "Bound Ticker";
-tickerWindow.size = [230, 200];
+var popupWindow = null;
+var colorWindow = null;
+var tickerWindow = null;
 
 var outMatrix = null;
-var colorMatrix = new JitterMatrix(4, "char", 200, 240);
-var tickerMatrix = new JitterMatrix(4, "char", 230, 200);
+var colorMatrix = null;
+var tickerMatrix = null;
 
 var windowListener = null;
 var colorListener = null;
@@ -197,6 +178,40 @@ var render_task = new Task(function () {
 }, this);
 
 var cached_preview_rect = { x: 70, y: 30, w: 140, h: 140 };
+
+function ensurePopupWindows() {
+  if (!popupWindow) {
+    popupWindow = new JitterObject("jit.window", "dial_set_" + uniqueID);
+    popupWindow.floating = 1;
+    popupWindow.visible = 0;
+    popupWindow.border = 1;
+    popupWindow.grow = 0;
+    popupWindow.title = "Touch Dial Inspector";
+    windowListener = new JitterListener(popupWindow.name, windowListenerCallback);
+  }
+  if (!colorWindow) {
+    colorWindow = new JitterObject("jit.window", "dial_col_" + uniqueID);
+    colorWindow.floating = 1;
+    colorWindow.visible = 0;
+    colorWindow.border = 1;
+    colorWindow.grow = 0;
+    colorWindow.title = "Color Picker";
+    colorWindow.size = [200, 240];
+    colorMatrix = new JitterMatrix(4, "char", 200, 240);
+    colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
+  }
+  if (!tickerWindow) {
+    tickerWindow = new JitterObject("jit.window", "dial_num_" + uniqueID);
+    tickerWindow.floating = 1;
+    tickerWindow.visible = 0;
+    tickerWindow.border = 1;
+    tickerWindow.grow = 0;
+    tickerWindow.title = "Bound Ticker";
+    tickerWindow.size = [230, 200];
+    tickerMatrix = new JitterMatrix(4, "char", 230, 200);
+    tickerListener = new JitterListener(tickerWindow.name, tickerWindowListenerCallback);
+  }
+}
 
 function recycleMatrix(mat, w, h) {
   if (!mat) return new JitterMatrix(4, "char", w, h);
@@ -352,6 +367,7 @@ function onresize(w, h) {
 }
 onresize.local = 1;
 
+// Mark dirty ONLY upon manual user actions
 function mark_dirty() {
   if (this.patcher) {
     try { this.patcher.dirty = 1; } catch (e) {}
@@ -361,8 +377,7 @@ function mark_dirty() {
 function redraw_all() {
   mgraphics.redraw();
   if (typeof notifyclients === "function") notifyclients();
-  mark_dirty();
-  if (showSettings) draw_popup_to_window();
+  if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
 }
 
 function get_font_weight() {
@@ -966,7 +981,8 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
 
   if (allow_popup === 1) {
     var dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
-    var dotX = w - dotMargin, dotY = dotMargin;
+    var dotX = w - dotMargin;
+    var dotY = dotMargin;
     var hitR = Math.max(4.0, Math.min(8.0, Math.min(w, h) * 0.20));
     var distToDot = Math.sqrt((x - dotX) * (x - dotX) + (y - dotY) * (y - dotY));
     if (distToDot <= hitR || is_right_click) {
@@ -975,6 +991,7 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
     }
   }
 
+  mark_dirty();
   is_dragging = 1;
   is_scrolling_drag = 0;
   last_x = x;
@@ -1008,6 +1025,7 @@ function ondrag(x, y, button) {
     onmouseup();
     return;
   }
+  mark_dirty();
   var dims = get_dimensions();
   var cx = dims.w * 0.5;
   var cy = dims.h * 0.5;
@@ -1069,6 +1087,7 @@ function onidleout() { onmouseup(); }
 function onidle() { if (is_dragging) onmouseup(); }
 
 function onmousewheel(x, y, deltaX, deltaY) {
+  mark_dirty();
   var delta = (deltaY !== 0 ? -deltaY : 0) * 0.005 * slider_speed;
   if (rotary_mode === 3) {
     val = ((val + delta) % 1.0 + 1.0) % 1.0;
@@ -1125,7 +1144,7 @@ function get_visible_rows_map() {
     list.push({ name: "Font Size", val: text_size, pct: (text_size - 6) / 24.0, is_slider: true, target_id: 305 });
   }
 
-  // Tab 2: 3. Colors (13 items - Ribbon Fill on top)
+  // Tab 2: 3. Colors (13 items)
   else if (active_mask_tab === 2) {
     list.push({ name: "Ribbon Fill", val: ribbon_fill_names[ribbon_fill], is_toggle: true, target_id: 114 });
     list.push({ name: "Mode Color", val: mode_color, is_color: true, key: "mode_color" });
@@ -1155,6 +1174,7 @@ function get_popup_dimensions_map() {
 
 function update_popup_dimensions() {
   if (showSettings && allow_popup === 1) {
+    ensurePopupWindows();
     var dims = get_popup_dimensions_map();
     popupWindow.size = [dims.w, dims.h];
     popupWindow.title = "Touch Dial Inspector";
@@ -1162,12 +1182,12 @@ function update_popup_dimensions() {
     popupWindow.visible = 1;
     draw_popup_to_window();
   } else {
-    popupWindow.visible = 0;
+    if (popupWindow) popupWindow.visible = 0;
   }
 }
 
 function draw_popup_to_window() {
-  if (!showSettings || allow_popup !== 1 || !outMatrix) return;
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
   if (render_pending === 0) {
     render_pending = 1;
     render_task.schedule(16);
@@ -1175,7 +1195,7 @@ function draw_popup_to_window() {
 }
 
 function draw_popup_to_window_deferred() {
-  if (!showSettings || allow_popup !== 1 || !outMatrix) return;
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
   var dims = get_popup_dimensions_map();
   var w = dims.w, h = dims.h;
 
@@ -1281,7 +1301,7 @@ function draw_popup_to_window_deferred() {
     pCtx.move_to(navX + 9, navY + 15);
     pCtx.show_text("<");
 
-    // Right Button [ > ] (Fixed with explicit white text color)
+    // Right Button [ > ]
     var rBtnX = navX + navW - btnW - 1;
     pCtx.set_source_rgba(attr_bg_color);
     pCtx.rectangle_rounded(rBtnX, navY + 1, btnW, navH - 2, 2, 2);
@@ -1441,6 +1461,7 @@ function initPickerFromTarget() {
 }
 
 function applyPickerToTarget() {
+  mark_dirty();
   var rgb = hsvToRgb(cur_h, cur_s, cur_v);
   var arr = get_color_target(active_color_target);
   if (arr) {
@@ -1450,6 +1471,7 @@ function applyPickerToTarget() {
 }
 
 function draw_color_picker_popup() {
+  ensurePopupWindows();
   var winW = 200, winH = 240;
   colorMatrix = recycleMatrix(colorMatrix, winW, winH);
 
@@ -1599,6 +1621,7 @@ function rebuild_ticker_value(digits_obj) {
 }
 
 function draw_ticker_matrix_popup() {
+  ensurePopupWindows();
   var winW = 230, winH = 200;
   tickerMatrix = recycleMatrix(tickerMatrix, winW, winH);
 
@@ -1658,6 +1681,7 @@ function draw_ticker_matrix_popup() {
 }
 
 function update_ticker_value_and_redraw() {
+  mark_dirty();
   var constrained_digit = Math.round(continuous_digit_floats[active_ticker_column]);
   var current_val = min_val;
   if (active_ticker_target === "max_val") current_val = max_val;
@@ -1724,14 +1748,19 @@ function popup(v) {
   if (v === undefined) showSettings = !showSettings;
   else showSettings = (Number(v) > 0) ? 1 : 0;
 
-  if (showSettings) update_popup_dimensions();
-  else {
-    popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+  if (showSettings) {
+    ensurePopupWindows();
+    update_popup_dimensions();
+  } else {
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
   }
   mgraphics.redraw();
 }
 
 function apply_slider_target(target_id, targetPct) {
+  mark_dirty();
   if (target_id === 109) set_slider_speed(0.1 + targetPct * 1.9);
   else if (target_id === 112) set_step_speed_ms(Math.round(5 + targetPct * 95));
   else if (target_id === 113) set_curve_exponent(targetPct * 1.0);
@@ -1817,7 +1846,9 @@ function windowListenerCallback(event) {
     // Close Button Hit
     if (mbut && mx < 35 && my < 26) {
       showSettings = 0;
-      popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+      if (popupWindow) popupWindow.visible = 0;
+      if (colorWindow) colorWindow.visible = 0;
+      if (tickerWindow) tickerWindow.visible = 0;
       mgraphics.redraw();
       return;
     }
@@ -1887,7 +1918,7 @@ function windowListenerCallback(event) {
     if (!has_rows) return;
 
     // -------------------------------------------------------------
-    // 3. MASK NAVIGATOR PAGER CLICKS (3 Tabs)
+    // 3. MASK NAVIGATOR PAGER CLICKS
     // -------------------------------------------------------------
     if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
       if (mx <= navX + btnW + 4) {
@@ -1914,6 +1945,7 @@ function windowListenerCallback(event) {
           active_pop_target = r.target_id;
           apply_slider_target(r.target_id, pct);
         } else if (is_pop_tap) {
+          mark_dirty();
           if (r.is_toggle) {
             if (r.target_id === 101) set_dial_style(dial_style ? 0 : 1);
             else if (r.target_id === 114) set_ribbon_fill(ribbon_fill ? 0 : 1);
@@ -1927,6 +1959,7 @@ function windowListenerCallback(event) {
             else if (r.target_id === 310) set_borders(borders ? 0 : 1);
             else if (r.target_id === 311) set_show_background(show_background ? 0 : 1);
           } else if (r.is_ticker) {
+            ensurePopupWindows();
             active_ticker_target = r.key;
             colorWindow.visible = 0;
             if (popupWindow && popupWindow.pos) {
@@ -1937,6 +1970,7 @@ function windowListenerCallback(event) {
             tickerWindow.front();
             draw_ticker_matrix_popup();
           } else if (r.is_color) {
+            ensurePopupWindows();
             active_color_target = r.key;
             tickerWindow.visible = 0;
             initPickerFromTarget();
@@ -1961,7 +1995,7 @@ function set_active_mask_tab(v) {
   var p = parseInt(v, 10);
   if (!isNaN(p)) {
     active_mask_tab = clamp(p, 0, 2);
-    draw_popup_to_window();
+    if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
   }
 }
 function get_active_mask_tab() { return active_mask_tab; }
@@ -1979,7 +2013,6 @@ function set_show_background(v) {
   redraw_all();
 }
 function get_show_background() { return show_background; }
-function get_background() { return background; }
 
 function set_border_radius(v) {
   if (arguments.length > 0) v = arguments[0];
@@ -2224,7 +2257,10 @@ function set_allow_popup(v) {
   var p = parseInt(v, 10);
   if (!isNaN(p)) allow_popup = p ? 1 : 0;
   if (!allow_popup && showSettings) {
-    showSettings = 0; popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+    showSettings = 0;
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
   }
   redraw_all();
 }
@@ -2305,7 +2341,7 @@ function anything() {
   if (name === "corner_radius") name = "border_radius";
   if (name === "bordersize" || name === "border_size") name = "border_thickness";
   if (name === "corners" || name === "border") name = "borders";
-  if (name === "bg") name = "background";
+  if (name === "bg" || name === "background") name = "show_background";
 
   if (typeof this["set_" + name] === "function") {
     this["set_" + name].apply(this, args);
@@ -2384,56 +2420,58 @@ function loadThemeFromDict() {
   var initDict = new Dict("touch_theme_store");
   if (!initDict) return;
   try {
-    if (initDict.contains("bg_color")) set_bg_color(initDict.get("bg_color"));
-    if (initDict.contains("border_color")) set_border_color(initDict.get("border_color"));
-    if (initDict.contains("border_radius")) set_border_radius(initDict.get("border_radius"));
-    if (initDict.contains("border_thickness")) set_border_thickness(initDict.get("border_thickness"));
-    if (initDict.contains("border_extension")) set_border_extension(initDict.get("border_extension"));
+    if (initDict.contains("bg_color")) bg_color = rgba_values(initDict.get("bg_color"), bg_color);
+    if (initDict.contains("border_color")) border_color = rgba_values(initDict.get("border_color"), border_color);
+    if (initDict.contains("border_radius")) border_radius = Math.max(0.0, Number(initDict.get("border_radius")));
+    if (initDict.contains("border_thickness")) border_thickness = Math.max(0.0, Number(initDict.get("border_thickness")));
+    if (initDict.contains("border_extension")) border_extension = Math.max(0.0, Number(initDict.get("border_extension")));
 
-    if (initDict.contains("text_color")) set_text_color(initDict.get("text_color"));
-    if (initDict.contains("mode_color")) set_mode_color(initDict.get("mode_color"));
+    if (initDict.contains("text_color")) text_color = rgba_values(initDict.get("text_color"), text_color);
+    if (initDict.contains("mode_color")) mode_color = rgba_values(initDict.get("mode_color"), mode_color);
 
     var kVal = initDict.contains("slider_handle_color") ? initDict.get("slider_handle_color") : (initDict.contains("highlight_color") ? initDict.get("highlight_color") : null);
-    if (kVal) set_handle_color(kVal);
+    if (kVal) handle_color = rgba_values(kVal, handle_color);
 
     var rColVal = initDict.contains("slider_rail_color") ? initDict.get("slider_rail_color") : (initDict.contains("track_color") ? initDict.get("track_color") : null);
-    if (rColVal) set_track_color(rColVal);
+    if (rColVal) track_color = rgba_values(rColVal, track_color);
 
-    if (initDict.contains("popup_dot_color")) set_popup_dot_color(initDict.get("popup_dot_color"));
-    if (initDict.contains("pop_bgcolor")) set_pop_bgcolor(initDict.get("pop_bgcolor"));
-    if (initDict.contains("attr_bg_color")) set_attr_bg_color(initDict.get("attr_bg_color"));
-    if (initDict.contains("attr_border_color")) set_attr_border_color(initDict.get("attr_border_color"));
-    if (initDict.contains("attr_slider_color")) set_attr_slider_color(initDict.get("attr_slider_color"));
-    if (initDict.contains("attr_text_color")) set_attr_text_color(initDict.get("attr_text_color"));
-    redraw_all();
+    if (initDict.contains("popup_dot_color")) popup_dot_color = rgba_values(initDict.get("popup_dot_color"), popup_dot_color);
+    if (initDict.contains("pop_bgcolor")) pop_bgcolor = rgba_values(initDict.get("pop_bgcolor"), pop_bgcolor);
+    if (initDict.contains("attr_bg_color")) attr_bg_color = rgba_values(initDict.get("attr_bg_color"), attr_bg_color);
+    if (initDict.contains("attr_border_color")) attr_border_color = rgba_values(initDict.get("attr_border_color"), attr_border_color);
+    if (initDict.contains("attr_slider_color")) attr_slider_color = rgba_values(initDict.get("attr_slider_color"), attr_slider_color);
+    if (initDict.contains("attr_text_color")) attr_text_color = rgba_values(initDict.get("attr_text_color"), attr_text_color);
+
+    mgraphics.redraw();
   } catch(e) {}
 }
 
 function onThemeUpdate(theme) {
   if (!theme) return;
   try {
-    if (theme.bg_color) set_bg_color(theme.bg_color);
-    if (theme.border_color) set_border_color(theme.border_color);
-    if (theme.border_radius !== undefined) set_border_radius(theme.border_radius);
-    if (theme.border_thickness !== undefined) set_border_thickness(theme.border_thickness);
-    if (theme.border_extension !== undefined) set_border_extension(theme.border_extension);
+    if (theme.bg_color) bg_color = rgba_values(theme.bg_color, bg_color);
+    if (theme.border_color) border_color = rgba_values(theme.border_color, border_color);
+    if (theme.border_radius !== undefined) border_radius = Math.max(0.0, Number(theme.border_radius));
+    if (theme.border_thickness !== undefined) border_thickness = Math.max(0.0, Number(theme.border_thickness));
+    if (theme.border_extension !== undefined) border_extension = Math.max(0.0, Number(theme.border_extension));
 
-    if (theme.text_color) set_text_color(theme.text_color);
-    if (theme.mode_color) set_mode_color(theme.mode_color);
+    if (theme.text_color) text_color = rgba_values(theme.text_color, text_color);
+    if (theme.mode_color) mode_color = rgba_values(theme.mode_color, mode_color);
 
     var knobColor = theme.slider_handle_color || theme.handle_color || theme.highlight_color || theme.accent_color;
-    if (knobColor) set_handle_color(knobColor);
+    if (knobColor) handle_color = rgba_values(knobColor, handle_color);
 
     var railColor = theme.slider_rail_color || theme.track_color;
-    if (railColor) set_track_color(railColor);
+    if (railColor) track_color = rgba_values(railColor, track_color);
 
-    if (theme.popup_dot_color) set_popup_dot_color(theme.popup_dot_color);
-    if (theme.pop_bgcolor) set_pop_bgcolor(theme.pop_bgcolor);
-    if (theme.attr_bg_color) set_attr_bg_color(theme.attr_bg_color);
-    if (theme.attr_border_color) set_attr_border_color(theme.attr_border_color);
-    if (theme.attr_slider_color) set_attr_slider_color(theme.attr_slider_color);
-    if (theme.attr_text_color) set_attr_text_color(theme.attr_text_color);
-    redraw_all();
+    if (theme.popup_dot_color) popup_dot_color = rgba_values(theme.popup_dot_color, popup_dot_color);
+    if (theme.pop_bgcolor) pop_bgcolor = rgba_values(theme.pop_bgcolor, pop_bgcolor);
+    if (theme.attr_bg_color) attr_bg_color = rgba_values(theme.attr_bg_color, attr_bg_color);
+    if (theme.attr_border_color) attr_border_color = rgba_values(theme.attr_border_color, attr_border_color);
+    if (theme.attr_slider_color) attr_slider_color = rgba_values(theme.attr_slider_color, attr_slider_color);
+    if (theme.attr_text_color) attr_text_color = rgba_values(theme.attr_text_color, attr_text_color);
+
+    mgraphics.redraw();
   } catch(e) {}
 }
 
@@ -2450,7 +2488,6 @@ if (themeBus && themeBus.theme && (themeBus.theme.bg_color || themeBus.theme.bor
 function loadbang() {
   if (themeBus && themeBus.theme) onThemeUpdate(themeBus.theme);
   else loadThemeFromDict();
-  redraw_all();
 }
 
 function save() {
@@ -2540,9 +2577,5 @@ function notifydeleted() {
   colorMatrix = null;
   tickerMatrix = null;
 }
-
-windowListener = new JitterListener(popupWindow.name, windowListenerCallback);
-colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
-tickerListener = new JitterListener(tickerWindow.name, tickerWindowListenerCallback);
 
 mgraphics.redraw();

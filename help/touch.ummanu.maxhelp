@@ -9,7 +9,7 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 972.0, 750.0 ],
+        "rect": [ 100.0, 100.0, 862.0, 750.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
@@ -28,7 +28,7 @@
                 "box": {
                     "border": 0,
                     "embedstate": [
-                        [ "set_modes", "\"Core Audio\" NonRealTime \"ad portaudio Core Audio\"" ],
+                        [ "set_modes", "None \"Core Audio\" NonRealTime \"ad_portaudio Core Audio\"" ],
                         [ "set_prefix", "Driver" ],
                         [ "set_mode", 1 ],
                         [ "set_multimenu", 0 ],
@@ -86,13 +86,13 @@
                         [ "mask_popup_colors", 1 ],
                         [ "mode", 1 ],
                         [ "mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
-                        [ "modes", "\"Core Audio\" NonRealTime \"ad portaudio Core Audio\"" ],
+                        [ "modes", "None \"Core Audio\" NonRealTime \"ad_portaudio Core Audio\"" ],
                         [ "multimenu", 0 ],
                         [ "output_type", 2 ],
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "prefix", "Driver" ],
-                        [ "selected", 0 ],
+                        [ "selected", 3 ],
                         [ "show_arrow", 0 ],
                         [ "show_markers", 1 ],
                         [ "show_settings_attrs", 1 ],
@@ -406,7 +406,7 @@
                         [ "set_mask_geometry", 0 ],
                         [ "set_mask_colors", 0 ],
                         [ "set_mask_popup_colors", 0 ],
-                        [ "set_popup_mini_size", 420, 150 ],
+                        [ "set_popup_mini_size", 270, 95 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.18, 0.18, 0.22, 1 ],
                         [ "attr_border_color", 0.28, 0.28, 0.32, 1 ],
