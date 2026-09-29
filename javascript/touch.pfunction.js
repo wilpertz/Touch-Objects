@@ -2,8 +2,8 @@
 // touch.pfunction.js - Max 9 v8ui / jsui
 // Multi-Breakpoint Envelope & Curve Generator with Oscilloscope Reticle,
 // L-Frame & Graticule Y-Axis Engine, Dual-Mode XY Elastic Resizing,
-// Domain Rescale / Clamp Engine, Standard 5-Tier 50/50 Attrui Inspector,
-// and Wireless Theme Bus.
+// Domain Rescale / Clamp Engine, 3-Tab Carousel Attrui Inspector,
+// Wireless Theme Bus, and Local Preset Morph Hooks.
 // ============================================================================
 
 autowatch = 1;
@@ -52,7 +52,7 @@ var points = [
 ];
 
 // =============================================================
-// 2. TYPOGRAPHY & LABELS (TWO-PASS DECOUPLING)
+// 2. TYPOGRAPHY & LABELS
 // =============================================================
 var label_text = "env";
 var label_mode = 0; // 0 = Full, 1 = No Vowels, 2 = Caps Only, 3 = First Letter, 4 = No Text
@@ -96,19 +96,17 @@ var attr_border_color = [0.28, 0.28, 0.32, 1.0];
 var attr_slider_color = [0.35, 0.38, 0.42, 1.0];
 var attr_text_color = [0.88, 0.88, 0.88, 1.0];
 
-// Standard 5-Tier Popup Visibility Masks & Dual-Mode Sizing
+// 3-Category Carousel Inspector State
 var show_settings_attrs = 1;
-var mask_performance   = 1;
-var mask_labels        = 1;
-var mask_geometry      = 1;
-var mask_colors        = 1;
-var mask_popup_colors  = 1;
+var active_mask_tab = 0;
+var mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 
 var allow_popup = 1;
 var showSettings = 0;
-var popup_window_width = 280; // Standard locked width when Attrui rows are visible
-var popup_mini_w       = 420; // Elastic width for mini preview mode
-var popup_mini_h       = 180; // Elastic height for mini preview mode
+var popup_window_width = 280;
+var popup_window_fixed_h = 510;
+var popup_mini_w       = 420;
+var popup_mini_h       = 180;
 var start_resize_w     = 420;
 var start_resize_h     = 180;
 var is_resizing_window = 0;
@@ -160,32 +158,13 @@ var lastMouseY = 0;
 var start_click_x = 0;
 var start_click_y = 0;
 
-var popupWindow = new JitterObject("jit.window", "pfunc_set_" + uniqueID);
-popupWindow.floating = 1;
-popupWindow.visible = 0;
-popupWindow.border = 1;
-popupWindow.grow = 0;
-popupWindow.title = "Touch Function Inspector";
-
-var colorWindow = new JitterObject("jit.window", "pfunc_col_" + uniqueID);
-colorWindow.floating = 1;
-colorWindow.visible = 0;
-colorWindow.border = 1;
-colorWindow.grow = 0;
-colorWindow.title = "Color Picker";
-colorWindow.size = [200, 240];
-
-var tickerWindow = new JitterObject("jit.window", "pfunc_num_" + uniqueID);
-tickerWindow.floating = 1;
-tickerWindow.visible = 0;
-tickerWindow.border = 1;
-tickerWindow.grow = 0;
-tickerWindow.title = "Bound Ticker";
-tickerWindow.size = [230, 200];
+var popupWindow = null;
+var colorWindow = null;
+var tickerWindow = null;
 
 var outMatrix = null;
-var colorMatrix = new JitterMatrix(4, "char", 200, 240);
-var tickerMatrix = new JitterMatrix(4, "char", 230, 200);
+var colorMatrix = null;
+var tickerMatrix = null;
 
 var windowListener = null;
 var colorListener = null;
@@ -198,6 +177,29 @@ var render_task = new Task(function () {
 }, this);
 
 var cached_preview_rect = { x: 12, y: 28, w: 256, h: 85 };
+
+function ensurePopupWindows() {
+  if (!popupWindow) {
+    popupWindow = new JitterObject("jit.window", "pfunc_set_" + uniqueID);
+    popupWindow.floating = 1; popupWindow.visible = 0; popupWindow.border = 1; popupWindow.grow = 0;
+    popupWindow.title = "Touch Function Inspector";
+    windowListener = new JitterListener(popupWindow.name, windowListenerCallback);
+  }
+  if (!colorWindow) {
+    colorWindow = new JitterObject("jit.window", "pfunc_col_" + uniqueID);
+    colorWindow.floating = 1; colorWindow.visible = 0; colorWindow.border = 1; colorWindow.grow = 0;
+    colorWindow.title = "Color Picker"; colorWindow.size = [200, 240];
+    colorMatrix = new JitterMatrix(4, "char", 200, 240);
+    colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
+  }
+  if (!tickerWindow) {
+    tickerWindow = new JitterObject("jit.window", "pfunc_num_" + uniqueID);
+    tickerWindow.floating = 1; tickerWindow.visible = 0; tickerWindow.border = 1; tickerWindow.grow = 0;
+    tickerWindow.title = "Bound Ticker"; tickerWindow.size = [230, 200];
+    tickerMatrix = new JitterMatrix(4, "char", 230, 200);
+    tickerListener = new JitterListener(tickerWindow.name, tickerWindowListenerCallback);
+  }
+}
 
 function recycleMatrix(mat, w, h) {
   if (!mat) return new JitterMatrix(4, "char", w, h);
@@ -295,7 +297,7 @@ function redraw_all() {
   if (typeof notifyclients === "function") {
     notifyclients();
   }
-  if (showSettings) draw_popup_to_window();
+  if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
 }
 
 // =============================================================
@@ -488,7 +490,7 @@ function get_clamped_handle_x(idx, targetX) {
 }
 
 // =============================================================
-// 8. OSCILLOSCOPE RETICLE & UNCLUTTERED AXIS ENGINE
+// 8. OSCILLOSCOPE RETICLE & AXIS ENGINE
 // =============================================================
 function draw_common_path(ctx, x, y, w, h, r) {
   ctx.new_path();
@@ -569,7 +571,7 @@ function draw_envelope_graph(ctx, w, h, is_preview) {
   var lSize = isNaN(line_size) ? 1.5 : line_size;
   var hSize = isNaN(handle_size) ? 7.0 : handle_size;
 
-  // 3. Precision Graticule Framing (Clean X baseline, Y-Axis Rail, and Ticks)
+  // 3. Precision Graticule Framing
   if (axis_style > 0) {
     var axisAlpha = 0.18;
     ctx.set_source_rgba(border_color[0], border_color[1], border_color[2], axisAlpha);
@@ -589,18 +591,17 @@ function draw_envelope_graph(ctx, w, h, is_preview) {
       ctx.line_to(zeroPt.x, zeroPt.y);
       ctx.stroke();
 
-      // Precision Edge Graduation Notches (No numbers, clean oscilloscope graticule)
       if (axis_style === 3) {
         var tickLen = 3.5;
-        // Ceiling tick (1.0 / y_max)
+        // Ceiling tick
         ctx.move_to(zeroPt.x, maxPt.y);
         ctx.line_to(zeroPt.x + tickLen, maxPt.y);
-        // Midpoint tick (0.5)
+        // Midpoint tick
         var midValY = (y_min + y_max) * 0.5;
         var midPt = valueToPixel({ x: x_min, y: midValY }, w, h, margin);
         ctx.move_to(zeroPt.x, midPt.y);
         ctx.line_to(zeroPt.x + tickLen, midPt.y);
-        // Baseline tick (0.0 / y_min)
+        // Baseline tick
         ctx.move_to(zeroPt.x, zeroPt.y);
         ctx.line_to(zeroPt.x + tickLen, zeroPt.y);
         ctx.stroke();
@@ -643,7 +644,7 @@ function draw_envelope_graph(ctx, w, h, is_preview) {
     ctx.stroke();
   }
 
-  // 5. Handles & Two-Pass Typography
+  // 5. Handles & Typography
   ctx.select_font_face(font_name, get_font_slant(), get_font_weight());
   ctx.set_font_size(is_preview ? Math.max(8, Math.min(12, h * 0.07)) : text_size);
 
@@ -654,7 +655,6 @@ function draw_envelope_graph(ctx, w, h, is_preview) {
   for (var j = 0; j < points.length; j++) {
     var pPos = valueToPixel(points[j], w, h, margin);
 
-    // Node handle shadow & core
     ctx.set_source_rgba(0.0, 0.0, 0.0, 0.45);
     ctx.ellipse(pPos.x - (hSize + 1.5) * 0.5, pPos.y - (hSize + 1.5) * 0.5 + 0.5, hSize + 1.5, hSize + 1.5);
     ctx.fill();
@@ -875,9 +875,6 @@ function clear() {
   if (raw_output_mode === 1) output_raw_points();
 }
 
-// =============================================================
-// ROBUST LIST INGEST & PATTR VALUE HOOKS FOR PFUNCTION
-// =============================================================
 function list() {
   var args = arrayfromargs(arguments);
   while (args.length === 1 && Array.isArray(args[0])) {
@@ -902,12 +899,81 @@ function list() {
 }
 
 // =============================================================
-// UNCAPPED DYNAMIC PATTR HOOKS (SUPPORTS 100 TO 1000+ POINTS)
+// PRESET ENGINE HOOKS (touch.status GLIDE ENGINE)
+// =============================================================
+function parse_point_array(arr) {
+  if (!Array.isArray(arr) || arr.length < 2) return [];
+  var step = (curve_mode === 1) ? 3 : 2;
+  var pts = [];
+  for (var i = 0; i < arr.length; i += step) {
+    if (i + 1 < arr.length) {
+      pts.push({
+        x: Number(arr[i]),
+        y: Number(arr[i + 1]),
+        curve: (step === 3 && i + 2 < arr.length) ? Number(arr[i + 2] || 0.0) : 0.0
+      });
+    }
+  }
+  return pts;
+}
+
+function get_state() {
+  return { val: getvalueof(), curve_mode: curve_mode };
+}
+
+function set_state(d) {
+  var v = (typeof d === "object" && d !== null && d.val !== undefined) ? d.val : d;
+  setvalueof(v);
+  output_line_envelope();
+}
+
+function morph_state(a, b, frac) {
+  var rawA = (typeof a === "object" && a !== null && a.val !== undefined) ? a.val : a;
+  var rawB = (typeof b === "object" && b !== null && b.val !== undefined) ? b.val : b;
+
+  var ptsA = parse_point_array(rawA);
+  var ptsB = parse_point_array(rawB);
+
+  if (ptsA.length === 0 || ptsB.length === 0) {
+    set_state(frac >= 0.5 ? b : a);
+    return;
+  }
+
+  var maxLen = Math.max(ptsA.length, ptsB.length);
+  var blended = [];
+
+  for (var i = 0; i < maxLen; i++) {
+    var pA = i < ptsA.length ? ptsA[i] : ptsA[ptsA.length - 1];
+    var pB = i < ptsB.length ? ptsB[i] : ptsB[ptsB.length - 1];
+
+    var interpX = pA.x + (pB.x - pA.x) * frac;
+    var interpY = pA.y + (pB.y - pA.y) * frac;
+    var cA = pA.curve || 0.0;
+    var cB = pB.curve || 0.0;
+    var interpC = cA + (cB - cA) * frac;
+
+    blended.push({
+      x: clamp(interpX, x_min, x_max),
+      y: clamp(interpY, y_min, y_max),
+      curve: clamp(interpC, -0.99, 0.99)
+    });
+  }
+
+  if (latch_first_point && blended.length > 0) blended[0].x = x_min;
+  if (latch_last_point && blended.length > 1) blended[blended.length - 1].x = x_max;
+
+  points = blended;
+  sort_points();
+  redraw_all();
+  output_line_envelope();
+}
+
+// =============================================================
+// PATTR HOOKS
 // =============================================================
 function getvalueof() {
   sort_points();
   var data = [];
-  // Exports all points dynamically with zero artificial limits
   for (var i = 0; i < points.length; i++) {
     data.push(points[i].x);
     data.push(points[i].y);
@@ -940,7 +1006,6 @@ function setvalueof() {
 
   if (raw.length === 0) return;
 
-  // Enforce boundary anchors on whatever point count arrives
   if (latch_first_point) raw[0].x = x_min;
   if (latch_last_point && raw.length > 1) raw[raw.length - 1].x = x_max;
 
@@ -1023,7 +1088,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
   var closestDist = Infinity;
   var hitRadius = Math.max(12, handle_size * 2.0);
 
-  // Check existing handle click
   for (var i = 0; i < points.length; i++) {
     var pPos = valueToPixel(points[i], w, h);
     var dx = x - pPos.x;
@@ -1070,7 +1134,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
     return;
   }
 
-  // Check segment click
   var seg = findNearestSegment(x, y, w, h);
   if (seg !== -1) {
     if (curve_mode === 1 || option === 1) {
@@ -1106,7 +1169,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
     return;
   }
 
-  // Clicked on empty space: Add point
   var emptyClickVal = pixelToValue(x, y, w, h);
   var newPt = {
     x: clamp(emptyClickVal.x, x_min, x_max),
@@ -1176,35 +1238,29 @@ function onidle(x, y, button, cmd, shift, capslock, option, ctrl) {
 }
 
 // =============================================================
-// 11. 5-TIER POPUP WINDOW & DUAL-MODE SIZING MAPPER
+// 11. 3-CATEGORY CAROUSEL POPUP INSPECTOR
 // =============================================================
 function get_visible_rows_map() {
   if (!show_settings_attrs) return [];
   var list = [];
 
-  // Tier 1: Performance
-  if (mask_performance === 1) {
+  if (active_mask_tab === 0) {
+    // 1. Performance / Behavior
     list.push({ name: "Scale Mode", val: rescale_mode_names[rescale_mode], is_toggle: true, target_id: 109 });
     list.push({ name: "Curve Mode", val: curve_mode === 1 ? "Curve~" : "Line~", is_toggle: true, target_id: 101 });
     list.push({ name: "Latch First", val: latch_first_point ? "ON" : "OFF", is_toggle: true, target_id: 102 });
     list.push({ name: "Latch Last", val: latch_last_point ? "ON" : "OFF", is_toggle: true, target_id: 103 });
     list.push({ name: "Raw Out Mode", val: raw_output_mode ? "Continuous" : "On Bang", is_toggle: true, target_id: 104 });
+    list.push({ name: "Display Text", val: display_value ? "Always" : "Peek", is_toggle: true, target_id: 201 });
     list.push({ name: "X Min", val: x_min, is_ticker: true, key: "x_min", target_id: 105 });
     list.push({ name: "X Max", val: x_max, is_ticker: true, key: "x_max", target_id: 106 });
     list.push({ name: "Y Min", val: y_min, is_ticker: true, key: "y_min", target_id: 107 });
     list.push({ name: "Y Max", val: y_max, is_ticker: true, key: "y_max", target_id: 108 });
-  }
-
-  // Tier 2: Labels
-  if (mask_labels === 1) {
-    list.push({ name: "Display Text", val: display_value ? "Always" : "Peek", is_toggle: true, target_id: 201 });
+  } else if (active_mask_tab === 1) {
+    // 2. Geometry & Labels
     list.push({ name: "Label Style", val: label_mode_names[label_mode], is_toggle: true, target_id: 202 });
     list.push({ name: "Case Style", val: case_mode_names[case_mode], is_toggle: true, target_id: 203 });
     list.push({ name: "Font Style", val: font_style_names[font_style], is_toggle: true, target_id: 204 });
-  }
-
-  // Tier 3: Geometry & Axes
-  if (mask_geometry === 1) {
     list.push({ name: "Axis Graticule", val: axis_style_names[axis_style], is_toggle: true, target_id: 308 });
     list.push({ name: "Border Radius", val: border_radius.toFixed(1), pct: border_radius / 25.0, is_slider: true, target_id: 301 });
     list.push({ name: "Border Size", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 302 });
@@ -1213,21 +1269,15 @@ function get_visible_rows_map() {
     list.push({ name: "Handle Size", val: handle_size.toFixed(1), pct: (handle_size - 3.0) / 17.0, is_slider: true, target_id: 305 });
     list.push({ name: "Margin", val: track_margin, pct: (track_margin - 4) / 36.0, is_slider: true, target_id: 306 });
     list.push({ name: "Text Size", val: text_size, pct: (text_size - 6) / 36.0, is_slider: true, target_id: 307 });
-  }
-
-  // Tier 4: Envelope Colors
-  if (mask_colors === 1) {
-    list.push({ name: "Mode Color", val: mode_color, is_color: true, key: "mode_color" });
-    list.push({ name: "BG Color", val: bg_color, is_color: true, key: "bg_color" });
-    list.push({ name: "Border Color", val: border_color, is_color: true, key: "border_color" });
+  } else if (active_mask_tab === 2) {
+    // 3. Colors
     list.push({ name: "Line Color", val: range_color, is_color: true, key: "range_color" });
     list.push({ name: "Handle Color", val: handle_color, is_color: true, key: "handle_color" });
+    list.push({ name: "BG Color", val: bg_color, is_color: true, key: "bg_color" });
+    list.push({ name: "Border Color", val: border_color, is_color: true, key: "border_color" });
     list.push({ name: "Text Color", val: text_color, is_color: true, key: "text_color" });
+    list.push({ name: "Mode Color", val: mode_color, is_color: true, key: "mode_color" });
     list.push({ name: "Popup Dot", val: popup_dot_color, is_color: true, key: "popup_dot_color" });
-  }
-
-  // Tier 5: Popup Colors
-  if (mask_popup_colors === 1) {
     list.push({ name: "Popup BG", val: pop_bgcolor, is_color: true, key: "pop_bgcolor" });
     list.push({ name: "Attr BG", val: attr_bg_color, is_color: true, key: "attr_bg_color" });
     list.push({ name: "Attr Border", val: attr_border_color, is_color: true, key: "attr_border_color" });
@@ -1239,29 +1289,29 @@ function get_visible_rows_map() {
 }
 
 function get_popup_dimensions_map() {
-  var rows = get_visible_rows_map();
-  if (!show_settings_attrs || rows.length === 0) {
-    return { w: popup_mini_w, h: popup_mini_h };
+  if (!show_settings_attrs) {
+    return { w: popup_mini_w, h: popup_mini_h, rows_h: 0, nav_h: 0 };
   }
-  var calculated_h = 28 + 85 + 12 + rows.length * 28 + 14;
-  return { w: popup_window_width, h: calculated_h };
+  return { w: popup_window_width, h: popup_window_fixed_h, rows_h: 10 * 28, nav_h: 24 };
 }
 
 function update_popup_dimensions() {
   if (showSettings && allow_popup === 1) {
+    ensurePopupWindows();
     var dims = get_popup_dimensions_map();
     popupWindow.size = [dims.w, dims.h];
     popupWindow.title = "Touch Function Inspector";
+    outMatrix = recycleMatrix(outMatrix, dims.w, dims.h);
     popupWindow.visible = 1;
     popupWindow.front();
     draw_popup_to_window();
   } else {
-    popupWindow.visible = 0;
+    if (popupWindow) popupWindow.visible = 0;
   }
 }
 
 function draw_popup_to_window() {
-  if (!showSettings || allow_popup !== 1) return;
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
   if (render_pending === 0) {
     render_pending = 1;
     render_task.schedule(16);
@@ -1269,11 +1319,9 @@ function draw_popup_to_window() {
 }
 
 function draw_popup_to_window_deferred() {
-  if (!showSettings || allow_popup !== 1) return;
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
   var dims = get_popup_dimensions_map();
   var w = dims.w, h = dims.h;
-  var rows = get_visible_rows_map();
-  var has_rows = rows.length > 0;
 
   popupWindow.size = [w, h];
   outMatrix = recycleMatrix(outMatrix, w, h);
@@ -1282,6 +1330,9 @@ function draw_popup_to_window_deferred() {
   pCtx.set_source_rgba(pop_bgcolor);
   pCtx.rectangle(0, 0, w, h);
   pCtx.fill();
+
+  var rows = get_visible_rows_map();
+  var has_rows = rows.length > 0;
 
   // Red Close Dot & Label
   pCtx.set_source_rgba(0.85, 0.2, 0.2, 1.0);
@@ -1295,28 +1346,22 @@ function draw_popup_to_window_deferred() {
   pCtx.show_text("close");
 
   // Toggle Hide/Show Button Pill
-  var tglW = 44, tglH = 16;
-  var tglX = w - tglW - 12, tglY = 6;
-  var tglR = Math.max(2, Math.min(6, border_radius * 0.3));
-
+  var tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
   pCtx.set_source_rgba(attr_bg_color);
-  pCtx.rectangle_rounded(tglX, tglY, tglW, tglH, tglR, tglR);
+  pCtx.rectangle_rounded(tglX, tglY, tglW, tglH, 3, 3);
   pCtx.fill();
 
-  if (border_thickness > 0) {
-    pCtx.set_source_rgba(attr_border_color);
-    pCtx.set_line_width(Math.min(border_thickness, 1.0));
-    pCtx.rectangle_rounded(tglX + 0.5, tglY + 0.5, tglW - 1, tglH - 1, tglR, tglR);
-    pCtx.stroke();
-  }
+  pCtx.set_source_rgba(attr_border_color);
+  pCtx.set_line_width(1.0);
+  pCtx.rectangle_rounded(tglX + 0.5, tglY + 0.5, tglW - 1, tglH - 1, 3, 3);
+  pCtx.stroke();
 
   pCtx.select_font_face("Arial", "normal", "bold");
   pCtx.set_font_size(9);
   pCtx.set_source_rgba(attr_text_color);
   var tglLabel = show_settings_attrs ? "hide" : "show";
   var tglTm = pCtx.text_measure(tglLabel);
-  var tglTextX = tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5;
-  pCtx.move_to(tglTextX, tglY + 11.5);
+  pCtx.move_to(tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5, tglY + 11.5);
   pCtx.show_text(tglLabel);
 
   // PREVIEW CHASSIS
@@ -1332,7 +1377,7 @@ function draw_popup_to_window_deferred() {
   // XY Corner Drag Grip Mark (Mini mode only)
   if (!has_rows) {
     pCtx.new_path();
-    pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.6);
+    pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.6);
     pCtx.set_line_width(1.2);
     pCtx.move_to(w - 14, h - 4); pCtx.line_to(w - 4, h - 14);
     pCtx.move_to(w - 9, h - 4);  pCtx.line_to(w - 4, h - 9);
@@ -1340,15 +1385,57 @@ function draw_popup_to_window_deferred() {
     pCtx.stroke();
   }
 
-  // 50/50 ATTRIBUTE ROWS STACKED VERTICALLY
+  // Carousel & 50/50 Attribute Rows
   if (has_rows) {
     var divY = prevY + prevH + 8;
-    pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
+    pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
     pCtx.set_line_width(1.0);
     pCtx.move_to(10, divY); pCtx.line_to(w - 10, divY); pCtx.stroke();
 
-    var sY = divY + 8;
-    var rowX = 12, rowW = w - 24;
+    // Navigation Header Bar
+    var navY = divY + 6;
+    var navH = 22;
+    var navW = w - 24;
+    var navX = 12;
+
+    pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.85);
+    pCtx.rectangle_rounded(navX, navY, navW, navH, 3, 3);
+    pCtx.fill();
+
+    pCtx.set_source_rgba(attr_border_color);
+    pCtx.set_line_width(1.0);
+    pCtx.rectangle_rounded(navX + 0.5, navY + 0.5, navW - 1, navH - 1, 3, 3);
+    pCtx.stroke();
+
+    var btnW = 24;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(navX + 1, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.select_font_face("Arial", "normal", "bold");
+    pCtx.set_font_size(10);
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(navX + 9, navY + 15);
+    pCtx.show_text("<");
+
+    var rBtnX = navX + navW - btnW - 1;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(rBtnX, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(rBtnX + 9, navY + 15);
+    pCtx.show_text(">");
+
+    var tabTitle = mask_tab_names[active_mask_tab] || "Category";
+    var tabTm = pCtx.text_measure(tabTitle);
+    var tabTW = tabTm ? tabTm[0] : 60;
+    pCtx.set_source_rgba(mode_color);
+    pCtx.move_to(navX + (navW - tabTW) * 0.5, navY + 15);
+    pCtx.show_text(tabTitle);
+
+    // Rows
+    var rowsStartY = navY + navH + 8;
+    var rowW = w - 24;
+    var rowX = 12;
     var midX = rowX + rowW * 0.5;
     var valBoxX = midX + 4;
     var valBoxW = rowW * 0.5 - 8;
@@ -1356,7 +1443,7 @@ function draw_popup_to_window_deferred() {
     pCtx.select_font_face("Arial", "normal", "normal");
 
     for (var i = 0; i < rows.length; i++) {
-      var r = rows[i], rY = sY + i * 28;
+      var r = rows[i], rY = rowsStartY + i * 28;
 
       pCtx.set_source_rgba(attr_bg_color);
       pCtx.rectangle(rowX, rY, rowW, 26);
@@ -1369,11 +1456,11 @@ function draw_popup_to_window_deferred() {
       pCtx.show_text(r.name);
 
       // Center Divider Notch
-      pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
+      pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
       pCtx.set_line_width(1.0);
       pCtx.move_to(midX, rY + 3); pCtx.line_to(midX, rY + 23); pCtx.stroke();
 
-      // Right 50%: Value / Slider / Swatch / Ticker
+      // Right 50%: Control
       var vY = rY + 4, vH = 18;
 
       if (r.is_color) {
@@ -1411,7 +1498,7 @@ function draw_popup_to_window_deferred() {
 
         pCtx.set_source_rgba(attr_border_color);
         pCtx.set_line_width(1.0);
-        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.rectangle(valBoxX, vY, fillW, vH);
         pCtx.stroke();
 
         pCtx.set_source_rgba(attr_text_color);
@@ -1438,8 +1525,8 @@ function draw_popup_to_window_deferred() {
     }
   }
 
-  var img = new Image(pCtx);
-  img.tonamedmatrix(outMatrix.name);
+  var theImage = new Image(pCtx);
+  theImage.tonamedmatrix(outMatrix.name);
   popupWindow.jit_matrix(outMatrix.name);
 }
 
@@ -1495,8 +1582,9 @@ function applyPickerToTarget() {
 }
 
 function draw_color_picker_popup() {
+  ensurePopupWindows();
   var winW = 200, winH = 240;
-  colorMatrix = recycleMatrix(colorMatrix, winW, winH); // <-- Reuses buffer
+  colorMatrix = recycleMatrix(colorMatrix, winW, winH);
 
   var ctx = new MGraphics(winW, winH);
   ctx.set_source_rgba(0.11, 0.11, 0.13, 1.0);
@@ -1644,6 +1732,7 @@ function rebuild_ticker_value(digits_obj) {
 }
 
 function draw_ticker_matrix_popup() {
+  ensurePopupWindows();
   var winW = 230, winH = 200;
   tickerMatrix = recycleMatrix(tickerMatrix, winW, winH);
 
@@ -1800,7 +1889,7 @@ function tickerWindowListenerCallback(event) {
 }
 
 // =============================================================
-// 14. POPUP WINDOW LISTENER (SLIDER FIX & RESIZE ENGINE)
+// 14. POPUP WINDOW LISTENER & CAROUSEL INTERACTION
 // =============================================================
 function apply_slider_target(target_id, targetPct) {
   if (target_id === 301) set_border_radius(targetPct * 25.0);
@@ -1817,9 +1906,13 @@ function popup(v) {
   if (v === undefined) showSettings = !showSettings;
   else showSettings = (Number(v) > 0) ? 1 : 0;
 
-  if (showSettings) update_popup_dimensions();
-  else {
-    popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+  if (showSettings) {
+    ensurePopupWindows();
+    update_popup_dimensions();
+  } else {
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
   }
   mgraphics.redraw();
 }
@@ -1844,6 +1937,21 @@ function windowListenerCallback(event) {
     var has_rows = rows.length > 0;
     var pr = cached_preview_rect;
     var pMargin = Math.max(10, Math.min(18, Math.min(pr.w, pr.h) * 0.12));
+
+    var divY = pr.y + pr.h + 8;
+    var navY = divY + 6;
+    var navH = 22;
+    var navW = w - 24;
+    var navX = 12;
+    var btnW = 24;
+    var rBtnX = navX + navW - btnW - 1;
+
+    var rowsStartY = navY + navH + 8;
+    var rowW = w - 24;
+    var rowX = 12;
+    var midX = rowX + rowW * 0.5;
+    var valBoxX = midX + 4;
+    var valBoxW = rowW * 0.5 - 8;
 
     if (mbut === 0) {
       is_resizing_window = 0;
@@ -1888,7 +1996,7 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // Free XY Resizing (Mini mode only)
+    // Mini preview resizing
     if (is_resizing_window && !has_rows) {
       var deltaW = mx - start_click_x;
       var deltaH = my - start_click_y;
@@ -1898,7 +2006,6 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // Corner Grab Handle Hit Detection (Mini mode only)
     if (!has_rows && mx >= w - 18 && my >= h - 18) {
       is_resizing_window = 1;
       start_click_x = mx;
@@ -1908,16 +2015,18 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // Red Close Button Hit
+    // Close dot
     if (mbut && mx < 35 && my < 26) {
       showSettings = 0;
-      popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+      if (popupWindow) popupWindow.visible = 0;
+      if (colorWindow) colorWindow.visible = 0;
+      if (tickerWindow) tickerWindow.visible = 0;
       stop_scrolling();
       mgraphics.redraw();
       return;
     }
 
-    // Top-Right Toggle Pill Button Hit
+    // Toggle hide/show pill
     var tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
     if (is_pop_tap && mx >= tglX && mx <= tglX + tglW && my >= tglY && my <= tglY + tglH) {
       show_settings_attrs = show_settings_attrs ? 0 : 1;
@@ -1957,8 +2066,8 @@ function windowListenerCallback(event) {
     if (mbut && my >= pr.y && my <= prevMaxY && active_pop_target === -1) {
       if (mx >= pr.x && mx <= pr.x + pr.w) {
         active_pop_target = 50;
-        var local_x = mx - pr.x;
-        var local_y = my - pr.y;
+        var local_x2 = mx - pr.x;
+        var local_y2 = my - pr.y;
 
         popup_active_index = -1;
         popup_is_curving_segment = -1;
@@ -1970,8 +2079,8 @@ function windowListenerCallback(event) {
 
         for (var i = 0; i < points.length; i++) {
           var pPos = valueToPixel(points[i], pr.w, pr.h, pMargin);
-          var dx = local_x - pPos.x;
-          var dy = local_y - pPos.y;
+          var dx = local_x2 - pPos.x;
+          var dy = local_y2 - pPos.y;
           var dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < hitRadius && dist < closestDist) {
             closestDist = dist;
@@ -2006,7 +2115,7 @@ function windowListenerCallback(event) {
           popup_last_tap_time = now;
           popup_dragging = true;
 
-          var valPt2 = pixelToValue(local_x, local_y, pr.w, pr.h, pMargin);
+          var valPt2 = pixelToValue(local_x2, local_y2, pr.w, pr.h, pMargin);
           points[popup_active_index].x = get_clamped_handle_x(popup_active_index, valPt2.x);
           points[popup_active_index].y = clamp(valPt2.y, y_min, y_max);
           redraw_all();
@@ -2014,12 +2123,12 @@ function windowListenerCallback(event) {
           return;
         }
 
-        var seg = findNearestSegment(local_x, local_y, pr.w, pr.h, pMargin);
+        var seg = findNearestSegment(local_x2, local_y2, pr.w, pr.h, pMargin);
         if (seg !== -1) {
           if (curve_mode === 1 || option === 1) {
             popup_is_curving_segment = seg;
-            popup_curve_drag_start_x = local_x;
-            popup_curve_drag_start_y = local_y;
+            popup_curve_drag_start_x = local_x2;
+            popup_curve_drag_start_y = local_y2;
             popup_curve_drag_initial_val = points[seg].curve || 0.0;
             popup_segment_dragged = false;
             popup_pending_click_insert = (option !== 1);
@@ -2027,7 +2136,7 @@ function windowListenerCallback(event) {
             return;
           }
 
-          var clickVal = pixelToValue(local_x, local_y, pr.w, pr.h, pMargin);
+          var clickVal = pixelToValue(local_x2, local_y2, pr.w, pr.h, pMargin);
           var pLeft = points[seg - 1];
           var pRight = points[seg];
           var t = (clickVal.x - pLeft.x) / (pRight.x - pLeft.x);
@@ -2049,7 +2158,7 @@ function windowListenerCallback(event) {
           return;
         }
 
-        var emptyClickVal = pixelToValue(local_x, local_y, pr.w, pr.h, pMargin);
+        var emptyClickVal = pixelToValue(local_x2, local_y2, pr.w, pr.h, pMargin);
         var newPreviewPt = {
           x: clamp(emptyClickVal.x, x_min, x_max),
           y: clamp(emptyClickVal.y, y_min, y_max),
@@ -2075,65 +2184,76 @@ function windowListenerCallback(event) {
 
     if (!has_rows) return;
 
-    // 50/50 Attrui Rows Click & Drag
-    var sY = pr.y + pr.h + 16;
-    var rowW = w - 24;
-    var midX = 12 + rowW * 0.5;
-    var valBoxX = midX + 4;
-    var valBoxW = rowW * 0.5 - 8;
-
-    var rIdx = Math.floor((my - sY) / 28);
-    if (rIdx >= 0 && rIdx < rows.length) {
-      var r = rows[rIdx];
-      var pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
-
-      if (r.is_slider || r.pct !== undefined) {
-        active_pop_target = r.target_id;
-        apply_slider_target(r.target_id, pct);
-
-        stop_scrolling();
-        scrollTask = new Task(function () {
-          if (active_pop_target === -1) return;
-          var targetPct = clamp((lastMouseX - valBoxX) / valBoxW, 0, 1);
-          apply_slider_target(active_pop_target, targetPct);
-        }, this);
-        scrollTask.interval = 15;
-        scrollTask.repeat();
-      } else if (is_pop_tap) {
-        if (r.is_toggle) {
-          if (r.target_id === 109) set_rescale_mode(rescale_mode ? 0 : 1);
-          else if (r.target_id === 101) set_curve_mode(curve_mode ? 0 : 1);
-          else if (r.target_id === 102) set_latch_first_point(latch_first_point ? 0 : 1);
-          else if (r.target_id === 103) set_latch_last_point(latch_last_point ? 0 : 1);
-          else if (r.target_id === 104) set_raw_output_mode(raw_output_mode ? 0 : 1);
-          else if (r.target_id === 201) set_display_value(display_value ? 0 : 1);
-          else if (r.target_id === 202) set_label_mode((label_mode + 1) % 5);
-          else if (r.target_id === 203) set_case_mode((case_mode + 1) % 3);
-          else if (r.target_id === 204) set_font_style((font_style + 1) % 4);
-          else if (r.target_id === 308) set_axis_style((axis_style + 1) % 4);
-        } else if (r.is_ticker) {
-          active_ticker_target = r.key;
-          colorWindow.visible = 0;
-          if (popupWindow && popupWindow.pos) {
-            tickerWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + sY + rIdx * 28 + 14];
-          }
-          continuous_digit_floats = [];
-          tickerWindow.visible = 1;
-          tickerWindow.front();
-          draw_ticker_matrix_popup();
-        } else if (r.is_color) {
-          active_color_target = r.key;
-          tickerWindow.visible = 0;
-          initPickerFromTarget();
-          if (popupWindow && popupWindow.pos) {
-            colorWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + sY + rIdx * 28 + 14];
-          }
-          colorWindow.visible = 1;
-          colorWindow.front();
-          draw_color_picker_popup();
-        }
+    // Carousel Navigation Click Hit
+    if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
+      if (mx <= navX + btnW + 4) {
+        active_mask_tab = (active_mask_tab - 1 + 3) % 3;
+      } else if (mx >= rBtnX - 4) {
+        active_mask_tab = (active_mask_tab + 1) % 3;
+      } else {
+        active_mask_tab = (active_mask_tab + 1) % 3;
       }
       draw_popup_to_window();
+      return;
+    }
+
+    // 50/50 Attrui Rows Click & Drag
+    if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
+      var clickRow = Math.floor((my - rowsStartY) / 28);
+      if (clickRow >= 0 && clickRow < rows.length) {
+        var r = rows[clickRow];
+        var pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
+
+        if (r.is_slider || r.pct !== undefined) {
+          active_pop_target = r.target_id;
+          apply_slider_target(r.target_id, pct);
+
+          stop_scrolling();
+          scrollTask = new Task(function () {
+            if (active_pop_target === -1) return;
+            var targetPct = clamp((lastMouseX - valBoxX) / valBoxW, 0, 1);
+            apply_slider_target(active_pop_target, targetPct);
+          }, this);
+          scrollTask.interval = 15;
+          scrollTask.repeat();
+        } else if (is_pop_tap) {
+          if (r.is_toggle) {
+            if (r.target_id === 109) set_rescale_mode(rescale_mode ? 0 : 1);
+            else if (r.target_id === 101) set_curve_mode(curve_mode ? 0 : 1);
+            else if (r.target_id === 102) set_latch_first_point(latch_first_point ? 0 : 1);
+            else if (r.target_id === 103) set_latch_last_point(latch_last_point ? 0 : 1);
+            else if (r.target_id === 104) set_raw_output_mode(raw_output_mode ? 0 : 1);
+            else if (r.target_id === 201) set_display_value(display_value ? 0 : 1);
+            else if (r.target_id === 202) set_label_mode((label_mode + 1) % 5);
+            else if (r.target_id === 203) set_case_mode((case_mode + 1) % 3);
+            else if (r.target_id === 204) set_font_style((font_style + 1) % 4);
+            else if (r.target_id === 308) set_axis_style((axis_style + 1) % 4);
+          } else if (r.is_ticker) {
+            ensurePopupWindows();
+            active_ticker_target = r.key;
+            colorWindow.visible = 0;
+            if (popupWindow && popupWindow.pos) {
+              tickerWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + rowsStartY + clickRow * 28 + 40];
+            }
+            continuous_digit_floats = [];
+            tickerWindow.visible = 1;
+            tickerWindow.front();
+            draw_ticker_matrix_popup();
+          } else if (r.is_color) {
+            ensurePopupWindows();
+            active_color_target = r.key;
+            tickerWindow.visible = 0;
+            initPickerFromTarget();
+            if (popupWindow && popupWindow.pos) {
+              colorWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + rowsStartY + clickRow * 28 + 40];
+            }
+            colorWindow.visible = 1;
+            colorWindow.front();
+            draw_color_picker_popup();
+          }
+        }
+        draw_popup_to_window();
+      }
     }
   }
 }
@@ -2141,6 +2261,15 @@ function windowListenerCallback(event) {
 // =============================================================
 // 15. SAFE GETTERS & SETTERS
 // =============================================================
+function set_active_mask_tab(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) {
+    active_mask_tab = clamp(p, 0, 2);
+    if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
+  }
+}
+function get_active_mask_tab() { return active_mask_tab; }
+
 function set_rescale_mode(v) {
   var p = parseInt(v, 10);
   if (!isNaN(p)) {
@@ -2337,7 +2466,10 @@ function set_allow_popup(v) {
   var p = parseInt(v, 10);
   if (!isNaN(p)) allow_popup = p ? 1 : 0;
   if (!allow_popup && showSettings) {
-    showSettings = 0; popupWindow.visible = 0; colorWindow.visible = 0; tickerWindow.visible = 0;
+    showSettings = 0;
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
   }
   redraw_all();
 }
@@ -2393,41 +2525,6 @@ function get_attr_slider_color() { return attr_slider_color; }
 function set_attr_text_color() { attr_text_color = rgba_values(arguments, attr_text_color); redraw_all(); }
 function get_attr_text_color() { return attr_text_color; }
 
-function set_mask_performance(v) {
-  var p = parseInt(v, 10);
-  if (!isNaN(p)) mask_performance = p ? 1 : 0;
-  update_popup_dimensions();
-}
-function get_mask_performance() { return mask_performance; }
-
-function set_mask_labels(v) {
-  var p = parseInt(v, 10);
-  if (!isNaN(p)) mask_labels = p ? 1 : 0;
-  update_popup_dimensions();
-}
-function get_mask_labels() { return mask_labels; }
-
-function set_mask_geometry(v) {
-  var p = parseInt(v, 10);
-  if (!isNaN(p)) mask_geometry = p ? 1 : 0;
-  update_popup_dimensions();
-}
-function get_mask_geometry() { return mask_geometry; }
-
-function set_mask_colors(v) {
-  var p = parseInt(v, 10);
-  if (!isNaN(p)) mask_colors = p ? 1 : 0;
-  update_popup_dimensions();
-}
-function get_mask_colors() { return mask_colors; }
-
-function set_mask_popup_colors(v) {
-  var p = parseInt(v, 10);
-  if (!isNaN(p)) mask_popup_colors = p ? 1 : 0;
-  update_popup_dimensions();
-}
-function get_mask_popup_colors() { return mask_popup_colors; }
-
 function anything() {
   var args = arrayfromargs(arguments);
   var name = messagename.replace(/^set_?/, "").toLowerCase();
@@ -2457,6 +2554,7 @@ function anything() {
 // =============================================================
 // 16. MAX DECLAREATTRIBUTE CONFIGURATIONS
 // =============================================================
+declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry / Labels", "3. Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 1 });
 declareattribute("rescale_mode", { type: "int", style: "enumindex", enumvals: ["Clamp", "Rescale"], label: "Domain Scale Mode", setter: "set_rescale_mode", getter: "get_rescale_mode", category: "Envelope Behavior", embed: 1 });
 declareattribute("curve_mode", { type: "int", style: "onoff", label: "Curve Mode (curve~)", setter: "set_curve_mode", getter: "get_curve_mode", category: "Envelope Behavior", embed: 1 });
 declareattribute("latch_first_point", { type: "int", style: "onoff", label: "Latch First Point", setter: "set_latch_first_point", getter: "get_latch_first_point", category: "Envelope Behavior", embed: 1 });
@@ -2482,13 +2580,9 @@ declareattribute("line_size", { type: "float", label: "Line Size", setter: "set_
 declareattribute("handle_size", { type: "float", label: "Handle Size", setter: "set_handle_size", getter: "get_handle_size", category: "Geometry", embed: 1 });
 declareattribute("track_margin", { type: "int", label: "Track Margin", setter: "set_track_margin", getter: "get_track_margin", category: "Geometry", embed: 1 });
 
-declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Popup", setter: "set_allow_popup", getter: "get_allow_popup", category: "Popup Masks", embed: 1 });
-declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", setter: "set_show_settings_attrs", getter: "get_show_settings_attrs", category: "Popup Masks", embed: 1 });
-declareattribute("mask_performance", { type: "int", style: "onoff", label: "1. Show Performance", setter: "set_mask_performance", getter: "get_mask_performance", category: "Popup Masks", embed: 1 });
-declareattribute("mask_labels", { type: "int", style: "onoff", label: "2. Show Labels", setter: "set_mask_labels", getter: "get_mask_labels", category: "Popup Masks", embed: 1 });
-declareattribute("mask_geometry", { type: "int", style: "onoff", label: "3. Show Geometry", setter: "set_mask_geometry", getter: "get_mask_geometry", category: "Popup Masks", embed: 1 });
-declareattribute("mask_colors", { type: "int", style: "onoff", label: "4. Show Colors", setter: "set_mask_colors", getter: "get_mask_colors", category: "Popup Masks", embed: 1 });
-declareattribute("mask_popup_colors", { type: "int", style: "onoff", label: "5. Show Popup Colors", setter: "set_mask_popup_colors", getter: "get_mask_popup_colors", category: "Popup Masks", embed: 1 });
+declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Popup", setter: "set_allow_popup", getter: "get_allow_popup", category: "Popup", embed: 1 });
+declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", setter: "set_show_settings_attrs", getter: "get_show_settings_attrs", category: "Popup", embed: 1 });
+declareattribute("popup_mini_size", { type: "float", size: 2, label: "Mini Size (W H)", setter: "set_popup_mini_size", getter: "get_popup_mini_size", category: "Popup", embed: 1 });
 
 declareattribute("bg_color", { type: "rgba", style: "rgba", label: "Background Color", setter: "set_bg_color", getter: "get_bg_color", category: "Envelope Colors", embed: 1 });
 declareattribute("border_color", { type: "rgba", style: "rgba", label: "Border Color", setter: "set_border_color", getter: "get_border_color", category: "Envelope Colors", embed: 1 });
@@ -2591,6 +2685,7 @@ if (themeBus && themeBus.theme && (themeBus.theme.bg_color || themeBus.theme.bor
 // 18. PERSISTENCE (SAVE) & LIFECYCLE DESTRUCTION
 // =============================================================
 function save() {
+  embedmessage("set_active_mask_tab", active_mask_tab);
   embedmessage("set_rescale_mode", rescale_mode);
   embedmessage("set_curve_mode", curve_mode);
   embedmessage("set_latch_first_point", latch_first_point);
@@ -2620,12 +2715,6 @@ function save() {
   embedmessage("set_show_settings_attrs", show_settings_attrs);
   embedmessage("set_popup_mini_size", popup_mini_w, popup_mini_h);
 
-  embedmessage("set_mask_performance", mask_performance);
-  embedmessage("set_mask_labels", mask_labels);
-  embedmessage("set_mask_geometry", mask_geometry);
-  embedmessage("set_mask_colors", mask_colors);
-  embedmessage("set_mask_popup_colors", mask_popup_colors);
-
   embedmessage("set_bg_color", bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
   embedmessage("set_border_color", border_color[0], border_color[1], border_color[2], border_color[3]);
   embedmessage("set_range_color", range_color[0], range_color[1], range_color[2], range_color[3]);
@@ -2636,7 +2725,7 @@ function save() {
 
   embedmessage("set_pop_bgcolor", pop_bgcolor[0], pop_bgcolor[1], pop_bgcolor[2], pop_bgcolor[3]);
   embedmessage("set_attr_bg_color", attr_bg_color[0], attr_bg_color[1], attr_bg_color[2], attr_bg_color[3]);
-  embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], attr_border_color[2], attr_border_color[3]);
+  embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], border_color[2], attr_border_color[3]);
   embedmessage("set_attr_slider_color", attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], attr_slider_color[3]);
   embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
 
@@ -2688,8 +2777,3 @@ function notifydeleted() {
   colorMatrix = null;
   tickerMatrix = null;
 }
-
-// Attach Jitter Listeners
-windowListener = new JitterListener(popupWindow.name, windowListenerCallback);
-colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
-tickerListener = new JitterListener(tickerWindow.name, tickerWindowListenerCallback);

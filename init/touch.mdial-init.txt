@@ -1,0 +1,2 @@
+
+max define touch.mdial v8ui @filename touch.mdial.js;

@@ -9,11 +9,128 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 312.0, 197.0, 1000.0, 780.0 ],
+        "rect": [ 360.0, 303.0, 1000.0, 780.0 ],
         "openinpresentation": 1,
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
+            {
+                "box": {
+                    "border": 0,
+                    "embedstate": [
+                        [ "set_active_mask_tab", 1 ],
+                        [ "set_borders", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_dial_style", 0 ],
+                        [ "set_ribbon_fill", 1 ],
+                        [ "set_rotary_mode", 0 ],
+                        [ "set_mode", 0 ],
+                        [ "set_mouse_mode", 1 ],
+                        [ "set_min_val", 0 ],
+                        [ "set_max_val", 1 ],
+                        [ "set_decimal_digits", 2 ],
+                        [ "set_integer_digits", 1 ],
+                        [ "set_leading_zeros", 0 ],
+                        [ "set_step_amount", 0.05 ],
+                        [ "set_step_speed_ms", 20 ],
+                        [ "set_curve_exponent", 0.35 ],
+                        [ "set_slider_speed", 1 ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_label_text", "dial" ],
+                        [ "set_track_breadth", 4 ],
+                        [ "set_handle_size", 5 ],
+                        [ "set_needle_thickness", 2 ],
+                        [ "set_dial_margin", 0.8333333333333333 ],
+                        [ "set_font_name", "Arial" ],
+                        [ "set_font_size", 9 ],
+                        [ "set_font_style", 0 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 190, 190 ],
+                        [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
+                        [ "set_track_color", 0, 0, 0, 0.75 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
+                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.8420289855072465, 1 ],
+                        [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
+                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "msg_float", 0.05 ],
+                        [ "set_unit_mode", 0 ],
+                        [ "active_mask_tab", 1 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
+                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_radius", 0 ],
+                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "borders", 0 ],
+                        [ "case_mode", 0 ],
+                        [ "curve_exponent", 0.35 ],
+                        [ "decimal_digits", 2 ],
+                        [ "dial_margin", 0.8333333333333333 ],
+                        [ "font_name", "Arial" ],
+                        [ "font_size", 9 ],
+                        [ "font_style", 0 ],
+                        [ "handle_color", 1, 1, 1, 1 ],
+                        [ "handle_size", 5 ],
+                        [ "integer_digits", 1 ],
+                        [ "label_mode", 0 ],
+                        [ "label_text", "dial" ],
+                        [ "leading_zeros", 0 ],
+                        [ "max_val", 1 ],
+                        [ "min_val", 0 ],
+                        [ "mode", 0 ],
+                        [ "mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
+                        [ "mouse_mode", 1 ],
+                        [ "needle_thickness", 2 ],
+                        [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "popup_mini_size", 190, 190 ],
+                        [ "ribbon_fill", 1 ],
+                        [ "rotary_mode", 0 ],
+                        [ "show_background", 0 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "slider_speed", 1 ],
+                        [ "step_amount", 0.05 ],
+                        [ "step_speed_ms", 20 ],
+                        [ "style", 0 ],
+                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "track_breadth", 4 ],
+                        [ "track_color", 0, 0, 0, 0.75 ],
+                        [ "unit_mode", 0 ]
+                    ],
+                    "filename": "touch.rdial.js",
+                    "id": "obj-13",
+                    "maxclass": "v8ui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 199.0, 88.0, 64.0, 64.0 ],
+                    "presentation": 1,
+                    "presentation_rect": [ 0.0, 0.0, 44.0, 42.0 ],
+                    "textfile": {
+                        "filename": "touch.rdial.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    },
+                    "varname": "rdial~"
+                }
+            },
             {
                 "box": {
                     "id": "obj-19",
@@ -38,26 +155,9 @@
             },
             {
                 "box": {
-                    "id": "obj-7",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 3,
-                    "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 244.0, 37.0, 82.0, 23.0 ],
-                    "restore": [ 50.796451268506345 ],
-                    "saved_object_attributes": {
-                        "parameter_enable": 0,
-                        "parameter_mappable": 0
-                    },
-                    "text": "pattr dial_val",
-                    "varname": "dial_val"
-                }
-            },
-            {
-                "box": {
                     "comment": "",
                     "id": "obj-12",
-                    "index": 2,
+                    "index": 0,
                     "maxclass": "inlet",
                     "numinlets": 0,
                     "numoutlets": 1,
@@ -91,7 +191,7 @@
                 "box": {
                     "comment": "",
                     "id": "obj-5",
-                    "index": 1,
+                    "index": 0,
                     "maxclass": "outlet",
                     "numinlets": 1,
                     "numoutlets": 0,
@@ -102,7 +202,7 @@
                 "box": {
                     "comment": "",
                     "id": "obj-4",
-                    "index": 1,
+                    "index": 0,
                     "maxclass": "inlet",
                     "numinlets": 0,
                     "numoutlets": 1,
@@ -120,86 +220,9 @@
                     "patching_rect": [ 120.0, 325.0, 41.0, 23.0 ],
                     "text": "mc.*~"
                 }
-            },
-            {
-                "box": {
-                    "border": 0,
-                    "embedstate": [
-                        [ "set_active_mask_tab", 0 ],
-                        [ "set_borders", 0 ],
-                        [ "set_show_background", 0 ],
-                        [ "set_border_radius", 7.303370786516854 ],
-                        [ "set_border_thickness", 1.6123595505617978 ],
-                        [ "set_border_extension", 4.943820224719101 ],
-                        [ "set_dial_style", 0 ],
-                        [ "set_ribbon_fill", 0 ],
-                        [ "set_rotary_mode", 0 ],
-                        [ "set_mode", 0 ],
-                        [ "set_mouse_mode", 0 ],
-                        [ "set_min_val", 0 ],
-                        [ "set_max_val", 100 ],
-                        [ "set_decimal_digits", 0 ],
-                        [ "set_integer_digits", 3 ],
-                        [ "set_leading_zeros", 0 ],
-                        [ "set_step_amount", 0.05 ],
-                        [ "set_step_speed_ms", 20 ],
-                        [ "set_curve_exponent", 0.35 ],
-                        [ "set_slider_speed", 1 ],
-                        [ "set_label_mode", 0 ],
-                        [ "set_case_mode", 0 ],
-                        [ "set_label_text", "Gain" ],
-                        [ "set_track_breadth", 4 ],
-                        [ "set_handle_size", 5 ],
-                        [ "set_needle_thickness", 2 ],
-                        [ "set_dial_margin", 4 ],
-                        [ "set_font_name", "Arial" ],
-                        [ "set_font_size", 11 ],
-                        [ "set_font_style", 0 ],
-                        [ "set_allow_popup", 1 ],
-                        [ "set_show_settings_attrs", 1 ],
-                        [ "set_popup_mini_size", 190, 190 ],
-                        [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 0 ],
-                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
-                        [ "set_handle_color", 1, 1, 1, 1 ],
-                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.85, 0.85, 0.9, 1 ],
-                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.1298550724637681, 0.2683671497584541, 0.27826086956521734, 1 ],
-                        [ "set_attr_bg_color", 0.281256038647343, 0.7130434782608696, 0.684257648953301, 0.4888888888888889 ],
-                        [ "set_attr_border_color", 0.77, 0.77, 0.8608695652173913, 1 ],
-                        [ "set_attr_slider_color", 0.5911111111111111, 0.8, 0.7860740740740741, 0.4722222222222222 ],
-                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 50.796451268506345 ],
-                        [ "set_unit_mode", 1 ]
-                    ],
-                    "filename": "touch.rdial.js",
-                    "id": "obj-1",
-                    "maxclass": "v8ui",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 199.0, 88.0, 64.0, 64.0 ],
-                    "presentation": 1,
-                    "presentation_rect": [ 1.0, 1.0, 64.0, 64.0 ],
-                    "textfile": {
-                        "filename": "touch.rdial.js",
-                        "flags": 0,
-                        "embed": 0,
-                        "autowatch": 1
-                    },
-                    "varname": "v8ui"
-                }
             }
         ],
         "lines": [
-            {
-                "patchline": {
-                    "destination": [ "obj-18", 0 ],
-                    "source": [ "obj-1", 0 ]
-                }
-            },
             {
                 "patchline": {
                     "destination": [ "obj-11", 0 ],
@@ -214,8 +237,14 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-1", 0 ],
+                    "destination": [ "obj-13", 0 ],
                     "source": [ "obj-12", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-18", 0 ],
+                    "source": [ "obj-13", 0 ]
                 }
             },
             {
@@ -241,14 +270,9 @@
                     "destination": [ "obj-3", 0 ],
                     "source": [ "obj-4", 0 ]
                 }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-1", 0 ],
-                    "source": [ "obj-7", 1 ]
-                }
             }
         ],
+        "autosave": 0,
         "accentcolor": [ 0.0, 0.0, 0.0, 1.0 ],
         "patchlinecolor": [ 0.933333333333333, 0.964705882352941, 0.219607843137255, 1.0 ]
     }

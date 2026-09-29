@@ -9,20 +9,270 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 212.0, 323.0, 1482.0, 918.0 ],
+        "rect": [ 100.0, 100.0, 1482.0, 918.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
             {
                 "box": {
                     "bubble": 1,
-                    "id": "obj-6",
-                    "linecount": 5,
+                    "id": "obj-52",
+                    "linecount": 2,
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 1147.0, 205.0, 123.0, 82.0 ],
-                    "text": "remove scripting name is the best way to avoid accidental object saving"
+                    "patching_rect": [ 409.5000014305115, 560.0, 117.0, 39.0 ],
+                    "text": "no scripting name"
+                }
+            },
+            {
+                "box": {
+                    "embedstate": [
+                        [ "set_active_mask_tab", 0 ],
+                        [ "set_borders", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_dial_style", 0 ],
+                        [ "set_ribbon_fill", 1 ],
+                        [ "set_rotary_mode", 0 ],
+                        [ "set_mode", 0 ],
+                        [ "set_mouse_mode", 1 ],
+                        [ "set_min_val", 0 ],
+                        [ "set_max_val", 1 ],
+                        [ "set_decimal_digits", 2 ],
+                        [ "set_integer_digits", 1 ],
+                        [ "set_leading_zeros", 0 ],
+                        [ "set_step_amount", 0.05 ],
+                        [ "set_step_speed_ms", 20 ],
+                        [ "set_curve_exponent", 0.35 ],
+                        [ "set_slider_speed", 1 ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_label_text", "dial" ],
+                        [ "set_track_breadth", 4 ],
+                        [ "set_handle_size", 5 ],
+                        [ "set_needle_thickness", 2 ],
+                        [ "set_dial_margin", 4 ],
+                        [ "set_font_name", "Arial" ],
+                        [ "set_font_size", 9 ],
+                        [ "set_font_style", 0 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 190, 190 ],
+                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "set_border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
+                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "set_attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
+                        [ "set_attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
+                        [ "set_attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "msg_float", 0 ],
+                        [ "set_unit_mode", 0 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
+                        [ "attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
+                        [ "attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_radius", 0 ],
+                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "borders", 0 ],
+                        [ "case_mode", 0 ],
+                        [ "curve_exponent", 0.35 ],
+                        [ "decimal_digits", 2 ],
+                        [ "dial_margin", 4 ],
+                        [ "font_name", "Arial" ],
+                        [ "font_size", 9 ],
+                        [ "font_style", 0 ],
+                        [ "handle_color", 1, 1, 1, 1 ],
+                        [ "handle_size", 5 ],
+                        [ "integer_digits", 1 ],
+                        [ "label_mode", 0 ],
+                        [ "label_text", "dial" ],
+                        [ "leading_zeros", 0 ],
+                        [ "max_val", 1 ],
+                        [ "min_val", 0 ],
+                        [ "mode", 0 ],
+                        [ "mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "mouse_mode", 1 ],
+                        [ "needle_thickness", 2 ],
+                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "popup_mini_size", 190, 190 ],
+                        [ "ribbon_fill", 1 ],
+                        [ "rotary_mode", 0 ],
+                        [ "show_background", 0 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "slider_speed", 1 ],
+                        [ "step_amount", 0.05 ],
+                        [ "step_speed_ms", 20 ],
+                        [ "style", 0 ],
+                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "track_breadth", 4 ],
+                        [ "track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "unit_mode", 0 ]
+                    ],
+                    "filename": "touch.rdial.js",
+                    "id": "obj-51",
+                    "maxclass": "v8ui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 327.5, 553.0, 64.0, 64.0 ],
+                    "textfile": {
+                        "filename": "touch.rdial.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    }
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "bubbleside": 3,
+                    "id": "obj-45",
+                    "linecount": 2,
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 115.0, 560.0, 117.0, 39.0 ],
+                    "text": "scripting name = this_dial"
+                }
+            },
+            {
+                "box": {
+                    "bubble": 1,
+                    "bubbleside": 0,
+                    "id": "obj-44",
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 221.0, 422.0, 117.0, 40.0 ],
+                    "text": "see storage pallet"
+                }
+            },
+            {
+                "box": {
+                    "embedstate": [
+                        [ "set_active_mask_tab", 0 ],
+                        [ "set_borders", 0 ],
+                        [ "set_show_background", 0 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_dial_style", 0 ],
+                        [ "set_ribbon_fill", 1 ],
+                        [ "set_rotary_mode", 0 ],
+                        [ "set_mode", 0 ],
+                        [ "set_mouse_mode", 0 ],
+                        [ "set_min_val", 0 ],
+                        [ "set_max_val", 1 ],
+                        [ "set_decimal_digits", 2 ],
+                        [ "set_integer_digits", 1 ],
+                        [ "set_leading_zeros", 0 ],
+                        [ "set_step_amount", 0.05 ],
+                        [ "set_step_speed_ms", 20 ],
+                        [ "set_curve_exponent", 0.35 ],
+                        [ "set_slider_speed", 1 ],
+                        [ "set_label_mode", 0 ],
+                        [ "set_case_mode", 0 ],
+                        [ "set_label_text", "dial" ],
+                        [ "set_track_breadth", 4 ],
+                        [ "set_handle_size", 5 ],
+                        [ "set_needle_thickness", 2 ],
+                        [ "set_dial_margin", 4 ],
+                        [ "set_font_name", "Arial" ],
+                        [ "set_font_size", 9 ],
+                        [ "set_font_style", 0 ],
+                        [ "set_allow_popup", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 190, 190 ],
+                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "set_border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "set_handle_color", 1, 1, 1, 1 ],
+                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "set_mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
+                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "set_attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
+                        [ "set_attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
+                        [ "set_attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "msg_float", 0.8765070762709539 ],
+                        [ "set_unit_mode", 0 ],
+                        [ "allow_popup", 1 ],
+                        [ "attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
+                        [ "attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
+                        [ "attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
+                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
+                        [ "border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_radius", 0 ],
+                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "borders", 0 ],
+                        [ "case_mode", 0 ],
+                        [ "curve_exponent", 0.35 ],
+                        [ "decimal_digits", 2 ],
+                        [ "dial_margin", 4 ],
+                        [ "font_name", "Arial" ],
+                        [ "font_size", 9 ],
+                        [ "font_style", 0 ],
+                        [ "handle_color", 1, 1, 1, 1 ],
+                        [ "handle_size", 5 ],
+                        [ "integer_digits", 1 ],
+                        [ "label_mode", 0 ],
+                        [ "label_text", "dial" ],
+                        [ "leading_zeros", 0 ],
+                        [ "max_val", 1 ],
+                        [ "min_val", 0 ],
+                        [ "mode", 0 ],
+                        [ "mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "mouse_mode", 0 ],
+                        [ "needle_thickness", 2 ],
+                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
+                        [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "popup_mini_size", 190, 190 ],
+                        [ "ribbon_fill", 1 ],
+                        [ "rotary_mode", 0 ],
+                        [ "show_background", 0 ],
+                        [ "show_settings_attrs", 1 ],
+                        [ "slider_speed", 1 ],
+                        [ "step_amount", 0.05 ],
+                        [ "step_speed_ms", 20 ],
+                        [ "style", 0 ],
+                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
+                        [ "track_breadth", 4 ],
+                        [ "track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
+                        [ "unit_mode", 0 ]
+                    ],
+                    "filename": "touch.rdial.js",
+                    "id": "obj-3",
+                    "maxclass": "v8ui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 247.5, 553.0, 64.0, 64.0 ],
+                    "textfile": {
+                        "filename": "touch.rdial.js",
+                        "flags": 0,
+                        "embed": 0,
+                        "autowatch": 1
+                    },
+                    "varname": "this_dial"
                 }
             },
             {
@@ -33,7 +283,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 981.833333333333, 364.5833194255829, 117.0, 40.0 ],
+                    "patching_rect": [ 932.0, 356.5, 117.0, 40.0 ],
                     "text": "rename main slots "
                 }
             },
@@ -66,7 +316,7 @@
                     "numinlets": 1,
                     "numoutlets": 2,
                     "outlettype": [ "bang", "" ],
-                    "patching_rect": [ 940.0, 277.0, 33.0, 23.0 ],
+                    "patching_rect": [ 902.0, 229.0, 33.0, 23.0 ],
                     "text": "t b s"
                 }
             },
@@ -77,7 +327,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "int" ],
-                    "patching_rect": [ 1078.0, 277.0, 29.5, 23.0 ],
+                    "patching_rect": [ 1040.0, 229.0, 29.5, 23.0 ],
                     "text": "+ 1"
                 }
             },
@@ -88,8 +338,8 @@
                     "numinlets": 3,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 940.0, 325.0, 157.0, 23.0 ],
-                    "text": "pack rename_slot_save s i"
+                    "patching_rect": [ 902.0, 277.0, 125.0, 23.0 ],
+                    "text": "pack rename_slot s i"
                 }
             },
             {
@@ -99,7 +349,7 @@
                     "numinlets": 2,
                     "numoutlets": 2,
                     "outlettype": [ "", "" ],
-                    "patching_rect": [ 940.0, 241.5, 63.0, 23.0 ],
+                    "patching_rect": [ 902.0, 194.0, 63.0, 23.0 ],
                     "text": "route text"
                 }
             },
@@ -111,8 +361,8 @@
                     "numoutlets": 4,
                     "outlettype": [ "", "int", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 940.0, 186.5, 100.0, 50.0 ],
-                    "text": "woo"
+                    "patching_rect": [ 902.0, 139.0, 100.0, 50.0 ],
+                    "text": "wood  "
                 }
             },
             {
@@ -182,7 +432,7 @@
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "prefix", "Slot Number" ],
-                        [ "selected", 3 ],
+                        [ "selected", 1 ],
                         [ "show_arrow", 1 ],
                         [ "show_markers", 1 ],
                         [ "show_settings_attrs", 1 ],
@@ -196,13 +446,14 @@
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 1041.5, 241.0, 92.0, 24.0 ],
+                    "patching_rect": [ 1004.0, 193.0, 92.0, 24.0 ],
                     "textfile": {
                         "filename": "touch.ummanu.js",
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
-                    }
+                    },
+                    "varname": "v8ui_AC"
                 }
             },
             {
@@ -300,7 +551,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 783.0, 785.0, 181.0, 30.0 ],
+                    "patching_rect": [ 239.0, 733.0, 167.0, 38.0 ],
                     "textfile": {
                         "filename": "touch.numticker.js",
                         "flags": 0,
@@ -308,19 +559,6 @@
                         "autowatch": 1
                     },
                     "varname": "v8ui_AA"
-                }
-            },
-            {
-                "box": {
-                    "bubble": 1,
-                    "bubbleside": 3,
-                    "id": "obj-31",
-                    "linecount": 2,
-                    "maxclass": "comment",
-                    "numinlets": 1,
-                    "numoutlets": 0,
-                    "patching_rect": [ 22.0, 462.0, 144.0, 39.0 ],
-                    "text": "This patch needs autopattr to work!"
                 }
             },
             {
@@ -350,53 +588,8 @@
             },
             {
                 "box": {
-                    "id": "obj-29",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 3,
-                    "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 660.0, 665.0, 103.0, 23.0 ],
-                    "restore": [ 0 ],
-                    "saved_object_attributes": {
-                        "parameter_enable": 0,
-                        "parameter_mappable": 0
-                    },
-                    "text": "pattr this_toggle",
-                    "varname": "this_toggle"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-28",
-                    "maxclass": "toggle",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "int" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 702.0, 726.0, 24.0, 24.0 ],
-                    "varname": "toggle[1]"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-27",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 3,
-                    "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 481.0, 675.0, 104.0, 23.0 ],
-                    "restore": [ 0, 0, 1 ],
-                    "saved_object_attributes": {
-                        "parameter_enable": 0,
-                        "parameter_mappable": 0
-                    },
-                    "text": "pattr this_button",
-                    "varname": "this_button"
-                }
-            },
-            {
-                "box": {
                     "embedstate": [
+                        [ "set_active_mask_tab", 2 ],
                         [ "set_count", 3 ],
                         [ "set_direction", 0 ],
                         [ "set_group_mode", 0 ],
@@ -415,12 +608,6 @@
                         [ "set_allow_popup", 1 ],
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 270, 90 ],
-                        [ "set_mask_performance", 1 ],
-                        [ "set_mask_labels", 1 ],
-                        [ "set_mask_geometry", 1 ],
-                        [ "set_mask_colors", 1 ],
-                        [ "set_mask_popup_colors", 1 ],
-                        [ "set_text_color_mode", 1 ],
                         [ "set_btn_color_off", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
                         [ "set_btn_color_on", 1, 0.6880000000000001, 0.21999999999999997, 0.5666666666666667 ],
                         [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
@@ -431,7 +618,8 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set", 0, 0, 1 ],
+                        [ "set", 0, 1, 0 ],
+                        [ "active_mask_tab", 2 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -452,14 +640,10 @@
                         [ "group_mode", 0 ],
                         [ "label_mode", 0 ],
                         [ "labels", "Touch/Hold bob joe" ],
-                        [ "mask_colors", 1 ],
-                        [ "mask_geometry", 1 ],
-                        [ "mask_labels", 1 ],
-                        [ "mask_performance", 1 ],
-                        [ "mask_popup_colors", 1 ],
                         [ "modes", "1 1 1" ],
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "popup_mini_size", 270, 90 ],
                         [ "show_settings_attrs", 1 ],
                         [ "text_color", 0.92, 0.94, 0.98, 1 ],
                         [ "text_color_mode", 1 ],
@@ -469,17 +653,17 @@
                     "id": "obj-23",
                     "maxclass": "v8ui",
                     "numinlets": 1,
-                    "numoutlets": 2,
-                    "outlettype": [ "", "" ],
+                    "numoutlets": 3,
+                    "outlettype": [ "", "", "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 524.0, 721.0, 118.0, 35.0 ],
+                    "patching_rect": [ 459.0, 669.0, 118.0, 35.0 ],
                     "textfile": {
                         "filename": "touch.mbutton.js",
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
                     },
-                    "varname": "v8ui"
+                    "varname": "button"
                 }
             },
             {
@@ -524,7 +708,7 @@
                     "outlettype": [ "", "int", "", "" ],
                     "parameter_enable": 0,
                     "patching_rect": [ 328.0, 74.83333539962769, 100.0, 50.0 ],
-                    "text": "willy"
+                    "text": "week"
                 }
             },
             {
@@ -535,8 +719,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 713.0, 212.0, 144.0, 111.0 ],
-                    "presentation_linecount": 7,
+                    "patching_rect": [ 685.0, 226.5, 144.0, 111.0 ],
                     "text": "Once in the storage menu, click + to add slots, - to remiove slots, save to arm , then select any prename to save store the presets"
                 }
             },
@@ -554,20 +737,6 @@
             },
             {
                 "box": {
-                    "bubble": 1,
-                    "bubbleside": 3,
-                    "id": "obj-15",
-                    "linecount": 4,
-                    "maxclass": "comment",
-                    "numinlets": 1,
-                    "numoutlets": 0,
-                    "patching_rect": [ 708.5, 76.08333039283752, 153.0, 68.0 ],
-                    "presentation_linecount": 4,
-                    "text": "dont need these antmore - everything is built in to touch.status"
-                }
-            },
-            {
-                "box": {
                     "fontsize": 16.0,
                     "id": "obj-14",
                     "maxclass": "comment",
@@ -575,127 +744,6 @@
                     "numoutlets": 0,
                     "patching_rect": [ 30.0, 25.0, 174.0, 26.0 ],
                     "text": "touch.status.maxhelp"
-                }
-            },
-            {
-                "box": {
-                    "bubble": 1,
-                    "id": "obj-12",
-                    "linecount": 2,
-                    "maxclass": "comment",
-                    "numinlets": 1,
-                    "numoutlets": 0,
-                    "patching_rect": [ 269.0, 665.0, 150.0, 39.0 ],
-                    "text": "use pattr with max objects"
-                }
-            },
-            {
-                "box": {
-                    "bubble": 1,
-                    "id": "obj-18",
-                    "maxclass": "comment",
-                    "numinlets": 1,
-                    "numoutlets": 0,
-                    "patching_rect": [ 550.0, 787.5, 150.0, 25.0 ],
-                    "text": "no scripting name"
-                }
-            },
-            {
-                "box": {
-                    "format": 6,
-                    "id": "obj-16",
-                    "maxclass": "flonum",
-                    "numinlets": 1,
-                    "numoutlets": 2,
-                    "outlettype": [ "", "bang" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 485.0, 788.5, 50.0, 23.0 ]
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-13",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 3,
-                    "outlettype": [ "", "", "" ],
-                    "patching_rect": [ 177.0, 673.0, 82.0, 23.0 ],
-                    "restore": [ 0 ],
-                    "saved_object_attributes": {
-                        "parameter_enable": 0,
-                        "parameter_mappable": 0
-                    },
-                    "text": "pattr t_oggle",
-                    "varname": "t_oggle"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-11",
-                    "maxclass": "toggle",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "int" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 208.0, 721.0, 24.0, 24.0 ],
-                    "varname": "toggle"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-4",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "bang" ],
-                    "patching_rect": [ 1164.7499825954437, 53.12499797344208, 61.0, 23.0 ],
-                    "text": "loadbang"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-5",
-                    "linecount": 4,
-                    "maxclass": "message",
-                    "numinlets": 2,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "patching_rect": [ 1164.7499825954437, 77.08333039283752, 217.0, 66.0 ],
-                    "text": "write \"Macintosh HD:/Users/wilpertz/Documents/Max 9/Packages/touch.objects/states/honey_chicken.json\""
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-49",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "bang" ],
-                    "patching_rect": [ 889.7499930858612, 53.12499797344208, 61.0, 23.0 ],
-                    "text": "loadbang"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-59",
-                    "linecount": 4,
-                    "maxclass": "message",
-                    "numinlets": 2,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "patching_rect": [ 889.7499930858612, 77.08333039283752, 226.0, 66.0 ],
-                    "text": "read \"Macintosh HD:/Users/wilpertz/Documents/Max 9/Packages/touch.objects/misc/honey_chicken.json\""
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-3",
-                    "maxclass": "number",
-                    "numinlets": 1,
-                    "numoutlets": 2,
-                    "outlettype": [ "", "bang" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 205.0, 427.0, 50.0, 23.0 ]
                 }
             },
             {
@@ -712,6 +760,7 @@
             {
                 "box": {
                     "embedstate": [
+                        [ "set_active_mask_tab", 2 ],
                         [ "set_rescale_mode", 1 ],
                         [ "set_curve_mode", 1 ],
                         [ "set_latch_first_point", 1 ],
@@ -722,26 +771,21 @@
                         [ "set_y_min", 0 ],
                         [ "set_y_max", 1 ],
                         [ "set_display_value", 1 ],
-                        [ "set_label_mode", 0 ],
+                        [ "set_label_mode", 2 ],
                         [ "set_case_mode", 0 ],
                         [ "set_font_style", 0 ],
                         [ "set_font_name", "Arial" ],
-                        [ "set_text_size", 10 ],
+                        [ "set_text_size", 9 ],
                         [ "set_axis_style", 3 ],
                         [ "set_border_radius", 0 ],
-                        [ "set_border_thickness", 1.6123595505617978 ],
-                        [ "set_border_extension", 4.943820224719101 ],
+                        [ "set_border_thickness", 1 ],
+                        [ "set_border_extension", 11.666666666666666 ],
                         [ "set_line_size", 1.5 ],
                         [ "set_handle_size", 9.516666666666667 ],
                         [ "set_track_margin", 14 ],
                         [ "set_allow_popup", 1 ],
-                        [ "set_show_settings_attrs", 0 ],
-                        [ "set_popup_mini_size", 921, 613 ],
-                        [ "set_mask_performance", 1 ],
-                        [ "set_mask_labels", 1 ],
-                        [ "set_mask_geometry", 1 ],
-                        [ "set_mask_colors", 1 ],
-                        [ "set_mask_popup_colors", 1 ],
+                        [ "set_show_settings_attrs", 1 ],
+                        [ "set_popup_mini_size", 420, 180 ],
                         [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
                         [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
                         [ "set_range_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
@@ -751,10 +795,11 @@
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
                         [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
-                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.8420289855072465, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "list", 0, 0, 0, 818.452380952381, 0.15463917525773196, 0, 907.7380952380952, 0.9175257731958762, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        [ "list", 0, 0, 0, 130.95238095238096, 0.865979381443299, 0, 238.09523809523807, 0.29896907216494845, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        [ "active_mask_tab", 2 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -763,9 +808,9 @@
                         [ "axis_style", 3 ],
                         [ "bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
                         [ "border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
-                        [ "border_extension", 4.943820224719101 ],
+                        [ "border_extension", 11.666666666666666 ],
                         [ "border_radius", 0 ],
-                        [ "border_thickness", 1.6123595505617978 ],
+                        [ "border_thickness", 1 ],
                         [ "case_mode", 0 ],
                         [ "curve_mode", 1 ],
                         [ "display_value", 1 ],
@@ -773,24 +818,20 @@
                         [ "font_style", 0 ],
                         [ "handle_color", 1, 1, 1, 1 ],
                         [ "handle_size", 9.516666666666667 ],
-                        [ "label_mode", 0 ],
+                        [ "label_mode", 2 ],
                         [ "latch_first_point", 1 ],
                         [ "latch_last_point", 1 ],
                         [ "line_size", 1.5 ],
-                        [ "mask_colors", 1 ],
-                        [ "mask_geometry", 1 ],
-                        [ "mask_labels", 1 ],
-                        [ "mask_performance", 1 ],
-                        [ "mask_popup_colors", 1 ],
                         [ "mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
+                        [ "popup_mini_size", 420, 180 ],
                         [ "range_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
                         [ "raw_output_mode", 0 ],
                         [ "rescale_mode", 1 ],
-                        [ "show_settings_attrs", 0 ],
+                        [ "show_settings_attrs", 1 ],
                         [ "text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "text_size", 10 ],
+                        [ "text_size", 9 ],
                         [ "track_margin", 14 ],
                         [ "x_max", 1000 ],
                         [ "x_min", 0 ],
@@ -881,7 +922,7 @@
                         [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
                         [ "popup_dot_color", 1, 0, 0, 1 ],
                         [ "prefix", "Slot Number" ],
-                        [ "selected", 5 ],
+                        [ "selected", 0 ],
                         [ "show_arrow", 1 ],
                         [ "show_markers", 1 ],
                         [ "show_settings_attrs", 1 ],
@@ -901,7 +942,8 @@
                         "flags": 0,
                         "embed": 0,
                         "autowatch": 1
-                    }
+                    },
+                    "varname": "v8ui_AB"
                 }
             },
             {
@@ -958,7 +1000,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.041916167664670656 ],
+                        [ "msg_float", 0.8203592814371258 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1005,7 +1047,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 185.0, 775.0, 167.0, 39.0 ],
+                    "patching_rect": [ 239.0, 667.0, 167.0, 39.0 ],
                     "textfile": {
                         "filename": "touch.hslider.js",
                         "flags": 0,
@@ -1018,73 +1060,29 @@
             {
                 "box": {
                     "embedstate": [
-                        [ "grid", "4/1" ],
-                        [ "set_name_bank_attr", "s1, s2, s2, s2, s2, s2, john, john, john, willy, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
                         [ "set_name", "honey_chicken" ],
+                        [ "grid", "4/1" ],
+                        [ "set_active_mask_tab", 2 ],
+                        [ "set_name_bank_attr", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
                         [ "set_allow_hold_save", 1 ],
-                        [ "set_hold_threshold", 450 ],
+                        [ "set_hold_threshold", 500 ],
                         [ "set_double_tap_threshold", 320 ],
                         [ "set_label_mode", 0 ],
                         [ "set_case_mode", 0 ],
                         [ "set_font_style", 0 ],
                         [ "set_text_size", 11 ],
-                        [ "set_border_radius", 0 ],
-                        [ "set_border_thickness", 1.6123595505617978 ],
-                        [ "set_border_extension", 4.943820224719101 ],
-                        [ "set_allow_popup", 1 ],
-                        [ "set_show_settings_attrs", 1 ],
-                        [ "set_popup_mini_size", 320, 110 ],
-                        [ "set_mask_performance", 1 ],
-                        [ "set_mask_labels", 1 ],
-                        [ "set_mask_geometry", 1 ],
-                        [ "set_mask_colors", 1 ],
-                        [ "set_mask_popup_colors", 1 ],
-                        [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
-                        [ "set_highlight_color", 1, 0.6880000000000001, 0.21999999999999997, 0.5666666666666667 ],
-                        [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_accent_bar_color", 1, 1, 1, 1 ],
-                        [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
-                        [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
-                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
-                        [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
-                        [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set_slot_names", "she, he, dow, woo" ],
-                        [ "set_slots_saved", "%5B%22she%22%2C%22he%22%2C%22dow%22%2C%22woo%22%5D" ],
-                        [ "msg_float", 4 ],
-                        [ "accent_bar_color", 1, 1, 1, 1 ],
-                        [ "allow_hold_save", 1 ],
-                        [ "allow_popup", 1 ],
-                        [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
-                        [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
-                        [ "attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
-                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
-                        [ "border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
-                        [ "border_extension", 4.943820224719101 ],
-                        [ "border_radius", 0 ],
-                        [ "border_thickness", 1.6123595505617978 ],
-                        [ "case_mode", 0 ],
-                        [ "double_tap_threshold", 320 ],
-                        [ "font_style", 0 ],
+                        [ "set_borders", 1 ],
+                        [ "set_border_radius", 4 ],
+                        [ "set_border_thickness", 1.2 ],
+                        [ "set_border_extension", 6 ],
+                        [ "set_slot_names", "s1, he, Lead 80s, Solo Boost" ],
+                        [ "set_slots_saved", "%5B%22s1%22%2C%22he%22%2C%22Lead%2080s%22%2C%22Solo%20Boost%22%5D" ],
+                        [ "active_mask_tab", 2 ],
+                        [ "borders", 1 ],
                         [ "grid", "4/1" ],
-                        [ "highlight_color", 1, 0.6880000000000001, 0.21999999999999997, 0.5666666666666667 ],
-                        [ "hold_threshold", 450 ],
-                        [ "label_mode", 0 ],
-                        [ "mask_colors", 1 ],
-                        [ "mask_geometry", 1 ],
-                        [ "mask_labels", 1 ],
-                        [ "mask_performance", 1 ],
-                        [ "mask_popup_colors", 1 ],
                         [ "name", "honey_chicken" ],
-                        [ "name_bank", "s1, s2, s2, s2, s2, s2, john, john, john, willy, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, john, carlo" ],
-                        [ "pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
-                        [ "popup_dot_color", 1, 0, 0, 1 ],
-                        [ "show_settings_attrs", 1 ],
-                        [ "slot_names", "she, he, dow, woo" ],
-                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "text_size", 11 ]
+                        [ "popup_slots", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
+                        [ "slot_names", "s1, he, Lead 80s, Solo Boost" ]
                     ],
                     "filename": "touch.status.js",
                     "id": "obj-39",
@@ -1101,25 +1099,6 @@
                         "autowatch": 1
                     },
                     "varname": "v8ui_AF"
-                }
-            },
-            {
-                "box": {
-                    "autorestore": "honey_chicken.json",
-                    "id": "obj-33",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "patching_rect": [ 269.0, 470.0, 161.0, 23.0 ],
-                    "saved_object_attributes": {
-                        "client_rect": [ 3, 100, 416, 445 ],
-                        "parameter_enable": 0,
-                        "parameter_mappable": 0,
-                        "storage_rect": [ 583, 69, 1034, 197 ]
-                    },
-                    "text": "pattrstorage @savemode 0",
-                    "varname": "honey_chicken"
                 }
             },
             {
@@ -1164,7 +1143,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.034451580571881704 ],
+                        [ "msg_float", 0.8904471227305141 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1223,27 +1202,6 @@
             },
             {
                 "box": {
-                    "id": "obj-24",
-                    "maxclass": "newobj",
-                    "numinlets": 1,
-                    "numoutlets": 4,
-                    "outlettype": [ "", "", "", "" ],
-                    "patching_rect": [ 177.0, 470.0, 61.0, 23.0 ],
-                    "restore": {
-                        "h_value": [ 0.041916167664670656 ],
-                        "slid": [ 0.08496732026143794 ],
-                        "t_slider": [ 6 ],
-                        "this_function": [ 0, 0, 0, 818.452380952381, 0.15463917525773196, 0, 907.7380952380952, 0.9175257731958762, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
-                        "v8ui[1]": [ 0.034451580571881704 ],
-                        "v8ui_AA": [ 120 ],
-                        "v8ui_AF": [ 4 ]
-                    },
-                    "text": "autopattr",
-                    "varname": "u620003692"
-                }
-            },
-            {
-                "box": {
                     "embedstate": [
                         [ "set_slider_style", 0 ],
                         [ "set_mode", 0 ],
@@ -1284,7 +1242,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.08496732026143794 ],
+                        [ "msg_float", 0.8428495673008116 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1338,29 +1296,7 @@
                         "embed": 0,
                         "autowatch": 1
                     },
-                    "varname": "slid"
-                }
-            },
-            {
-                "box": {
-                    "id": "obj-2",
-                    "maxclass": "slider",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "parameter_enable": 1,
-                    "patching_rect": [ 438.0, 672.5, 20.0, 140.0 ],
-                    "saved_attribute_attributes": {
-                        "valueof": {
-                            "parameter_linknames": 1,
-                            "parameter_longname": "t_slider",
-                            "parameter_modmode": 4,
-                            "parameter_shortname": "name",
-                            "parameter_type": 1,
-                            "parameter_unitstyle": 0
-                        }
-                    },
-                    "varname": "t_slider"
+                    "varname": "vert_slider"
                 }
             },
             {
@@ -1389,7 +1325,7 @@
             },
             {
                 "box": {
-                    "attr": "name_bank",
+                    "attr": "popup_slots",
                     "id": "obj-1",
                     "maxclass": "attrui",
                     "numinlets": 1,
@@ -1397,6 +1333,30 @@
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
                     "patching_rect": [ 269.0, 34.0, 426.0, 23.0 ]
+                }
+            },
+            {
+                "box": {
+                    "attr": "slot_names",
+                    "id": "obj-33",
+                    "maxclass": "attrui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 902.0, 313.0, 268.0, 23.0 ]
+                }
+            },
+            {
+                "box": {
+                    "attr": "valuepopup",
+                    "id": "obj-36",
+                    "maxclass": "attrui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 328.0, 313.0, 150.0, 23.0 ]
                 }
             }
         ],
@@ -1415,12 +1375,6 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-11", 0 ],
-                    "source": [ "obj-13", 1 ]
-                }
-            },
-            {
-                "patchline": {
                     "destination": [ "obj-10", 0 ],
                     "source": [ "obj-17", 0 ]
                 }
@@ -1433,20 +1387,14 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-23", 0 ],
-                    "source": [ "obj-27", 1 ]
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-33", 0 ]
                 }
             },
             {
                 "patchline": {
-                    "destination": [ "obj-28", 0 ],
-                    "source": [ "obj-29", 1 ]
-                }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-33", 0 ],
-                    "source": [ "obj-3", 0 ]
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-36", 0 ]
                 }
             },
             {
@@ -1465,18 +1413,6 @@
                 "patchline": {
                     "destination": [ "obj-41", 0 ],
                     "source": [ "obj-38", 0 ]
-                }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-33", 0 ],
-                    "source": [ "obj-39", 0 ]
-                }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-5", 0 ],
-                    "source": [ "obj-4", 0 ]
                 }
             },
             {
@@ -1523,12 +1459,6 @@
             },
             {
                 "patchline": {
-                    "destination": [ "obj-59", 0 ],
-                    "source": [ "obj-49", 0 ]
-                }
-            },
-            {
-                "patchline": {
                     "destination": [ "obj-43", 2 ],
                     "source": [ "obj-56", 0 ]
                 }
@@ -1552,18 +1482,6 @@
                 }
             }
         ],
-        "parameters": {
-            "obj-2": [ "t_slider", "name", 0 ],
-            "parameterbanks": {
-                "0": {
-                    "index": 0,
-                    "name": "",
-                    "parameters": [ "-", "-", "-", "-", "-", "-", "-", "-" ],
-                    "buttons": [ "-", "-", "-", "-", "-", "-", "-", "-" ]
-                }
-            },
-            "inherited_shortname": 1
-        },
         "autosave": 0,
         "accentcolor": [ 0.0, 0.0, 0.0, 1.0 ],
         "patchlinecolor": [ 0.933333333333333, 0.964705882352941, 0.219607843137255, 1.0 ]

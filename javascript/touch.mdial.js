@@ -1,0 +1,3110 @@
+// ============================================================================
+// touch.mdial.js - Max 9 v8ui / jsui
+// Multi-Dial Strip / Platter Array with Wooden-Block Fixed Canvas Placement,
+// Unlimited Proportional Popup Zoom ("Grow BIG"), Tangent Collision Physics,
+// Individual & [ALL] Sizing, Offset Staggering, and Preset Glide Hooks.
+//
+// Outlets:
+//   Outlet 0 (Left):   All scaled dial values as list [v0 v1 ... vn]
+//   Outlet 1 (Middle): Event message [name/tag value] for [route]
+//   Outlet 2 (Right):  Active dial index (1..count, 0 on release)
+// ============================================================================
+
+autowatch = 1;
+
+if (typeof mgraphics.init === "function") {
+  mgraphics.init();
+}
+mgraphics.autofill = 0;
+mgraphics.relative_coords = 0;
+
+inlets = 1;
+outlets = 3;
+
+setinletassist(0, "Inlet: float / list / [tag value] / set; messages");
+setoutletassist(0, "Outlet 0: All scaled dial values as list");
+setoutletassist(1, "Outlet 1: Event message [name/tag value] for [route]");
+setoutletassist(2, "Outlet 2: Active dial index (1..count, 0 on release)");
+
+var uniqueID = Math.floor(Math.random() * 1000000);
+
+// =============================================================
+// 1. STATE & ARRAY TOPOLOGY (UP TO 8 DIALS)
+// =============================================================
+var count = 4;               // Default to 4 dials
+var max_dials = 8;           // Capped at 8 dials maximum
+var direction = 0;           // 0 = Horizontal strip, 1 = Vertical strip
+var dial_spacing = 0.0;      // Pixel gap between dials (0 = tangent crash)
+
+var alignment = 0;           // 0 = Strip (Linear), 1 = Offset (Staggered / Zigzag)
+var offset_amount = 0.5;     // 0.0 to 1.0 (depth of the zigzag shift)
+var alignment_names = ["Strip", "Offset"];
+
+var current_w = 210;
+var current_h = 70;
+
+// Per-Dial State Arrays (Indexed 0 to 7)
+var vals          = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+var target_vals   = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+var min_vals      = [-18.0, 20.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0];
+var max_vals      = [18.0, 20000.0, 20.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+var step_amounts  = [0.5, 50.0, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05];
+var dial_sizes    = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+var mouse_modes   = [1, 1, 1, 1, 1, 1, 1, 1]; // 0 = Vertical, 1 = Radial
+var dial_styles   = [0, 0, 0, 0, 0, 0, 0, 0]; // 0 = Ribbon, 1 = Rail
+var ribbon_fills  = [1, 1, 1, 1, 1, 1, 1, 1]; // 0 = Line, 1 = Arc Fill
+var rotary_modes  = [0, 0, 0, 0, 0, 0, 0, 0]; // 0 = 270, 1 = 360 Top, 2 = 360 Bottom, 3 = Continuous
+var unit_modes    = [2, 4, 0, 0, 0, 0, 0, 0]; // 0 = None, 1 = %, 2 = dB, 3 = ms, 4 = Hz
+
+var click_jump = 0; // 0 = Touch, 1 = Mouse
+var mode_options = ["Touch", "Mouse"];
+var step_speed_ms = 20;
+var curve_exponent = 0.35;
+var slider_speed = 1.0;
+
+var integer_digits = 1;
+var decimal_digits = 2;
+var leading_zeros  = 0;
+
+var style_names       = ["Ribbon", "Rail"];
+var ribbon_fill_names = ["Single Line", "Arc Fill"];
+var rotary_mode_names = ["270", "360 Top", "360 Bottom", "360 Continuous"];
+var mouse_mode_names  = ["Vertical", "Radial"];
+var unit_mode_names   = ["None", "%", "dB", "ms", "Hz"];
+
+// Labels
+var labels_raw = "Gain Sweep Q D4";
+var parsed_labels = ["Gain", "Sweep", "Q", "D4"];
+var label_mode = 0;
+var label_mode_names = ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"];
+var case_mode = 0;
+var case_mode_names = ["First Cap", "All Cap", "All Small"];
+
+var font_name = "Arial";
+var text_size = 9;
+var font_style = 0;
+var font_style_names = ["Regular", "Bold", "Italic", "Bold Italic"];
+
+var allow_popup = 1;
+var is_transmitting = false;
+
+// Interaction State
+var active_dial_pressed = -1;
+var is_dragging = 0;
+var is_scrolling_drag = 0;
+var click_time = 0;
+var last_step_time = 0;
+var hold_gate_passed = 0;
+var backgroundTask = null;
+
+var last_x = 0;
+var last_y = 0;
+var start_click_x = 0;
+var start_click_y = 0;
+var last_angle = 0.0;
+
+// =============================================================
+// 2. GEOMETRY & PALETTES
+// =============================================================
+var borders = 0;
+var show_background = 0;
+var border_radius = 6.0;
+var border_thickness = 1.2;
+var border_extension = 6.0;
+
+var track_breadth = 3.5;
+var needle_thickness = 1.8;
+var handle_size = 4.5;
+
+// Component Colors
+var bg_color        = [0.12, 0.12, 0.14, 1.0];
+var border_color    = [0.42, 0.42, 0.48, 1.0];
+var track_color     = [0.22, 0.22, 0.26, 1.0];
+var handle_color    = [1.00, 0.22, 0.25, 1.0];
+var text_color      = [0.92, 0.94, 0.98, 1.0];
+var mode_color      = [0.85, 0.85, 0.90, 1.0];
+var popup_dot_color = [1.0, 0.0, 0.0, 1.0];
+
+// Popup Attrui UI Colors
+var pop_bgcolor       = [0.10, 0.10, 0.12, 1.0];
+var attr_bg_color     = [0.14, 0.14, 0.16, 1.0];
+var attr_border_color = [0.28, 0.28, 0.32, 1.0];
+var attr_slider_color = [0.35, 0.38, 0.42, 1.0];
+var attr_text_color   = [0.88, 0.88, 0.88, 1.0];
+
+// 5-Category Carousel Inspector State (8 rows per tab)
+var show_settings_attrs = 1;
+var active_mask_tab     = 0;
+var mask_tab_names      = ["1. Performance", "2. Geometry", "3. Settings", "4. Styles", "5. Colors"];
+var active_edit_dial    = -1; // -1 = [ALL], 0..count-1 = Individual Dial
+
+var showSettings        = 0;
+var min_popup_dial_size = 88.0;
+var popup_window_width  = 280;
+var popup_mini_w        = 140;
+var popup_mini_h        = 200;
+var start_resize_w      = 140;
+var start_resize_h      = 200;
+var is_resizing_window  = 0;
+
+var popupWindow  = null;
+var colorWindow  = null;
+var tickerWindow = null;
+
+var outMatrix    = null;
+var colorMatrix  = null;
+var tickerMatrix = null;
+
+var windowListener = null;
+var colorListener  = null;
+var tickerListener = null;
+
+var active_pop_target     = -1;
+var active_pop_dial       = -1;
+var active_color_target   = "handle_color";
+var active_ticker_target  = "min_val";
+var active_ticker_column  = -1;
+var is_mouse_down_anywhere = 0;
+
+var picker_drag_zone = 0;
+var cur_h = 0.0, cur_s = 1.0, cur_v = 1.0, cur_a = 1.0;
+
+var whole_digits          = 4;
+var ticker_decimal_digits = 2;
+var continuous_digit_floats = [];
+var slider_width_px       = 32;
+var slider_gap_px         = 6;
+
+var lastMouseX = 0;
+var lastMouseY = 0;
+
+var scroll_valBoxX = 0;
+var scroll_valBoxW = 100;
+var scrollTask = new Task(function () {
+  if (active_pop_target === -1 || active_pop_target === 50) return;
+  var targetPct = clamp((lastMouseX - scroll_valBoxX) / scroll_valBoxW, 0, 1);
+  apply_slider_target(active_pop_target, targetPct);
+}, this);
+scrollTask.interval = 15;
+
+var render_pending = 0;
+var render_task = new Task(function () {
+  render_pending = 0;
+  draw_popup_to_window_deferred();
+}, this);
+
+var cached_preview_rect = { x: 12, y: 28, w: 256, h: 60 };
+
+function ensurePopupWindows() {
+  if (!popupWindow) {
+    popupWindow = new JitterObject("jit.window", "mdial_set_" + uniqueID);
+    popupWindow.floating = 1; 
+    popupWindow.visible = 0; 
+    popupWindow.border = 1; 
+    popupWindow.grow = 0;
+    popupWindow.mousewheel = 1;
+    popupWindow.title = "Touch Multi-Dial Inspector";
+    windowListener = new JitterListener(popupWindow.name, windowListenerCallback);
+  }
+  if (!colorWindow) {
+    colorWindow = new JitterObject("jit.window", "mdial_col_" + uniqueID);
+    colorWindow.floating = 1; colorWindow.visible = 0; colorWindow.border = 1; colorWindow.grow = 0;
+    colorWindow.title = "Color Picker"; colorWindow.size = [200, 240];
+    colorMatrix = new JitterMatrix(4, "char", 200, 240);
+    colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
+  }
+  if (!tickerWindow) {
+    tickerWindow = new JitterObject("jit.window", "mdial_num_" + uniqueID);
+    tickerWindow.floating = 1; tickerWindow.visible = 0; tickerWindow.border = 1; tickerWindow.grow = 0;
+    tickerWindow.title = "Bound Ticker"; tickerWindow.size = [230, 200];
+    tickerMatrix = new JitterMatrix(4, "char", 230, 200);
+    tickerListener = new JitterListener(tickerWindow.name, tickerWindowListenerCallback);
+  }
+}
+
+function recycleMatrix(mat, w, h) {
+  if (!mat) return new JitterMatrix(4, "char", w, h);
+  var d = mat.dim;
+  if (d[0] !== w || d[1] !== h) mat.dim = [w, h];
+  return mat;
+}
+
+// =============================================================
+// 3. PRESET ENGINE HOOKS (touch.status GLIDE)
+// =============================================================
+function get_state() {
+  return {
+    val: vals.slice(0, count),
+    min_val: min_vals.slice(0, count),
+    max_val: max_vals.slice(0, count),
+    step_amount: step_amounts.slice(0, count),
+    dial_size: dial_sizes.slice(0, count)
+  };
+}
+
+function set_state(d) {
+  if (Array.isArray(d)) {
+    for (var i = 0; i < count && i < d.length; i++) {
+      vals[i] = clamp(Number(d[i]), 0.0, 1.0);
+      target_vals[i] = vals[i];
+    }
+  } else if (typeof d === "object" && d !== null) {
+    if (Array.isArray(d.min_val)) {
+      for (var m = 0; m < count && m < d.min_val.length; m++) min_vals[m] = Number(d.min_val[m]);
+    }
+    if (Array.isArray(d.max_val)) {
+      for (var x = 0; x < count && x < d.max_val.length; x++) max_vals[x] = Number(d.max_val[x]);
+    }
+    if (Array.isArray(d.step_amount)) {
+      for (var s = 0; s < count && s < d.step_amount.length; s++) step_amounts[s] = Math.max(0.0001, Number(d.step_amount[s]));
+    }
+    if (Array.isArray(d.dial_size)) {
+      for (var ds = 0; ds < count && ds < d.dial_size.length; ds++) dial_sizes[ds] = clamp(Number(d.dial_size[ds]), 0.0, 1.0);
+    }
+    if (Array.isArray(d.val)) {
+      for (var v = 0; v < count && v < d.val.length; v++) {
+        vals[v] = clamp(Number(d.val[v]), 0.0, 1.0);
+        target_vals[v] = vals[v];
+      }
+    }
+  }
+  output_all_values();
+  redraw_all();
+}
+
+function morph_state(a, b, frac) {
+  var rawA = (typeof a === "object" && a !== null) ? a : { val: a };
+  var rawB = (typeof b === "object" && b !== null) ? b : { val: b };
+
+  var aVals = Array.isArray(rawA.val) ? rawA.val : [Number(rawA.val || 0)];
+  var bVals = Array.isArray(rawB.val) ? rawB.val : [Number(rawB.val || 0)];
+
+  var aMin = Array.isArray(rawA.min_val) ? rawA.min_val : min_vals;
+  var bMin = Array.isArray(rawB.min_val) ? rawB.min_val : min_vals;
+
+  var aMax = Array.isArray(rawA.max_val) ? rawA.max_val : max_vals;
+  var bMax = Array.isArray(rawB.max_val) ? rawB.max_val : max_vals;
+
+  var aStep = Array.isArray(rawA.step_amount) ? rawA.step_amount : step_amounts;
+  var bStep = Array.isArray(rawB.step_amount) ? rawB.step_amount : step_amounts;
+
+  var aSize = Array.isArray(rawA.dial_size) ? rawA.dial_size : dial_sizes;
+  var bSize = Array.isArray(rawB.dial_size) ? rawB.dial_size : dial_sizes;
+
+  for (var i = 0; i < count; i++) {
+    var v0 = i < aVals.length ? Number(aVals[i]) : vals[i];
+    var v1 = i < bVals.length ? Number(bVals[i]) : vals[i];
+    vals[i] = clamp(v0 + (v1 - v0) * frac, 0.0, 1.0);
+    target_vals[i] = vals[i];
+
+    var mn0 = i < aMin.length ? Number(aMin[i]) : min_vals[i];
+    var mn1 = i < bMin.length ? Number(bMin[i]) : min_vals[i];
+    min_vals[i] = mn0 + (mn1 - mn0) * frac;
+
+    var mx0 = i < aMax.length ? Number(aMax[i]) : max_vals[i];
+    var mx1 = i < bMax.length ? Number(bMax[i]) : max_vals[i];
+    max_vals[i] = mx0 + (mx1 - mx0) * frac;
+
+    var st0 = i < aStep.length ? Number(aStep[i]) : step_amounts[i];
+    var st1 = i < bStep.length ? Number(bStep[i]) : step_amounts[i];
+    step_amounts[i] = Math.max(0.0001, st0 + (st1 - st0) * frac);
+
+    var sz0 = i < aSize.length ? Number(aSize[i]) : dial_sizes[i];
+    var sz1 = i < bSize.length ? Number(bSize[i]) : dial_sizes[i];
+    dial_sizes[i] = clamp(sz0 + (sz1 - sz0) * frac, 0.0, 1.0);
+  }
+
+  output_all_values();
+  redraw_all();
+}
+
+// =============================================================
+// PATTR HOOKS
+// =============================================================
+function getvalueof() { return getAllScaledValues(); }
+
+function setvalueof() {
+  if (is_transmitting) return;
+  var args = arrayfromargs(arguments);
+  while (args.length === 1 && Array.isArray(args[0])) args = args[0];
+  if (args.length === 0) return;
+
+  for (var i = 0; i < count && i < args.length; i++) {
+    var span = max_vals[i] - min_vals[i];
+    var scaled = span !== 0 ? (Number(args[i]) - min_vals[i]) / span : 0.0;
+    vals[i] = clamp(scaled, 0.0, 1.0);
+    target_vals[i] = vals[i];
+  }
+  redraw_all();
+  output_all_values();
+}
+
+// =============================================================
+// 4. MATH, UTILITIES & OUTPUT ROUTING
+// =============================================================
+function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
+
+function getScaledValue(idx) {
+  var span = max_vals[idx] - min_vals[idx];
+  return min_vals[idx] + vals[idx] * span;
+}
+
+function getAllScaledValues() {
+  var list = [];
+  for (var i = 0; i < count; i++) list.push(getScaledValue(i));
+  return list;
+}
+
+function isBipolar(idx) { return (min_vals[idx] < 0.0 && max_vals[idx] > 0.0); }
+
+function get_dial_tag(idx) {
+  if (idx < 0 || idx >= count) return idx + 1;
+  var rawToken = parsed_labels[idx];
+  if (!rawToken || rawToken === "<empty>") return idx + 1;
+  var num = Number(rawToken);
+  return (!isNaN(num) && rawToken !== "") ? num : rawToken;
+}
+
+function output_dial_event(idx) {
+  if (is_transmitting || idx < 0 || idx >= count) return;
+  is_transmitting = true;
+  try {
+    outlet(2, idx + 1);
+    outlet(1, [get_dial_tag(idx), getScaledValue(idx)]);
+    outlet(0, getAllScaledValues());
+  } finally {
+    is_transmitting = false;
+  }
+}
+
+function output_all_values() {
+  if (is_transmitting) return;
+  is_transmitting = true;
+  try {
+    outlet(2, 0);
+    for (var i = 0; i < count; i++) {
+      outlet(1, [get_dial_tag(i), getScaledValue(i)]);
+    }
+    outlet(0, getAllScaledValues());
+  } finally {
+    is_transmitting = false;
+  }
+}
+
+function get_formatted_value(idx) {
+  var valNum = getScaledValue(idx);
+  var decCount = Math.max(0, Math.min(8, parseInt(decimal_digits, 10) || 0));
+  var intCount = Math.max(1, Math.min(12, parseInt(integer_digits, 10) || 1));
+
+  var sign = valNum < 0 ? "-" : "";
+  var absVal = Math.abs(valNum);
+  var fixedStr = absVal.toFixed(decCount);
+  var parts = fixedStr.split(".");
+  var intStr = parts[0];
+
+  if (leading_zeros) {
+    while (intStr.length < intCount) intStr = "0" + intStr;
+  }
+  return (decCount > 0 && parts[1] !== undefined) ? (sign + intStr + "." + parts[1]) : (sign + intStr);
+}
+
+function rgbToHsv(r, g, b) {
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var d = max - min, h = 0, s = (max === 0 ? 0 : d / max), v = max;
+  if (max !== min) {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return [h, s, v];
+}
+
+function hsvToRgb(h, s, v) {
+  var r, g, b, i = Math.floor(h * 6), f = h * 6 - i;
+  var p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = v; b = t; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+  return [r, g, b];
+}
+
+function rgba_values(args, fallback) {
+  if (args === undefined || args === null) return fallback;
+  var list = [];
+  if (Array.isArray(args)) list = args;
+  else if (typeof args === "object" && typeof args.length === "number") {
+    for (var i = 0; i < args.length; i++) list.push(args[i]);
+  } else list = [args];
+
+  while (list.length === 1 && (Array.isArray(list[0]) || (typeof list[0] === "object" && list[0] !== null && typeof list[0].length === "number"))) {
+    var inner = list[0];
+    list = [];
+    for (var j = 0; j < inner.length; j++) list.push(inner[j]);
+  }
+  if (list.length < 3) return fallback;
+  var r = Number(list[0]), g = Number(list[1]), b = Number(list[2]);
+  var a = list.length > 3 ? Number(list[3]) : 1.0;
+  if (isNaN(r) || isNaN(g) || isNaN(b) || isNaN(a)) return fallback;
+  return [r, g, b, a];
+}
+
+function get_dimensions() {
+  var sz = mgraphics.size;
+  if (sz && sz[0] > 0 && sz[1] > 0) {
+    current_w = sz[0]; current_h = sz[1];
+  }
+  return { w: current_w, h: current_h };
+}
+
+function onresize(w, h) {
+  if (w > 0 && h > 0) {
+    current_w = w; current_h = h;
+  }
+  mgraphics.redraw();
+}
+onresize.local = 1;
+
+function stop_scrolling() {
+  if (scrollTask) {
+    try { scrollTask.cancel(); } catch(e) {}
+  }
+}
+
+function mark_dirty() {
+  if (this.patcher) {
+    try {
+      this.patcher.dirty = 1;
+      var p = this.patcher;
+      while (p.parentpatcher) {
+        p = p.parentpatcher;
+        p.dirty = 1;
+      }
+    } catch (e) {}
+  }
+}
+
+function redraw_all() {
+  mgraphics.redraw();
+  if (typeof notifyclients === "function") notifyclients();
+  if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
+}
+
+function get_font_weight() { return (font_style === 1 || font_style === 3) ? "bold" : "normal"; }
+function get_font_slant() { return (font_style === 2 || font_style === 3) ? "italic" : "normal"; }
+
+// =============================================================
+// 5. ARRAY MANAGEMENT & LABELS
+// =============================================================
+function parse_tokens(str) {
+  if (!str || typeof str !== "string") return [];
+  var s = str.trim(), tokens = [];
+  var re = /"([^"]+)"|'([^']+)'|([^\s"',]+)/g, match;
+  while ((match = re.exec(s)) !== null) {
+    if (match[1] !== undefined) tokens.push(match[1]);
+    else if (match[2] !== undefined) tokens.push(match[2]);
+    else if (match[3] !== undefined) tokens.push(match[3]);
+  }
+  return tokens;
+}
+
+function sync_arrays() {
+  var rawTokens = parse_tokens(labels_raw);
+  parsed_labels = [];
+  for (var j = 0; j < count; j++) {
+    parsed_labels.push(j < rawTokens.length ? rawTokens[j] : ("D" + (j + 1)));
+  }
+  if (active_edit_dial >= count) active_edit_dial = count - 1;
+}
+
+function apply_case(str, c_mode) {
+  if (!str || typeof str !== "string") return "";
+  if (c_mode === 1) return str.toUpperCase();
+  if (c_mode === 2) return str.toLowerCase();
+  return str.toLowerCase().replace(/(?:^|\s|\/|-)\w/g, function (match) {
+    return match.toUpperCase();
+  });
+}
+
+function get_display_label(rawTxt, is_preview) {
+  if (!rawTxt || typeof rawTxt !== "string") return "";
+  if (label_mode === 4) return "";
+  if (is_preview) return apply_case(rawTxt, case_mode);
+
+  if (label_mode === 2) {
+    var caps = rawTxt.replace(/[^A-Z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+    if (caps.length > 0) return caps;
+    var words = rawTxt.trim().split(/\s+/);
+    var fb = "";
+    for (var i = 0; i < words.length; i++) {
+      if (words[i].length > 0) fb += words[i].charAt(0).toUpperCase();
+    }
+    return fb.length > 0 ? fb : rawTxt.charAt(0).toUpperCase();
+  }
+  if (label_mode === 3) {
+    var words3 = rawTxt.trim().split(/\s+/);
+    var initials = "";
+    for (var k = 0; k < words3.length; k++) {
+      if (words3[k].length > 0) initials += words3[k].charAt(0).toUpperCase();
+    }
+    return initials.length > 0 ? initials : rawTxt.charAt(0).toUpperCase();
+  }
+  if (label_mode === 1) {
+    var cleanFull = apply_case(rawTxt, case_mode);
+    var words1 = cleanFull.split(/\s+/);
+    var resWords = [];
+    for (var j = 0; j < words1.length; j++) {
+      var w = words1[j];
+      if (w.length <= 1) { resWords.push(w); continue; }
+      var firstChar = w.charAt(0);
+      var rest = w.slice(1).replace(/[aeiouAEIOU]/g, "");
+      resWords.push(firstChar + rest);
+    }
+    return resWords.join(" ").trim();
+  }
+  return apply_case(rawTxt, case_mode);
+}
+
+// =============================================================
+// 6. ROTARY ANGULAR GEOMETRY
+// =============================================================
+function get_dial_angles(r_mode) {
+  if (r_mode === 0) {
+    var spanRad = 270.0 * (Math.PI / 180.0);
+    var gapRad  = 90.0 * (Math.PI / 180.0);
+    var start   = (Math.PI * 0.5) + (gapRad * 0.5);
+    return { start: start, span: spanRad, end: start + spanRad, is360: false, zeroAngle: Math.PI * 1.5, stopAngle: start };
+  }
+  if (r_mode === 1) {
+    return { start: -Math.PI * 0.5, span: Math.PI * 2.0, end: Math.PI * 1.5, is360: true, zeroAngle: -Math.PI * 0.5, stopAngle: -Math.PI * 0.5 };
+  }
+  if (r_mode === 2) {
+    return { start: Math.PI * 0.5, span: Math.PI * 2.0, end: Math.PI * 2.5, is360: true, zeroAngle: Math.PI * 0.5, stopAngle: Math.PI * 0.5 };
+  }
+  return { start: -Math.PI * 0.5, span: Math.PI * 2.0, end: Math.PI * 1.5, is360: true, zeroAngle: -Math.PI * 0.5, stopAngle: null };
+}
+
+function point_to_normalized_dial_val(px, py, cx, cy, r_mode) {
+  var dx = px - cx, dy = py - cy;
+  var clickAngle = Math.atan2(dy, dx);
+  var ang = get_dial_angles(r_mode);
+
+  var relA = clickAngle - ang.start;
+  while (relA < 0) relA += Math.PI * 2.0;
+  while (relA >= Math.PI * 2.0) relA -= Math.PI * 2.0;
+
+  if (ang.is360) return clamp(relA / (Math.PI * 2.0), 0.0, 1.0);
+  if (relA <= ang.span) return clamp(relA / ang.span, 0.0, 1.0);
+  var distToStart = Math.PI * 2.0 - relA;
+  var distToEnd = relA - ang.span;
+  return (distToStart < distToEnd) ? 0.0 : 1.0;
+}
+
+// =============================================================
+// TOUCH STEPPING & ROTARY EASING SCHEDULER
+// =============================================================
+function execute_step_on_dial(idx, targetNormVal) {
+  var rMode = rotary_modes[idx] || 0;
+  var isContinuous = (rMode === 3);
+  var span = Math.abs(max_vals[idx] - min_vals[idx]);
+  var stepSize = isNaN(step_amounts[idx]) ? 0.05 : step_amounts[idx];
+  var normStep = span > 0 ? (stepSize / span) : 0.05;
+
+  var dist = targetNormVal - vals[idx];
+  if (isContinuous) {
+    if (dist > 0.5) dist -= 1.0;
+    else if (dist < -0.5) dist += 1.0;
+  }
+
+  var absDist = Math.abs(dist);
+  if (absDist <= normStep * 0.5) {
+    vals[idx] = targetNormVal;
+  } else if (dist > 0) {
+    vals[idx] += normStep;
+  } else {
+    vals[idx] -= normStep;
+  }
+
+  if (isContinuous) {
+    vals[idx] = ((vals[idx] % 1.0) + 1.0) % 1.0;
+  } else {
+    vals[idx] = clamp(vals[idx], 0.0, 1.0);
+  }
+
+  target_vals[idx] = vals[idx];
+  redraw_all();
+  output_dial_event(idx);
+}
+
+function execute_easing_on_dial(idx, targetNormVal) {
+  var rMode = rotary_modes[idx] || 0;
+  var isContinuous = (rMode === 3);
+  var dist = targetNormVal - vals[idx];
+
+  if (isContinuous) {
+    if (dist > 0.5) dist -= 1.0;
+    else if (dist < -0.5) dist += 1.0;
+  }
+
+  var absDist = Math.abs(dist);
+  if (absDist < 0.002) return;
+
+  var normDist = Math.min(1.0, absDist);
+  var exponent = isNaN(curve_exponent) ? 0.35 : curve_exponent;
+  var curveEase = Math.pow(normDist, exponent);
+  var baseScale = isNaN(slider_speed) ? 1.0 : slider_speed;
+  var calculatedIncrement = 0.001 + curveEase * baseScale * 0.02;
+
+  if (dist < 0) calculatedIncrement = -calculatedIncrement;
+
+  var nextVal = vals[idx] + calculatedIncrement;
+  if (isContinuous) {
+    nextVal = ((nextVal % 1.0) + 1.0) % 1.0;
+  } else {
+    nextVal = clamp(nextVal, 0.0, 1.0);
+  }
+
+  if (vals[idx] !== nextVal) {
+    vals[idx] = nextVal;
+    target_vals[idx] = vals[idx];
+    redraw_all();
+    output_dial_event(idx);
+  }
+}
+
+function start_touch_scheduler(is_popup_preview, dial_idx, cx, cy) {
+  if (backgroundTask) {
+    backgroundTask.cancel();
+    backgroundTask = null;
+  }
+  var holdTimerSetting = Math.max(1, isNaN(step_speed_ms) ? 20 : step_speed_ms);
+
+  backgroundTask = new Task(function () {
+    if (is_popup_preview) {
+      if (active_pop_target !== 50 || is_mouse_down_anywhere === 0) return;
+    } else {
+      if (is_dragging !== 1) return;
+    }
+    if (click_jump === 1) return;
+
+    if (is_scrolling_drag === 1) {
+      execute_easing_on_dial(dial_idx, target_vals[dial_idx]);
+    } else {
+      var clickTargetNorm = point_to_normalized_dial_val(start_click_x, start_click_y, cx, cy, rotary_modes[dial_idx] || 0);
+      var now = new Date().getTime();
+      if (hold_gate_passed === 0) {
+        if (now - click_time >= 350) {
+          hold_gate_passed = 1;
+          last_step_time = now;
+          execute_step_on_dial(dial_idx, clickTargetNorm);
+        }
+      } else {
+        if (now - last_step_time >= holdTimerSetting) {
+          last_step_time = now;
+          execute_step_on_dial(dial_idx, clickTargetNorm);
+        }
+      }
+    }
+  }, this);
+  backgroundTask.interval = 15;
+  backgroundTask.repeat();
+}
+
+// =============================================================
+// 7. WOODEN-BLOCK PHYSICAL COLLISION & POPUP PROPORTIONAL ZOOM
+// =============================================================
+function drawCorners(ctx, x, y, w, h, r, ew, eh, col, thick) {
+  ctx.set_source_rgba(col);
+  ctx.set_line_width(thick);
+
+  ctx.new_path();
+  if (r > 0) ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); else ctx.move_to(x, y);
+  ctx.line_to(x + r + ew, y); ctx.move_to(x, y + r); ctx.line_to(x, y + r + eh); ctx.stroke();
+
+  ctx.new_path();
+  if (r > 0) ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0); else ctx.move_to(x + w, y);
+  ctx.line_to(x + w, y + r + eh); ctx.move_to(x + w - r - ew, y); ctx.line_to(x + w - r, y); ctx.stroke();
+
+  ctx.new_path();
+  if (r > 0) ctx.arc(x + w - r, y + h - r, r, 0, Math.PI * 0.5); else ctx.move_to(x + w, y + h);
+  ctx.line_to(x + w - r - ew, y + h); ctx.move_to(x + w, y + h - r); ctx.line_to(x + w, y + h - r - eh); ctx.stroke();
+
+  ctx.new_path();
+  if (r > 0) ctx.arc(x + r, y + h - r, r, Math.PI * 0.5, Math.PI); else ctx.move_to(x, y + h);
+  ctx.line_to(x, y + h - r - eh); ctx.move_to(x + r + ew, y + h); ctx.line_to(x + r, y + h); ctx.stroke();
+}
+
+function get_dial_geometry(w, h, inset, dir, is_preview) {
+  var d = (dir !== undefined) ? dir : direction;
+  var totalDials = Math.max(1, count);
+  var S = Math.max(0, dial_spacing);
+
+  var rawRadii = [];
+  for (var i = 0; i < totalDials; i++) {
+    var sz = dial_sizes[i] !== undefined ? dial_sizes[i] : 0.5;
+    rawRadii.push(18.0 + clamp(sz, 0.0, 1.0) * 42.0);
+  }
+
+  var rawCoords = [];
+  if (d === 0) {
+    for (var j = 0; j < totalDials; j++) {
+      var R_curr = rawRadii[j];
+      var cy = inset + R_curr + 4.0;
+      if (alignment === 1 && totalDials > 1) {
+        var R_ref = (j > 0) ? rawRadii[j - 1] : R_curr;
+        var fixedShiftY = (R_ref + R_curr + 4.0) * clamp(offset_amount, 0.0, 1.0);
+        if (j % 2 !== 0) cy += fixedShiftY;
+      }
+      var cx;
+      if (j === 0) {
+        cx = inset + R_curr + 4.0;
+      } else {
+        var maxRequiredX = 0;
+        for (var k = 0; k < j; k++) {
+          var R_prev = rawRadii[k];
+          var cy_prev = rawCoords[k].cy;
+          var cx_prev = rawCoords[k].cx;
+          var touchDist = R_prev + R_curr + S;
+          var dy = Math.abs(cy - cy_prev);
+          var reqX = (dy >= touchDist) ? (cx_prev + S) : (cx_prev + Math.sqrt(Math.max(0, touchDist * touchDist - dy * dy)));
+          if (reqX > maxRequiredX) maxRequiredX = reqX;
+        }
+        cx = maxRequiredX;
+      }
+      rawCoords.push({ cx: cx, cy: cy, r: R_curr });
+    }
+  } else {
+    for (var m = 0; m < totalDials; m++) {
+      var R_curr2 = rawRadii[m];
+      var cx2 = inset + R_curr2 + 4.0;
+      if (alignment === 1 && totalDials > 1) {
+        var R_ref2 = (m > 0) ? rawRadii[m - 1] : R_curr2;
+        var fixedShiftX = (R_ref2 + R_curr2 + 4.0) * clamp(offset_amount, 0.0, 1.0);
+        if (m % 2 !== 0) cx2 += fixedShiftX;
+      }
+      var cy2;
+      if (m === 0) {
+        cy2 = inset + R_curr2 + 4.0;
+      } else {
+        var maxRequiredY = 0;
+        for (var k2 = 0; k2 < m; k2++) {
+          var R_prev2 = rawRadii[k2];
+          var cx_prev2 = rawCoords[k2].cx;
+          var cy_prev2 = rawCoords[k2].cy;
+          var touchDist2 = R_prev2 + R_curr2 + S;
+          var dx = Math.abs(cx2 - cx_prev2);
+          var reqY = (dx >= touchDist2) ? (cy_prev2 + S) : (cy_prev2 + Math.sqrt(Math.max(0, touchDist2 * touchDist2 - dx * dx)));
+          if (reqY > maxRequiredY) maxRequiredY = reqY;
+        }
+        cy2 = maxRequiredY;
+      }
+      rawCoords.push({ cx: cx2, cy: cy2, r: R_curr2 });
+    }
+  }
+
+  if (!is_preview) return rawCoords;
+
+  var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (var p = 0; p < rawCoords.length; p++) {
+    var c = rawCoords[p];
+    if (c.cx - c.r < minX) minX = c.cx - c.r;
+    if (c.cx + c.r > maxX) maxX = c.cx + c.r;
+    if (c.cy - c.r < minY) minY = c.cy - c.r;
+    if (c.cy + c.r > maxY) maxY = c.cy + c.r;
+  }
+
+  var clusterW = Math.max(1, maxX - minX);
+  var clusterH = Math.max(1, maxY - minY);
+  var availPW = Math.max(10, w - inset * 2 - 12);
+  var availPH = Math.max(10, h - inset * 2 - 12);
+  var zoomScale = Math.min(availPW / clusterW, availPH / clusterH);
+
+  var scaledCoords = [];
+  var pOffX = inset + (availPW - clusterW * zoomScale) * 0.5 - minX * zoomScale + 6.0;
+  var pOffY = inset + (availPH - clusterH * zoomScale) * 0.5 - minY * zoomScale + 6.0;
+
+  for (var q = 0; q < rawCoords.length; q++) {
+    var orig = rawCoords[q];
+    scaledCoords.push({
+      cx: orig.cx * zoomScale + pOffX,
+      cy: orig.cy * zoomScale + pOffY,
+      r: Math.max(4.0, orig.r * zoomScale)
+    });
+  }
+  return scaledCoords;
+}
+
+function draw_single_dial_face(ctx, geom, idx, is_preview, forcedFontSize) {
+  var cx = geom.cx;
+  var cy = geom.cy;
+  var outerRadius = geom.r;
+
+  var rawLabel = (idx < parsed_labels.length) ? parsed_labels[idx] : ("D" + (idx + 1));
+  var dispLbl = get_display_label(rawLabel, is_preview);
+  var hasLabel = (dispLbl.length > 0 && label_mode !== 4);
+  var valStr = get_formatted_value(idx);
+
+  var uMode = unit_modes[idx] || 0;
+  var unitStr = (uMode === 1) ? "%" : (uMode === 2) ? "dB" : (uMode === 3) ? "ms" : (uMode === 4) ? "Hz" : "";
+
+  var tBreadth = Math.max(1.0, track_breadth * (outerRadius / 25.0));
+  var nThick   = Math.max(0.75, needle_thickness * (outerRadius / 25.0));
+  var kSize    = Math.max(1.5, handle_size * (outerRadius / 25.0));
+  var trackRadius = Math.max(3.0, outerRadius - tBreadth * 0.5 - 1.5);
+
+  var scaleFont = forcedFontSize || Math.max(6, text_size);
+
+  ctx.select_font_face(font_name, get_font_slant(), get_font_weight());
+  ctx.set_font_size(scaleFont);
+  var unitFontSize = Math.max(5, Math.round(scaleFont * 0.7));
+
+  var fe = ctx.font_extents();
+  var fontAscent = (fe && (fe["0"] || fe.ascent)) || scaleFont;
+  var fontHeight = fontAscent + ((fe && (fe["1"] || fe.descent)) || (scaleFont * 0.25));
+
+  var valTm = ctx.text_measure(valStr);
+  var valW = valTm ? valTm[0] : (scaleFont * 1.6);
+  var unitW = 0;
+  if (unitStr.length > 0) {
+    ctx.set_font_size(unitFontSize);
+    var uTm = ctx.text_measure(unitStr);
+    unitW = uTm ? (uTm[0] + 1.0) : 5.0;
+    ctx.set_font_size(scaleFont);
+  }
+  var totalValW = valW + unitW;
+
+  var lblW = 0;
+  if (hasLabel) {
+    var lTm = ctx.text_measure(dispLbl);
+    lblW = lTm ? lTm[0] : (scaleFont * 1.5);
+  }
+
+  var rMode = rotary_modes[idx] || 0;
+  var ang = get_dial_angles(rMode);
+  var pVal = clamp(vals[idx], 0.0, 1.0);
+  var bipolarMode = isBipolar(idx);
+
+  ctx.set_line_cap("butt");
+  ctx.set_line_join("miter");
+
+  // Track Rail
+  ctx.set_source_rgba(track_color);
+  ctx.set_line_width(tBreadth);
+  ctx.new_path();
+  ctx.arc(cx, cy, trackRadius, ang.start, ang.end);
+  ctx.stroke();
+
+  // Active Value Fill
+  var curAngle = ang.start + pVal * ang.span;
+  var dStyle = dial_styles[idx] || 0;
+  var rFill = ribbon_fills[idx] !== undefined ? ribbon_fills[idx] : 1;
+
+  if (dStyle === 0) {
+    if (rFill === 1) {
+      if (bipolarMode) {
+        var zeroNorm = clamp((0.0 - min_vals[idx]) / (max_vals[idx] - min_vals[idx]), 0.0, 1.0);
+        var zeroAngle = ang.start + zeroNorm * ang.span;
+        var aStart = Math.min(zeroAngle, curAngle);
+        var aEnd   = Math.max(zeroAngle, curAngle);
+
+        if (Math.abs(curAngle - zeroAngle) > 0.005) {
+          ctx.set_source_rgba(handle_color);
+          ctx.set_line_width(tBreadth);
+          ctx.new_path();
+          ctx.arc(cx, cy, trackRadius, aStart, aEnd);
+          ctx.stroke();
+        }
+      } else {
+        if (pVal > 0.001) {
+          ctx.set_source_rgba(handle_color);
+          ctx.set_line_width(tBreadth);
+          ctx.new_path();
+          ctx.arc(cx, cy, trackRadius, ang.start, curAngle);
+          ctx.stroke();
+        }
+      }
+    } else {
+      var lineInward = Math.max(4.0, tBreadth * 0.5 + 3.0);
+      var lineOutward = (tBreadth * 0.5 + 2.0);
+      var rIn = Math.max(2.0, trackRadius - lineInward);
+      var rOut = Math.min(outerRadius - 0.5, trackRadius + lineOutward);
+
+      ctx.set_source_rgba(handle_color);
+      ctx.set_line_width(nThick);
+      ctx.new_path();
+      ctx.move_to(cx + rIn * Math.cos(curAngle), cy + rIn * Math.sin(curAngle));
+      ctx.line_to(cx + rOut * Math.cos(curAngle), cy + rOut * Math.sin(curAngle));
+      ctx.stroke();
+    }
+  } else {
+    var knobR = Math.max(2.0, kSize);
+    var kX = cx + trackRadius * Math.cos(curAngle);
+    var kY = cy + trackRadius * Math.sin(curAngle);
+    var needleHalfLen = knobR + 2.5;
+
+    ctx.set_source_rgba(handle_color);
+    ctx.set_line_width(nThick);
+    ctx.new_path();
+    ctx.move_to(kX - needleHalfLen * Math.cos(curAngle), kY - needleHalfLen * Math.sin(curAngle));
+    ctx.line_to(kX + needleHalfLen * Math.cos(curAngle), kY + needleHalfLen * Math.sin(curAngle));
+    ctx.stroke();
+
+    ctx.set_source_rgba(0.0, 0.0, 0.0, 0.65);
+    ctx.new_path();
+    ctx.arc(kX + 0.5, kY + 0.5, knobR + 1.0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.set_source_rgba(handle_color);
+    ctx.new_path();
+    ctx.arc(kX, kY, knobR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Typography
+  if (hasLabel) {
+    var lblY = cy - fontHeight * 0.15;
+    ctx.set_source_rgba(mode_color);
+    ctx.move_to(Math.round(cx - lblW * 0.5), Math.round(lblY));
+    ctx.show_text(dispLbl);
+
+    var valY = cy + fontHeight * 0.85;
+    var startValX = cx - totalValW * 0.5;
+    ctx.set_source_rgba(text_color);
+    ctx.move_to(Math.round(startValX), Math.round(valY));
+    ctx.show_text(valStr);
+
+    if (unitStr.length > 0) {
+      ctx.set_font_size(unitFontSize);
+      ctx.set_source_rgba(mode_color);
+      ctx.move_to(Math.round(startValX + valW + 1.0), Math.round(valY - fontAscent * 0.22));
+      ctx.show_text(unitStr);
+      ctx.set_font_size(scaleFont);
+    }
+  } else {
+    var singleY = cy + fontAscent * 0.35;
+    var startValX2 = cx - totalValW * 0.5;
+    ctx.set_source_rgba(text_color);
+    ctx.move_to(Math.round(startValX2), Math.round(singleY));
+    ctx.show_text(valStr);
+
+    if (unitStr.length > 0) {
+      ctx.set_font_size(unitFontSize);
+      ctx.set_source_rgba(mode_color);
+      ctx.move_to(Math.round(startValX2 + valW + 1.0), Math.round(singleY - fontAscent * 0.22));
+      ctx.show_text(unitStr);
+      ctx.set_font_size(scaleFont);
+    }
+  }
+}
+
+function draw_mdial_strip(ctx, w, h, is_preview) {
+  var b = isNaN(border_thickness) ? 1.2 : border_thickness;
+  var inset = b * 0.5;
+  var rw = Math.max(1, w - b);
+  var rh = Math.max(1, h - b);
+  var radVal = isNaN(border_radius) ? 6.0 : border_radius;
+  var r = Math.max(0, Math.min(radVal, rw * 0.5, rh * 0.5));
+  var extVal = isNaN(border_extension) ? 6.0 : border_extension;
+  var ew = Math.min(extVal, Math.max(0, (rw - 2 * r) * 0.5));
+  var eh = Math.min(extVal, Math.max(0, (rh - 2 * r) * 0.5));
+
+  if (show_background === 1 && bg_color && bg_color[3] > 0.001) {
+    ctx.set_source_rgba(bg_color);
+    ctx.new_path();
+    if (r > 0) {
+      ctx.move_to(inset + r, inset);
+      ctx.line_to(inset + rw - r, inset);
+      ctx.arc(inset + rw - r, inset + r, r, -Math.PI / 2, 0);
+      ctx.line_to(inset + rw, inset + rh - r);
+      ctx.arc(inset + rw - r, inset + rh - r, r, 0, Math.PI / 2);
+      ctx.line_to(inset + r, inset + rh);
+      ctx.arc(inset + r, inset + rh - r, r, Math.PI / 2, Math.PI);
+      ctx.line_to(inset, inset + r);
+      ctx.arc(inset + r, inset + r, r, Math.PI, -Math.PI / 2);
+      ctx.close_path();
+    } else {
+      ctx.rectangle(inset, inset, rw, rh);
+    }
+    ctx.fill();
+  }
+
+  if (borders === 1 && b > 0 && border_color && border_color[3] > 0.001) {
+    drawCorners(ctx, inset, inset, rw, rh, r, ew, eh, border_color, b);
+  }
+
+  var geomList = get_dial_geometry(w, h, inset, direction, is_preview);
+  var numDials = Math.min(count, geomList.length);
+
+  var avgRadius = 0;
+  for (var a = 0; a < numDials; a++) avgRadius += geomList[a].r;
+  avgRadius = numDials > 0 ? (avgRadius / numDials) : 38.0;
+
+  var targetFont = is_preview
+    ? Math.max(7, Math.min(Math.round(avgRadius * 0.20), Math.round(text_size * (avgRadius / 42.0))))
+    : Math.max(6, Math.min(Math.round(avgRadius * 0.28), text_size));
+
+  var uniformFont = targetFont;
+  ctx.select_font_face(font_name, get_font_slant(), get_font_weight());
+
+  for (var m = 0; m < numDials; m++) {
+    var gM = geomList[m];
+    var rM = gM.r;
+    var tBM = Math.max(1.0, track_breadth * (rM / 25.0));
+    var innerRM = Math.max(4.0, (rM - tBM * 0.5 - 1.5) - tBM * 0.5 - 2.0);
+    var maxW = innerRM * 1.65;
+    var maxH = innerRM * 1.50;
+
+    var rawL = (m < parsed_labels.length) ? parsed_labels[m] : ("D" + (m + 1));
+    var dL = get_display_label(rawL, is_preview);
+    var hasL = (dL.length > 0 && label_mode !== 4);
+    var vS = get_formatted_value(m);
+
+    var uM = unit_modes[m] || 0;
+    var uS = (uM === 1) ? "%" : (uM === 2) ? "dB" : (uM === 3) ? "ms" : (uM === 4) ? "Hz" : "";
+
+    ctx.set_font_size(uniformFont);
+    var vTm = ctx.text_measure(vS);
+    var vW = vTm ? vTm[0] : (uniformFont * 1.6);
+    var uW = 0;
+    if (uS.length > 0) {
+      ctx.set_font_size(Math.max(5, Math.round(uniformFont * 0.7)));
+      var uTm = ctx.text_measure(uS);
+      uW = uTm ? (uTm[0] + 1.0) : 5.0;
+    }
+    var totalVW = vW + uW;
+
+    var lW = 0;
+    if (hasL) {
+      ctx.set_font_size(uniformFont);
+      var lTm = ctx.text_measure(dL);
+      lW = lTm ? lTm[0] : (uniformFont * 1.5);
+    }
+
+    var neededW = Math.max(lW, totalVW);
+    if (neededW > maxW && neededW > 0) {
+      var fitted = Math.max(6, Math.floor(uniformFont * (maxW / neededW)));
+      if (fitted < uniformFont) uniformFont = fitted;
+    }
+    if (hasL && (uniformFont * 2.1 > maxH)) {
+      var fittedH = Math.max(6, Math.floor(maxH / 2.1));
+      if (fittedH < uniformFont) uniformFont = fittedH;
+    }
+  }
+
+  for (var i = 0; i < numDials; i++) {
+    draw_single_dial_face(ctx, geomList[i], i, is_preview, uniformFont);
+  }
+
+  if (!is_preview && allow_popup === 1) {
+    var dotR = Math.max(1.5, Math.min(2.8, Math.min(w, h) * 0.08));
+    var dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
+    ctx.set_source_rgba(popup_dot_color);
+    ctx.new_path();
+    ctx.arc(w - dotMargin, dotMargin, dotR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function paint() {
+  var dims = get_dimensions();
+  draw_mdial_strip(mgraphics, dims.w, dims.h, false);
+}
+
+// =============================================================
+// 8. INTERACTION ENGINE
+// =============================================================
+function get_hit_dial(x, y, w, h, dir, is_preview) {
+  var b = border_thickness * 0.5;
+  var geomList = get_dial_geometry(w, h, b, dir, is_preview);
+
+  var bestIdx = -1;
+  var bestDist = Infinity;
+
+  for (var i = 0; i < count && i < geomList.length; i++) {
+    var g = geomList[i];
+    var dx = x - g.cx;
+    var dy = y - g.cy;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist <= g.r + 6.0 && dist < bestDist) {
+      bestDist = dist;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+function accumulate_rotary_delta(mx, my, cx, cy, idx) {
+  var dx = mx - cx, dy = my - cy;
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+  var currentAngle = Math.atan2(dy, dx);
+  var deltaA = currentAngle - last_angle;
+
+  if (deltaA > Math.PI) deltaA -= Math.PI * 2.0;
+  else if (deltaA < -Math.PI) deltaA += Math.PI * 2.0;
+
+  var rMode = rotary_modes[idx] || 0;
+  var ang = get_dial_angles(rMode);
+  var deltaVal = (deltaA / ang.span) * slider_speed;
+
+  if (rMode === 3) {
+    target_vals[idx] = ((target_vals[idx] + deltaVal) % 1.0 + 1.0) % 1.0;
+  } else {
+    target_vals[idx] = clamp(target_vals[idx] + deltaVal, 0.0, 1.0);
+  }
+
+  last_angle = currentAngle;
+
+  if (click_jump === 1) {
+    vals[idx] = target_vals[idx];
+    redraw_all();
+    output_dial_event(idx);
+  }
+}
+
+function onclick(x, y, button, cmd, shift, capslock, option, ctrl) {
+  var dims = get_dimensions();
+  var w = dims.w, h = dims.h;
+  var is_right_click = (ctrl === 1);
+
+  if (allow_popup === 1) {
+    var dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
+    var dotX = w - dotMargin, dotY = dotMargin;
+    var hitR = Math.max(4.0, Math.min(8.0, Math.min(w, h) * 0.20));
+    var distToDot = Math.sqrt((x - dotX) * (x - dotX) + (y - dotY) * (y - dotY));
+    if (distToDot <= hitR || is_right_click) {
+      popup();
+      return;
+    }
+  }
+
+  if (button === 0) { onmouseup(); return; }
+
+  var hit = get_hit_dial(x, y, w, h, direction, false);
+  if (hit === -1) return;
+
+  active_dial_pressed = hit;
+  is_dragging = 1;
+  is_scrolling_drag = 0;
+  last_x = x;
+  last_y = y;
+  start_click_x = x;
+  start_click_y = y;
+  hold_gate_passed = 0;
+  click_time = new Date().getTime();
+  last_step_time = click_time;
+
+  var geomList = get_dial_geometry(w, h, border_thickness * 0.5, direction, false);
+  var g = geomList[hit];
+  last_angle = Math.atan2(y - g.cy, x - g.cx);
+
+  if (click_jump === 0) {
+    var initialTarget = point_to_normalized_dial_val(x, y, g.cx, g.cy, rotary_modes[hit] || 0);
+    execute_step_on_dial(hit, initialTarget);
+    target_vals[hit] = vals[hit];
+    start_touch_scheduler(false, hit, g.cx, g.cy);
+  } else {
+    if (mouse_modes[hit] === 1) {
+      target_vals[hit] = point_to_normalized_dial_val(x, y, g.cx, g.cy, rotary_modes[hit] || 0);
+      vals[hit] = target_vals[hit];
+      redraw_all();
+      output_dial_event(hit);
+    }
+  }
+}
+
+function ondrag(x, y, button) {
+  if (button === 0) { onmouseup(); return; }
+  if (active_dial_pressed === -1) return;
+
+  var idx = active_dial_pressed;
+  var dims = get_dimensions();
+  var geomList = get_dial_geometry(dims.w, dims.h, border_thickness * 0.5, direction, false);
+  var g = geomList[idx];
+
+  if (click_jump === 0) {
+    var distMoved = Math.sqrt((x - start_click_x) * (x - start_click_x) + (y - start_click_y) * (y - start_click_y));
+    if (distMoved > 4 && is_scrolling_drag === 0) {
+      is_scrolling_drag = 1;
+      target_vals[idx] = vals[idx];
+    }
+    if (is_scrolling_drag === 1) {
+      if (mouse_modes[idx] === 1) {
+        accumulate_rotary_delta(x, y, g.cx, g.cy, idx);
+      } else {
+        var dy = (last_y - y);
+        var deltaV = (dy / (g.r * 2.5)) * slider_speed;
+        var rMode = rotary_modes[idx] || 0;
+        if (rMode === 3) target_vals[idx] = ((target_vals[idx] + deltaV) % 1.0 + 1.0) % 1.0;
+        else target_vals[idx] = clamp(target_vals[idx] + deltaV, 0.0, 1.0);
+      }
+    }
+    last_x = x;
+    last_y = y;
+    return;
+  }
+
+  if (mouse_modes[idx] === 1) {
+    accumulate_rotary_delta(x, y, g.cx, g.cy, idx);
+  } else {
+    var dy2 = (last_y - y);
+    var deltaV2 = (dy2 / (g.r * 2.5)) * slider_speed;
+    var rMode2 = rotary_modes[idx] || 0;
+    if (rMode2 === 3) vals[idx] = ((vals[idx] + deltaV2) % 1.0 + 1.0) % 1.0;
+    else vals[idx] = clamp(vals[idx] + deltaV2, 0.0, 1.0);
+    target_vals[idx] = vals[idx];
+    last_y = y;
+    redraw_all();
+    output_dial_event(idx);
+  }
+}
+
+function onmouseup() {
+  if (active_dial_pressed !== -1) {
+    outlet(2, 0);
+  }
+  active_dial_pressed = -1;
+  is_dragging = 0;
+  is_scrolling_drag = 0;
+  hold_gate_passed = 0;
+  if (backgroundTask) {
+    backgroundTask.cancel();
+    backgroundTask = null;
+  }
+}
+
+function onidleout() { onmouseup(); }
+function onidle() { if (active_dial_pressed !== -1 || is_dragging) onmouseup(); }
+
+function onmousewheel(x, y, deltaX, deltaY) {
+  var dims = get_dimensions();
+  var hit = get_hit_dial(x, y, dims.w, dims.h, direction, false);
+  if (hit === -1 && active_dial_pressed !== -1) hit = active_dial_pressed;
+  if (hit !== -1) {
+    var delta = (deltaY !== 0 ? -deltaY : 0) * 0.005 * slider_speed;
+    var rMode = rotary_modes[hit] || 0;
+    if (rMode === 3) vals[hit] = ((vals[hit] + delta) % 1.0 + 1.0) % 1.0;
+    else vals[hit] = clamp(vals[hit] + delta, 0.0, 1.0);
+    target_vals[hit] = vals[hit];
+    redraw_all();
+    output_dial_event(hit);
+  }
+}
+
+// =============================================================
+// 9. POPUP CAROUSEL INSPECTOR WITH EXACT 8x5 UNIFORMITY
+// =============================================================
+function get_popup_min_size() {
+  var minDialD = Math.max(60.0, min_popup_dial_size);
+  var S = Math.max(0.0, dial_spacing);
+  var totalD = Math.max(1, count);
+  var off = (alignment === 1) ? clamp(offset_amount, 0.0, 1.0) : 0.0;
+
+  var neededW, neededH;
+
+  if (direction === 0) {
+    if (alignment === 0) {
+      neededW = totalD * minDialD + (totalD - 1) * S;
+      neededH = minDialD;
+    } else {
+      var shiftY = minDialD * off;
+      var stepX = (shiftY >= minDialD + S) ? S : Math.sqrt(Math.max(10, Math.pow(minDialD + S, 2) - Math.pow(shiftY, 2)));
+      neededW = minDialD + (totalD - 1) * stepX;
+      neededH = minDialD + shiftY;
+    }
+  } else {
+    if (alignment === 0) {
+      neededW = minDialD;
+      neededH = totalD * minDialD + (totalD - 1) * S;
+    } else {
+      var shiftX = minDialD * off;
+      var stepY = (shiftX >= minDialD + S) ? S : Math.sqrt(Math.max(10, Math.pow(minDialD + S, 2) - Math.pow(shiftX, 2)));
+      neededW = minDialD + shiftX;
+      neededH = minDialD + (totalD - 1) * stepY;
+    }
+  }
+
+  var minW = Math.round(neededW + 36.0);
+  var minH = Math.round(neededH + 54.0);
+
+  return { w: minW, h: minH };
+}
+
+function get_visible_rows_map() {
+  if (!show_settings_attrs) return [];
+  var list = [];
+  var d = active_edit_dial;
+  var dPrefix = (d === -1) ? "[ALL] " : ("[D" + (d + 1) + "] ");
+  var dSafe = (d >= 0) ? d : 0;
+  var currentDialSize = (d >= 0) ? dial_sizes[d] : dial_sizes[0];
+
+  if (active_mask_tab === 0) {
+    list.push({ name: dPrefix + "Mode", val: mode_options[click_jump], is_toggle: true, target_id: 125 });
+    list.push({ name: dPrefix + "Drag Axis", val: mouse_mode_names[mouse_modes[dSafe] || 0], is_toggle: true, target_id: 108 });
+    list.push({ name: dPrefix + "Min Val", val: min_vals[dSafe], is_ticker: true, key: "min_val", target_id: 104 });
+    list.push({ name: dPrefix + "Max Val", val: max_vals[dSafe], is_ticker: true, key: "max_val", target_id: 105 });
+    list.push({ name: dPrefix + "Step Size", val: step_amounts[dSafe].toFixed(2), is_ticker: true, key: "step_amount", target_id: 106 });
+    list.push({ name: "Dec Digits", val: decimal_digits, pct: decimal_digits / 8.0, is_slider: true, target_id: 120 });
+    list.push({ name: "Int Digits", val: integer_digits, pct: (integer_digits - 1) / 11.0, is_slider: true, target_id: 121 });
+    list.push({ name: "Leading 0s", val: leading_zeros ? "ON" : "OFF", is_toggle: true, target_id: 122 });
+
+  } else if (active_mask_tab === 1) {
+    list.push({ name: "Dial Count", val: count, pct: (count - 1) / 7.0, is_slider: true, target_id: 101 });
+    list.push({ name: "Orientation", val: direction === 1 ? "Vertical" : "Horizontal", is_toggle: true, target_id: 102 });
+    list.push({ name: "Alignment", val: alignment_names[alignment], is_toggle: true, target_id: 112 });
+    list.push({ name: "Spacing", val: Math.round(dial_spacing), pct: dial_spacing / 200.0, is_slider: true, target_id: 103 });
+    list.push({ name: dPrefix + "Dial Size", val: Math.round(currentDialSize * 100) + "%", pct: currentDialSize, is_slider: true, target_id: 309 });
+    list.push({ name: dPrefix + "Style", val: style_names[dial_styles[dSafe] || 0], is_toggle: true, target_id: 110 });
+    list.push({ name: dPrefix + "Ribbon Fill", val: ribbon_fill_names[ribbon_fills[dSafe] !== undefined ? ribbon_fills[dSafe] : 1], is_toggle: true, target_id: 111 });
+    list.push({ name: dPrefix + "Rotary Mode", val: rotary_mode_names[rotary_modes[dSafe] || 0], is_toggle: true, target_id: 109 });
+
+  } else if (active_mask_tab === 2) {
+    list.push({ name: "Drag Speed", val: slider_speed.toFixed(2), pct: (slider_speed - 0.1) / 1.9, is_slider: true, target_id: 126 });
+    list.push({ name: "Hold Timer", val: step_speed_ms.toFixed(0) + "ms", pct: (step_speed_ms - 5) / 95.0, is_slider: true, target_id: 127 });
+    list.push({ name: "Curve Exp", val: curve_exponent.toFixed(2), pct: curve_exponent / 1.0, is_slider: true, target_id: 128 });
+    list.push({ name: dPrefix + "Unit Suffix", val: unit_mode_names[unit_modes[dSafe] || 0], is_toggle: true, target_id: 107 });
+    list.push({ name: "Font Size", val: Math.round(text_size), pct: (text_size - 6) / 24.0, is_slider: true, target_id: 204 });
+    list.push({ name: "Font Style", val: font_style_names[font_style], is_toggle: true, target_id: 203 });
+    list.push({ name: "Label Style", val: label_mode_names[label_mode], is_toggle: true, target_id: 201 });
+    list.push({ name: "Case Style", val: case_mode_names[case_mode], is_toggle: true, target_id: 202 });
+
+  } else if (active_mask_tab === 3) {
+    list.push({ name: "Borders", val: borders ? "ON" : "OFF", is_toggle: true, target_id: 301 });
+    list.push({ name: "Background", val: show_background ? "ON" : "OFF", is_toggle: true, target_id: 302 });
+    list.push({ name: "Radius", val: Math.round(border_radius), pct: border_radius / 25.0, is_slider: true, target_id: 303 });
+    list.push({ name: "Thickness", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 304 });
+    list.push({ name: "Extension", val: Math.round(border_extension), pct: border_extension / 50.0, is_slider: true, target_id: 305 });
+    list.push({ name: "Track Breadth", val: track_breadth.toFixed(1), pct: track_breadth / 14.0, is_slider: true, target_id: 306 });
+    list.push({ name: "Handle Size", val: handle_size.toFixed(1), pct: (handle_size - 1.0) / 19.0, is_slider: true, target_id: 307 });
+    list.push({ name: "Line Size", val: needle_thickness.toFixed(1), pct: (needle_thickness - 0.5) / 9.5, is_slider: true, target_id: 308 });
+
+  } else if (active_mask_tab === 4) {
+    list.push({ name: "Face / BG Color", val: bg_color, is_color: true, key: "bg_color" });
+    list.push({ name: "Border Color", val: border_color, is_color: true, key: "border_color" });
+    list.push({ name: "Track Rail", val: track_color, is_color: true, key: "track_color" });
+    list.push({ name: "Needle / Fill", val: handle_color, is_color: true, key: "handle_color" });
+    list.push({ name: "Text Color", val: text_color, is_color: true, key: "text_color" });
+    list.push({ name: "Mode Color", val: mode_color, is_color: true, key: "mode_color" });
+    list.push({ name: "Popup Dot", val: popup_dot_color, is_color: true, key: "popup_dot_color" });
+    list.push({ name: "Popup BG", val: pop_bgcolor, is_color: true, key: "pop_bgcolor" });
+  }
+
+  return list;
+}
+
+function get_popup_dimensions_map() {
+  if (!show_settings_attrs) {
+    var minDims = get_popup_min_size();
+    return {
+      w: Math.max(popup_mini_w, minDims.w),
+      h: Math.max(popup_mini_h, minDims.h)
+    };
+  }
+  var prevH = (direction === 1 ? Math.min(110, count * 28 + 10) : 60);
+  var fixedH = 28 + prevH + 8 + 26 + 28 + 8 + (8 * 28) + 16;
+  return { w: popup_window_width, h: fixedH };
+}
+
+function update_popup_dimensions() {
+  if (showSettings && allow_popup === 1) {
+    ensurePopupWindows();
+    var dims = get_popup_dimensions_map();
+    if (!show_settings_attrs) {
+      popup_mini_w = dims.w;
+      popup_mini_h = dims.h;
+    }
+    popupWindow.size = [dims.w, dims.h];
+    popupWindow.title = "Touch Multi-Dial Inspector";
+    outMatrix = recycleMatrix(outMatrix, dims.w, dims.h);
+    popupWindow.visible = 1;
+    popupWindow.front();
+    draw_popup_to_window();
+  } else {
+    if (popupWindow) popupWindow.visible = 0;
+  }
+}
+
+function draw_popup_to_window() {
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
+  if (render_pending === 0) {
+    render_pending = 1;
+    render_task.schedule(16);
+  }
+}
+
+function draw_popup_to_window_deferred() {
+  if (!showSettings || allow_popup !== 1 || !popupWindow) return;
+  var dims = get_popup_dimensions_map();
+  var w = dims.w, h = dims.h;
+
+  popupWindow.size = [w, h];
+  outMatrix = recycleMatrix(outMatrix, w, h);
+
+  var pCtx = new MGraphics(w, h);
+  pCtx.set_source_rgba(pop_bgcolor);
+  pCtx.rectangle(0, 0, w, h);
+  pCtx.fill();
+
+  var rows = get_visible_rows_map();
+  var has_rows = rows.length > 0;
+
+  // Red Close Dot & Label
+  pCtx.set_source_rgba(0.85, 0.2, 0.2, 1.0);
+  pCtx.arc(14, 14, 5.5, 0, Math.PI * 2);
+  pCtx.fill();
+
+  pCtx.select_font_face("Arial", "normal", "normal");
+  pCtx.set_font_size(9);
+  pCtx.set_source_rgba(text_color[0], text_color[1], text_color[2], 0.45);
+  pCtx.move_to(24, 17);
+  pCtx.show_text("close");
+
+  // Toggle Hide/Show Button Pill
+  var tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
+  pCtx.set_source_rgba(attr_bg_color);
+  pCtx.rectangle_rounded(tglX, tglY, tglW, tglH, 3, 3);
+  pCtx.fill();
+
+  pCtx.set_source_rgba(attr_border_color);
+  pCtx.set_line_width(1.0);
+  pCtx.rectangle_rounded(tglX + 0.5, tglY + 0.5, tglW - 1, tglH - 1, 3, 3);
+  pCtx.stroke();
+
+  pCtx.select_font_face("Arial", "normal", "bold");
+  pCtx.set_font_size(9);
+  pCtx.set_source_rgba(attr_text_color);
+  var tglLabel = show_settings_attrs ? "hide" : "show";
+  var tglTm = pCtx.text_measure(tglLabel);
+  pCtx.move_to(tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5, tglY + 11.5);
+  pCtx.show_text(tglLabel);
+
+  // PREVIEW CHASSIS
+  var prevX = 12, prevY = 28;
+  var prevW, prevH;
+  if (has_rows) {
+    if (direction === 1) {
+      prevW = Math.min(130, w - 24);
+      prevX = (w - prevW) * 0.5;
+      prevH = Math.min(110, count * 28 + 10);
+    } else {
+      prevW = w - 24;
+      prevH = 60;
+    }
+  } else {
+    prevW = w - 24;
+    prevH = h - prevY - 14;
+  }
+  cached_preview_rect = { x: prevX, y: prevY, w: prevW, h: prevH };
+
+  pCtx.save();
+  pCtx.translate(prevX, prevY);
+  draw_mdial_strip(pCtx, prevW, prevH, true);
+  pCtx.restore();
+
+  // Mini Mode Corner Grip
+  if (!has_rows) {
+    pCtx.new_path();
+    pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.6);
+    pCtx.set_line_width(1.2);
+    pCtx.move_to(w - 14, h - 4); pCtx.line_to(w - 4, h - 14);
+    pCtx.move_to(w - 9, h - 4);  pCtx.line_to(w - 4, h - 9);
+    pCtx.stroke();
+  }
+
+  if (has_rows) {
+    var divY = prevY + prevH + 8;
+    pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
+    pCtx.set_line_width(1.0);
+    pCtx.move_to(10, divY); pCtx.line_to(w - 10, divY); pCtx.stroke();
+
+    // Selection Strip
+    var selY = divY + 6, selH = 20, selW = w - 24, selX = 12;
+    var allBtnW = 36;
+    var remainW = selW - allBtnW - 4;
+    var btnCellW = (remainW - (count - 1) * 3) / count;
+
+    var selectColor = attr_slider_color;
+    var selectTextColor = [0.10, 0.10, 0.12, 1.0];
+
+    // [ALL] Button
+    var isAll = (active_edit_dial === -1);
+    pCtx.set_source_rgba(isAll ? selectColor : attr_bg_color);
+    pCtx.rectangle_rounded(selX, selY, allBtnW, selH, 3, 3);
+    pCtx.fill();
+
+    pCtx.set_source_rgba(isAll ? selectColor : attr_border_color);
+    pCtx.set_line_width(isAll ? 1.0 : 0.75);
+    pCtx.rectangle_rounded(selX + 0.5, selY + 0.5, allBtnW - 1, selH - 1, 3, 3);
+    pCtx.stroke();
+
+    pCtx.select_font_face("Arial", "normal", "bold");
+    pCtx.set_font_size(9);
+    pCtx.set_source_rgba(isAll ? selectTextColor : attr_text_color);
+    var allTm = pCtx.text_measure("ALL");
+    pCtx.move_to(selX + (allBtnW - (allTm ? allTm[0] : 18)) * 0.5, selY + 13.5);
+    pCtx.show_text("ALL");
+
+    // D1..Dn Buttons
+    var dStartX = selX + allBtnW + 4;
+    for (var k = 0; k < count; k++) {
+      var bX = dStartX + k * (btnCellW + 3);
+      var isFocused = (k === active_edit_dial);
+
+      pCtx.set_source_rgba(isFocused ? selectColor : attr_bg_color);
+      pCtx.rectangle_rounded(bX, selY, btnCellW, selH, 3, 3);
+      pCtx.fill();
+
+      pCtx.set_source_rgba(isFocused ? selectColor : attr_border_color);
+      pCtx.set_line_width(isFocused ? 1.0 : 0.75);
+      pCtx.rectangle_rounded(bX + 0.5, selY + 0.5, btnCellW - 1, selH - 1, 3, 3);
+      pCtx.stroke();
+
+      pCtx.select_font_face("Arial", "normal", isFocused ? "bold" : "normal");
+      pCtx.set_font_size(9);
+      pCtx.set_source_rgba(isFocused ? selectTextColor : attr_text_color);
+      var bTxt = "D" + (k + 1);
+      var bTm = pCtx.text_measure(bTxt);
+      pCtx.move_to(bX + (btnCellW - (bTm ? bTm[0] : 14)) * 0.5, selY + 13.5);
+      pCtx.show_text(bTxt);
+    }
+
+    // Carousel Navigation Bar (5 Tabs)
+    var navY = selY + selH + 6, navH = 22, navW = w - 24, navX = 12;
+
+    pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.85);
+    pCtx.rectangle_rounded(navX, navY, navW, navH, 3, 3);
+    pCtx.fill();
+
+    pCtx.set_source_rgba(attr_border_color);
+    pCtx.set_line_width(1.0);
+    pCtx.rectangle_rounded(navX + 0.5, navY + 0.5, navW - 1, navH - 1, 3, 3);
+    pCtx.stroke();
+
+    var btnW = 24;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(navX + 1, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.select_font_face("Arial", "normal", "bold");
+    pCtx.set_font_size(10);
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(navX + 9, navY + 15);
+    pCtx.show_text("<");
+
+    var rBtnX = navX + navW - btnW - 1;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(rBtnX, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(rBtnX + 9, navY + 15);
+    pCtx.show_text(">");
+
+    var tabTitle = mask_tab_names[active_mask_tab] || "Category";
+    var tabTm = pCtx.text_measure(tabTitle);
+    var tabTW = tabTm ? tabTm[0] : 60;
+    pCtx.set_source_rgba(mode_color);
+    pCtx.move_to(navX + (navW - tabTW) * 0.5, navY + 15);
+    pCtx.show_text(tabTitle);
+
+    // Attribute Rows (Exactly 8 Rows)
+    var rowsStartY = navY + navH + 8;
+    var rowW = w - 24, rowX = 12;
+    var midX = rowX + rowW * 0.5;
+    var valBoxX = midX + 4, valBoxW = rowW * 0.5 - 8;
+
+    pCtx.select_font_face("Arial", "normal", "normal");
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], rY = rowsStartY + i * 28;
+
+      pCtx.set_source_rgba(attr_bg_color);
+      pCtx.rectangle(rowX, rY, rowW, 26);
+      pCtx.fill();
+
+      // Left 50%: Name
+      pCtx.set_source_rgba(attr_text_color);
+      pCtx.set_font_size(10);
+      pCtx.move_to(rowX + 6, rY + 17);
+      pCtx.show_text(r.name);
+
+      // Center Divider
+      pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
+      pCtx.set_line_width(1.0);
+      pCtx.move_to(midX, rY + 3); pCtx.line_to(midX, rY + 23); pCtx.stroke();
+
+      // Right 50%: Control
+      var vY = rY + 4, vH = 18;
+
+      if (r.is_color) {
+        pCtx.set_source_rgba(r.val);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.fill();
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(1.0);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.stroke();
+      } else if (r.is_ticker) {
+        pCtx.set_source_rgba(attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], 0.35);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.fill();
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(1.0);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.stroke();
+
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(10);
+        pCtx.move_to(valBoxX + 6, rY + 17);
+        pCtx.show_text(parseFloat(r.val).toFixed(decimal_digits));
+      } else if (r.is_slider || r.pct !== undefined) {
+        pCtx.set_source_rgba(0.12, 0.12, 0.14, 0.85);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.fill();
+
+        var fillW = Math.max(0, Math.min(valBoxW, r.pct * valBoxW));
+        pCtx.set_source_rgba(attr_slider_color);
+        pCtx.rectangle(valBoxX, vY, fillW, vH);
+        pCtx.fill();
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(1.0);
+        pCtx.rectangle(valBoxX, vY, fillW, vH);
+        pCtx.stroke();
+
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(10);
+        pCtx.move_to(valBoxX + 6, rY + 17);
+        pCtx.show_text(String(r.val));
+      } else {
+        pCtx.set_source_rgba(0.14, 0.14, 0.17, 0.70);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.fill();
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(0.75);
+        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.stroke();
+
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(10);
+        var vTm = pCtx.text_measure(String(r.val));
+        var vStrW = vTm ? vTm[0] : 20;
+        pCtx.move_to(valBoxX + Math.max(6, (valBoxW - vStrW) * 0.5), rY + 17);
+        pCtx.show_text(String(r.val));
+      }
+    }
+  }
+
+  var theImage = new Image(pCtx);
+  theImage.tonamedmatrix(outMatrix.name);
+  popupWindow.jit_matrix(outMatrix.name);
+}
+
+// =============================================================
+// 10. SUB-WINDOW: COLOR PICKER
+// =============================================================
+function get_color_target(name) {
+  if (name === "bg_color") return bg_color;
+  if (name === "border_color") return border_color;
+  if (name === "track_color") return track_color;
+  if (name === "handle_color") return handle_color;
+  if (name === "text_color") return text_color;
+  if (name === "mode_color") return mode_color;
+  if (name === "popup_dot_color") return popup_dot_color;
+  if (name === "pop_bgcolor") return pop_bgcolor;
+  if (name === "attr_bg_color") return attr_bg_color;
+  if (name === "attr_border_color") return attr_border_color;
+  if (name === "attr_slider_color") return attr_slider_color;
+  if (name === "attr_text_color") return attr_text_color;
+  return null;
+}
+
+function get_color_target_label(name) {
+  if (name === "bg_color") return "Face / BG Color";
+  if (name === "border_color") return "Border Color";
+  if (name === "track_color") return "Track Rail";
+  if (name === "handle_color") return "Needle / Fill";
+  if (name === "text_color") return "Text Color";
+  if (name === "mode_color") return "Mode Color";
+  if (name === "popup_dot_color") return "Popup Dot";
+  if (name === "pop_bgcolor") return "Popup BG";
+  return "Color Picker";
+}
+
+function initPickerFromTarget() {
+  var arr = get_color_target(active_color_target) || [1, 1, 1, 1];
+  var hsv = rgbToHsv(arr[0], arr[1], arr[2]);
+  cur_h = hsv[0]; cur_s = hsv[1]; cur_v = hsv[2];
+  cur_a = (arr[3] !== undefined ? arr[3] : 1.0);
+}
+
+function applyPickerToTarget() {
+  var rgb = hsvToRgb(cur_h, cur_s, cur_v);
+  var arr = get_color_target(active_color_target);
+  if (arr) {
+    arr[0] = rgb[0]; arr[1] = rgb[1]; arr[2] = rgb[2]; arr[3] = cur_a;
+  }
+  mark_dirty();
+  redraw_all();
+}
+
+function draw_color_picker_popup() {
+  ensurePopupWindows();
+  var winW = 200, winH = 240;
+  colorMatrix = recycleMatrix(colorMatrix, winW, winH);
+
+  var ctx = new MGraphics(winW, winH);
+  ctx.set_source_rgba(0.11, 0.11, 0.13, 1.0);
+  ctx.rectangle(0, 0, winW, winH);
+  ctx.fill();
+
+  ctx.set_source_rgba(0.8, 0.2, 0.2, 1.0);
+  ctx.arc(14, 14, 6.0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.select_font_face("Arial", "normal", "bold");
+  ctx.set_font_size(9);
+  ctx.set_source_rgba(0.85, 0.88, 0.92, 1.0);
+  ctx.move_to(28, 17);
+  ctx.show_text(get_color_target_label(active_color_target));
+
+  var hueX = 10, hueY = 28, hueW = 180, hueH = 16;
+  var huePat = ctx.pattern_create_linear(hueX, 0, hueX + hueW, 0);
+  huePat.add_color_stop_rgba(0.00, 1.0, 0.0, 0.0, 1.0);
+  huePat.add_color_stop_rgba(0.17, 1.0, 1.0, 0.0, 1.0);
+  huePat.add_color_stop_rgba(0.33, 0.0, 1.0, 0.0, 1.0);
+  huePat.add_color_stop_rgba(0.50, 0.0, 1.0, 1.0, 1.0);
+  huePat.add_color_stop_rgba(0.67, 0.0, 0.0, 1.0, 1.0);
+  huePat.add_color_stop_rgba(0.83, 1.0, 0.0, 1.0, 1.0);
+  huePat.add_color_stop_rgba(1.00, 1.0, 0.0, 0.0, 1.0);
+  ctx.set_source(huePat);
+  ctx.rectangle_rounded(hueX, hueY, hueW, hueH, 3, 3);
+  ctx.fill();
+
+  var hIndX = hueX + cur_h * hueW;
+  ctx.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+  ctx.set_line_width(1.5);
+  ctx.arc(hIndX, hueY + hueH * 0.5, 4.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  var svX = 10, svY = 50, svW = 180, svH = 115;
+  var pureHueRGB = hsvToRgb(cur_h, 1.0, 1.0);
+  ctx.set_source_rgba(pureHueRGB[0], pureHueRGB[1], pureHueRGB[2], 1.0);
+  ctx.rectangle_rounded(svX, svY, svW, svH, 3, 3);
+  ctx.fill();
+
+  var satPat = ctx.pattern_create_linear(svX, 0, svX + svW, 0);
+  satPat.add_color_stop_rgba(0.0, 1.0, 1.0, 1.0, 1.0);
+  satPat.add_color_stop_rgba(1.0, 1.0, 1.0, 1.0, 0.0);
+  ctx.set_source(satPat);
+  ctx.rectangle_rounded(svX, svY, svW, svH, 3, 3);
+  ctx.fill();
+
+  var valPat = ctx.pattern_create_linear(0, svY, 0, svY + svH);
+  valPat.add_color_stop_rgba(0.0, 0.0, 0.0, 0.0, 0.0);
+  valPat.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 1.0);
+  ctx.set_source(valPat);
+  ctx.rectangle_rounded(svX, svY, svW, svH, 3, 3);
+  ctx.fill();
+
+  var svIndX = svX + cur_s * svW;
+  var svIndY = svY + (1.0 - cur_v) * svH;
+  ctx.set_source_rgba(cur_v > 0.4 ? [0, 0, 0, 0.9] : [1, 1, 1, 0.9]);
+  ctx.set_line_width(1.2);
+  ctx.arc(svIndX, svIndY, 4.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  var opX = 10, opY = 172, opW = 180, opH = 16;
+  ctx.set_source_rgba(0.2, 0.2, 0.22, 1.0);
+  ctx.rectangle_rounded(opX, opY, opW, opH, 3, 3);
+  ctx.fill();
+  var curRGB = hsvToRgb(cur_h, cur_s, cur_v);
+  var opPat = ctx.pattern_create_linear(opX, 0, opX + opW, 0);
+  opPat.add_color_stop_rgba(0.0, curRGB[0], curRGB[1], curRGB[2], 0.0);
+  opPat.add_color_stop_rgba(1.0, curRGB[0], curRGB[1], curRGB[2], 1.0);
+  ctx.set_source(opPat);
+  ctx.rectangle_rounded(opX, opY, opW, opH, 3, 3);
+  ctx.fill();
+
+  var opIndX = opX + cur_a * opW;
+  ctx.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+  ctx.set_line_width(1.5);
+  ctx.arc(opIndX, opY + opH * 0.5, 4.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  var swX = 10, swY = 196, swW = 180, swH = 34;
+  ctx.set_source_rgba(curRGB[0], curRGB[1], curRGB[2], cur_a);
+  ctx.rectangle_rounded(swX, swY, swW, swH, 3, 3);
+  ctx.fill();
+
+  ctx.select_font_face("Arial", "normal", "bold");
+  ctx.set_font_size(9);
+  ctx.set_source_rgba(cur_v > 0.5 ? [0, 0, 0, 0.8] : [1, 1, 1, 0.9]);
+  ctx.move_to(swX + 8, swY + 21);
+  ctx.show_text(`Opacity: ${Math.round(cur_a * 100)}%`);
+
+  var img = new Image(ctx);
+  img.tonamedmatrix(colorMatrix.name);
+  colorWindow.jit_matrix(colorMatrix.name);
+}
+
+function colorWindowListenerCallback(event) {
+  if (event.eventname === "close") { colorWindow.visible = 0; picker_drag_zone = 0; return; }
+  if (event.eventname === "mouse") {
+    var args = arrayfromargs(event.args);
+    var mx = args[0], my = args[1], mbut = args[2];
+    if (mbut === 0) { picker_drag_zone = 0; return; }
+
+    if (mbut) {
+      if (mx < 24 && my < 24) {
+        colorWindow.visible = 0; picker_drag_zone = 0; redraw_all(); return;
+      }
+      if (picker_drag_zone === 0) {
+        if (mx >= 10 && mx <= 190 && my >= 24 && my <= 46) picker_drag_zone = 1;
+        else if (mx >= 10 && mx <= 190 && my >= 48 && my <= 168) picker_drag_zone = 2;
+        else if (mx >= 10 && mx <= 190 && my >= 170 && my <= 190) picker_drag_zone = 3;
+      }
+
+      if (picker_drag_zone === 1) cur_h = clamp((mx - 10) / 180, 0.0, 1.0);
+      else if (picker_drag_zone === 2) {
+        cur_s = clamp((mx - 10) / 180, 0.0, 1.0);
+        cur_v = clamp(1.0 - (my - 50) / 115, 0.0, 1.0);
+      } else if (picker_drag_zone === 3) {
+        cur_a = clamp((mx - 10) / 180, 0.0, 1.0);
+      }
+      applyPickerToTarget();
+      draw_color_picker_popup();
+    }
+  }
+}
+
+// =============================================================
+// 11. SUB-WINDOW: BOUND TICKER
+// =============================================================
+function get_ticker_digit_array(current_val) {
+  var fixed_str = Math.abs(current_val).toFixed(ticker_decimal_digits);
+  var clean_str = fixed_str.replace(".", "");
+  var total = whole_digits + ticker_decimal_digits;
+  while (clean_str.length < total) clean_str = "0" + clean_str;
+  var digits = [];
+  for (var i = 0; i < total; i++) digits.push(parseInt(clean_str.charAt(i), 10));
+  return { arr: digits, sign: current_val < 0 ? -1 : 1 };
+}
+
+function rebuild_ticker_value(digits_obj) {
+  var raw_int = 0;
+  var total = whole_digits + ticker_decimal_digits;
+  for (var i = 0; i < total; i++) raw_int = raw_int * 10 + (digits_obj.arr[i] || 0);
+  return (raw_int / Math.pow(10, ticker_decimal_digits)) * digits_obj.sign;
+}
+
+function draw_ticker_matrix_popup() {
+  ensurePopupWindows();
+  var winW = 230, winH = 200;
+  tickerMatrix = recycleMatrix(tickerMatrix, winW, winH);
+
+  var ctx = new MGraphics(winW, winH);
+  ctx.set_source_rgba(pop_bgcolor);
+  ctx.rectangle(0, 0, winW, winH);
+  ctx.fill();
+
+  ctx.set_source_rgba(0.8, 0.2, 0.2, 1.0);
+  ctx.arc(15, 15, 7.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  var dSafe = (active_edit_dial >= 0) ? active_edit_dial : 0;
+  var current_val = min_vals[dSafe];
+  if (active_ticker_target === "max_val") current_val = max_vals[dSafe];
+  if (active_ticker_target === "step_amount") current_val = step_amounts[dSafe];
+
+  var ticker_data = get_ticker_digit_array(current_val);
+
+  ctx.set_source_rgba(attr_text_color);
+  ctx.set_font_size(14);
+  ctx.move_to(35, 22);
+  ctx.show_text(ticker_data.sign < 0 ? "-" : "+");
+
+  var total_cols = whole_digits + ticker_decimal_digits;
+  for (var i = 0; i < total_cols; i++) {
+    var xOffset = 30 + i * (slider_width_px + slider_gap_px);
+    if (i >= whole_digits) xOffset += 10;
+
+    ctx.set_source_rgba(0, 0, 0, 0.25);
+    ctx.rectangle(xOffset, 35, slider_width_px, 125);
+    ctx.fill();
+
+    var continuousVal = continuous_digit_floats[i] !== undefined ? continuous_digit_floats[i] : (ticker_data.arr[i] || 0);
+    var fillHeight = clamp((continuousVal / 9.0) * 125, 0, 125);
+
+    if (i === active_ticker_column) ctx.set_source_rgba(handle_color);
+    else ctx.set_source_rgba(handle_color[0] * 0.7, handle_color[1] * 0.7, handle_color[2] * 0.7, 0.6);
+
+    ctx.rectangle(xOffset, 160 - fillHeight, slider_width_px, fillHeight);
+    ctx.fill();
+
+    ctx.set_source_rgba(attr_text_color);
+    ctx.set_font_size(11);
+    ctx.move_to(xOffset + slider_width_px / 2 - 4, 185);
+    ctx.show_text(String(ticker_data.arr[i] || 0));
+
+    if (i === whole_digits - 1) {
+      ctx.set_source_rgba(attr_text_color);
+      ctx.arc(xOffset + slider_width_px + slider_gap_px * 0.5, 155, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  var img = new Image(ctx);
+  img.tonamedmatrix(tickerMatrix.name);
+  tickerWindow.jit_matrix(tickerMatrix.name);
+}
+
+function update_ticker_value_and_redraw() {
+  mark_dirty();
+  var constrained_digit = Math.round(continuous_digit_floats[active_ticker_column]);
+  var dSafe = (active_edit_dial >= 0) ? active_edit_dial : 0;
+  var current_val = min_vals[dSafe];
+  if (active_ticker_target === "max_val") current_val = max_vals[dSafe];
+  if (active_ticker_target === "step_amount") current_val = step_amounts[dSafe];
+
+  var inner_data = get_ticker_digit_array(current_val);
+  inner_data.arr[active_ticker_column] = constrained_digit;
+  var rebuilt = rebuild_ticker_value(inner_data);
+
+  if (active_edit_dial === -1) {
+    for (var k = 0; k < count; k++) {
+      if (active_ticker_target === "min_val") min_vals[k] = rebuilt;
+      else if (active_ticker_target === "max_val") max_vals[k] = rebuilt;
+      else if (active_ticker_target === "step_amount") step_amounts[k] = Math.max(0.0001, rebuilt);
+    }
+    output_all_values();
+  } else {
+    var d = active_edit_dial;
+    if (active_ticker_target === "min_val") min_vals[d] = rebuilt;
+    else if (active_ticker_target === "max_val") max_vals[d] = rebuilt;
+    else if (active_ticker_target === "step_amount") step_amounts[d] = Math.max(0.0001, rebuilt);
+    output_dial_event(d);
+  }
+
+  draw_ticker_matrix_popup();
+  redraw_all();
+}
+
+function tickerWindowListenerCallback(event) {
+  if (event.eventname === "close") { tickerWindow.visible = 0; return; }
+  if (event.eventname === "mouse") {
+    var args = arrayfromargs(event.args);
+    var mx = args[0], my = args[1], mbut = args[2];
+    if (mbut === 0) { active_ticker_column = -1; return; }
+    if (mbut) {
+      if (mx >= 4 && mx <= 26 && my >= 4 && my <= 26) {
+        tickerWindow.visible = 0; active_ticker_column = -1; redraw_all(); return;
+      }
+      var dSafe = (active_edit_dial >= 0) ? active_edit_dial : 0;
+      var current_val = min_vals[dSafe];
+      if (active_ticker_target === "max_val") current_val = max_vals[dSafe];
+      if (active_ticker_target === "step_amount") current_val = step_amounts[dSafe];
+      var ticker_data = get_ticker_digit_array(current_val);
+
+      if (mx >= 35 && mx <= 55 && my >= 5 && my <= 25 && active_ticker_column === -1) {
+        ticker_data.sign = ticker_data.sign * -1;
+        var updated = rebuild_ticker_value(ticker_data);
+        if (active_edit_dial === -1) {
+          for (var k = 0; k < count; k++) {
+            if (active_ticker_target === "min_val") min_vals[k] = updated;
+            else if (active_ticker_target === "max_val") max_vals[k] = updated;
+            else if (active_ticker_target === "step_amount") step_amounts[k] = Math.max(0.0001, updated);
+          }
+        } else {
+          var d = active_edit_dial;
+          if (active_ticker_target === "min_val") min_vals[d] = updated;
+          else if (active_ticker_target === "max_val") max_vals[d] = updated;
+          else if (active_ticker_target === "step_amount") step_amounts[d] = Math.max(0.0001, updated);
+        }
+        mark_dirty();
+        draw_ticker_matrix_popup(); redraw_all(); active_ticker_column = 99; return;
+      }
+
+      if (active_ticker_column === -1 || active_ticker_column === 99) {
+        var total_cols = whole_digits + ticker_decimal_digits;
+        for (var i = 0; i < total_cols; i++) {
+          var xOffset = 30 + i * (slider_width_px + slider_gap_px);
+          if (i >= whole_digits) xOffset += 10;
+          if (mx >= xOffset && mx <= xOffset + slider_width_px && my >= 35 && my <= 160) {
+            active_ticker_column = i;
+            var target_val_col = clamp((160 - my) / 125, 0, 1) * 9.0;
+            continuous_digit_floats[i] = target_val_col;
+            update_ticker_value_and_redraw();
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+// =============================================================
+// 12. POPUP WINDOW LISTENER & CAROUSEL INTERACTION
+// =============================================================
+function popup(v) {
+  if (v === undefined) showSettings = !showSettings;
+  else showSettings = (Number(v) > 0) ? 1 : 0;
+
+  if (showSettings) {
+    ensurePopupWindows();
+    update_popup_dimensions();
+  } else {
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
+  }
+  mgraphics.redraw();
+}
+
+function apply_slider_target(target_id, targetPct) {
+  mark_dirty(); 
+  if (target_id === 101) set_count(Math.round(1 + targetPct * 7));
+  else if (target_id === 103) set_dial_spacing(Math.round(targetPct * 200.0));
+  else if (target_id === 309) {
+    var roundedSize = Math.round(targetPct * 100.0) / 100.0;
+    set_dial_size(roundedSize);
+  }
+  else if (target_id === 126) set_slider_speed(0.1 + targetPct * 1.9);
+  else if (target_id === 127) set_step_speed_ms(Math.round(5 + targetPct * 95));
+  else if (target_id === 128) set_curve_exponent(targetPct * 1.0);
+  else if (target_id === 120) set_decimal_digits(Math.round(targetPct * 8));
+  else if (target_id === 121) set_integer_digits(Math.round(1 + targetPct * 11));
+  else if (target_id === 204) set_text_size(Math.round(6 + targetPct * 24));
+  else if (target_id === 301) set_borders(targetPct > 0.5 ? 1 : 0);
+  else if (target_id === 302) set_show_background(targetPct > 0.5 ? 1 : 0);
+  else if (target_id === 303) set_border_radius(Math.round(targetPct * 25.0));
+  else if (target_id === 304) set_border_thickness(Math.round(targetPct * 100.0) / 10.0);
+  else if (target_id === 305) set_border_extension(Math.round(targetPct * 50.0));
+  else if (target_id === 306) set_track_breadth(Math.round((1.0 + targetPct * 14.0) * 10.0) / 10.0);
+  else if (target_id === 307) set_handle_size(Math.round((1.0 + targetPct * 19.0) * 10.0) / 10.0);
+  else if (target_id === 308) set_needle_thickness(Math.round((0.5 + targetPct * 9.5) * 10.0) / 10.0);
+  redraw_all();
+}
+
+function windowListenerCallback(event) {
+  if (event.eventname === "close") { 
+    showSettings = 0; 
+    is_resizing_window = 0; 
+    active_pop_target = -1;
+    active_pop_dial = -1;
+    return; 
+  }
+
+  var dims = get_popup_dimensions_map();
+  var w = dims.w, h = dims.h;
+  var rows = get_visible_rows_map();
+  var has_rows = rows.length > 0;
+  var pr = cached_preview_rect;
+
+  // 1. MOUSE WHEEL
+  if (event.eventname === "mousewheel") {
+    var rawArgs = arrayfromargs(event.args);
+    var mx = rawArgs[0], my = rawArgs[1], dY = rawArgs[3];
+
+    if (rawArgs.length >= 4) {
+      if (Math.abs(rawArgs[0]) <= 30 && Math.abs(rawArgs[1]) <= 30 && (rawArgs[2] > 20 || rawArgs[3] > 20)) {
+        dY = rawArgs[1]; mx = rawArgs[2]; my = rawArgs[3];
+      }
+    }
+
+    if (dY !== undefined && dY !== 0) {
+      var localX = mx - pr.x;
+      var localY = my - pr.y;
+      var hitScroll = get_hit_dial(localX, localY, pr.w, pr.h, direction, true);
+
+      if (hitScroll === -1 && active_pop_dial !== -1) hitScroll = active_pop_dial;
+      if (hitScroll === -1 && active_edit_dial >= 0 && active_edit_dial < count) hitScroll = active_edit_dial;
+
+      if (hitScroll !== -1) {
+        var scrollDelta = (-dY * 0.005) * slider_speed;
+        var rMode = rotary_modes[hitScroll] || 0;
+
+        if (rMode === 3) vals[hitScroll] = ((vals[hitScroll] + scrollDelta) % 1.0 + 1.0) % 1.0;
+        else vals[hitScroll] = clamp(vals[hitScroll] + scrollDelta, 0.0, 1.0);
+
+        target_vals[hitScroll] = vals[hitScroll];
+        output_dial_event(hitScroll);
+        redraw_all();
+      }
+    }
+    return;
+  }
+
+  // 2. MOUSE CLICK & DRAG
+  if (event.eventname === "mouse") {
+    var args = arrayfromargs(event.args);
+    var mx = args[0], my = args[1], mbut = args[2];
+    var is_pop_tap = (mbut === 1 && is_mouse_down_anywhere === 0);
+    is_mouse_down_anywhere = mbut;
+
+    if (mbut) {
+      lastMouseX = mx;
+      lastMouseY = my;
+    }
+
+    var divY = pr.y + pr.h + 8;
+    var selY = divY + 6, selH = 20, selW = w - 24, selX = 12;
+    var allBtnW = 36;
+    var remainW = selW - allBtnW - 4;
+    var btnCellW = (remainW - (count - 1) * 3) / count;
+
+    var navY = selY + selH + 6, navH = 22, navW = w - 24, navX = 12;
+    var btnW = 24, rBtnX = navX + navW - btnW - 1;
+
+    var rowsStartY = navY + navH + 8;
+    var rowW = w - 24, rowX = 12;
+    var midX = rowX + rowW * 0.5;
+    var valBoxX = midX + 4, valBoxW = rowW * 0.5 - 8;
+
+    // Mouse up
+    if (mbut === 0) {
+      is_resizing_window = 0;
+      if (active_pop_target === 50) {
+        outlet(2, 0);
+        active_pop_dial = -1;
+        is_dragging = 0;
+        is_scrolling_drag = 0;
+        hold_gate_passed = 0;
+        if (backgroundTask) {
+          backgroundTask.cancel();
+          backgroundTask = null;
+        }
+      }
+      active_pop_target = -1;
+      stop_scrolling();
+      return;
+    }
+
+    // Active Slider Dragging
+    if (active_pop_target !== -1 && active_pop_target !== 50) {
+      var dragPct = clamp((mx - valBoxX) / valBoxW, 0, 1);
+      apply_slider_target(active_pop_target, dragPct);
+      draw_popup_to_window();
+      return;
+    }
+
+    // Dragging Preview Dial
+    if (active_pop_target === 50 && active_pop_dial !== -1) {
+      var dIdx = active_pop_dial;
+      var geomListP = get_dial_geometry(pr.w, pr.h, border_thickness * 0.5, direction, true);
+
+      if (dIdx < geomListP.length) {
+        var gp = geomListP[dIdx];
+        var dialCX = pr.x + gp.cx;
+        var dialCY = pr.y + gp.cy;
+
+        if (click_jump === 0) {
+          var distMoved = Math.sqrt((mx - start_click_x) * (mx - start_click_x) + (my - start_click_y) * (my - start_click_y));
+          if (distMoved > 4 && is_scrolling_drag === 0) {
+            is_scrolling_drag = 1;
+            target_vals[dIdx] = vals[dIdx];
+          }
+          if (is_scrolling_drag === 1) {
+            if (mouse_modes[dIdx] === 1) {
+              accumulate_rotary_delta(mx, my, dialCX, dialCY, dIdx);
+            } else {
+              var dy = (last_y - my);
+              var deltaV = (dy / (gp.r * 2.5)) * slider_speed;
+              var rMode = rotary_modes[dIdx] || 0;
+              if (rMode === 3) target_vals[dIdx] = ((target_vals[dIdx] + deltaV) % 1.0 + 1.0) % 1.0;
+              else target_vals[dIdx] = clamp(target_vals[dIdx] + deltaV, 0.0, 1.0);
+            }
+          }
+          last_x = mx;
+          last_y = my;
+          return;
+        }
+
+        if (mouse_modes[dIdx] === 1) {
+          accumulate_rotary_delta(mx, my, dialCX, dialCY, dIdx);
+        } else {
+          var dy2 = (last_y - my);
+          var deltaV2 = (dy2 / (gp.r * 2.5)) * slider_speed;
+          var rMode2 = rotary_modes[dIdx] || 0;
+          if (rMode2 === 3) vals[dIdx] = ((vals[dIdx] + deltaV2) % 1.0 + 1.0) % 1.0;
+          else vals[dIdx] = clamp(vals[dIdx] + deltaV2, 0.0, 1.0);
+          target_vals[dIdx] = vals[dIdx];
+          last_y = my;
+          redraw_all();
+          output_dial_event(dIdx);
+        }
+      }
+      return;
+    }
+
+    // Mini Window Drag Resize
+    if (is_resizing_window && !has_rows) {
+      var deltaW = mx - start_click_x;
+      var deltaH = my - start_click_y;
+      var minDims = get_popup_min_size();
+
+      popup_mini_w = Math.max(minDims.w, Math.min(start_resize_w + deltaW, 3840));
+      popup_mini_h = Math.max(minDims.h, Math.min(start_resize_h + deltaH, 2160));
+
+      update_popup_dimensions();
+      return;
+    }
+
+    // Corner Grab Handle Hit
+    if (!has_rows && mx >= w - 18 && my >= h - 18) {
+      is_resizing_window = 1;
+      start_click_x = mx; start_click_y = my;
+      start_resize_w = w;  start_resize_h = h;
+      return;
+    }
+
+    // Close Button
+    if (mbut && mx < 35 && my < 26) {
+      showSettings = 0;
+      update_popup_dimensions();
+      return;
+    }
+
+    // Toggle Hide/Show Pill
+    var tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
+    if (is_pop_tap && mx >= tglX && mx <= tglX + tglW && my >= tglY && my <= tglY + tglH) {
+      show_settings_attrs = show_settings_attrs ? 0 : 1;
+      update_popup_dimensions();
+      return;
+    }
+
+    // Dial Click in Preview
+    if (mbut && mx >= pr.x && mx <= pr.x + pr.w && my >= pr.y && my <= pr.y + pr.h) {
+      var localX = mx - pr.x;
+      var localY = my - pr.y;
+      var hitDial = get_hit_dial(localX, localY, pr.w, pr.h, direction, true);
+
+      if (hitDial !== -1) {
+        active_pop_target = 50;
+        active_pop_dial = hitDial;
+        start_click_x = mx;
+        start_click_y = my;
+        last_x = mx;
+        last_y = my;
+        hold_gate_passed = 0;
+        is_scrolling_drag = 0;
+        click_time = new Date().getTime();
+        last_step_time = click_time;
+
+        var geomP2 = get_dial_geometry(pr.w, pr.h, border_thickness * 0.5, direction, true);
+        var gHit = geomP2[hitDial];
+        var hitCX = pr.x + gHit.cx;
+        var hitCY = pr.y + gHit.cy;
+        last_angle = Math.atan2(my - hitCY, mx - hitCX);
+
+        if (click_jump === 0) {
+          var targetNorm = point_to_normalized_dial_val(mx, my, hitCX, hitCY, rotary_modes[hitDial] || 0);
+          execute_step_on_dial(hitDial, targetNorm);
+          target_vals[hitDial] = vals[hitDial];
+          start_touch_scheduler(true, hitDial, hitCX, hitCY);
+        } else {
+          target_vals[hitDial] = point_to_normalized_dial_val(mx, my, hitCX, hitCY, rotary_modes[hitDial] || 0);
+          vals[hitDial] = target_vals[hitDial];
+          redraw_all();
+          output_dial_event(hitDial);
+        }
+        return;
+      }
+    }
+
+    if (!has_rows) return;
+
+    // Focused Dial Selector Strip ([ALL] + D1..D8)
+    if (is_pop_tap && my >= selY && my <= selY + selH && mx >= selX && mx <= selX + selW) {
+      if (mx <= selX + allBtnW) {
+        active_edit_dial = -1;
+      } else {
+        var dStartX2 = selX + allBtnW + 4;
+        var clickedD = Math.floor((mx - dStartX2) / (btnCellW + 3));
+        if (clickedD >= 0 && clickedD < count) {
+          active_edit_dial = clickedD;
+        }
+      }
+      draw_popup_to_window();
+      return;
+    }
+
+    // Carousel Navigation Bar Hit
+    if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
+      if (mx <= navX + btnW + 4) {
+        active_mask_tab = (active_mask_tab - 1 + 5) % 5;
+      } else if (mx >= rBtnX - 4) {
+        active_mask_tab = (active_mask_tab + 1) % 5;
+      } else {
+        active_mask_tab = (active_mask_tab + 1) % 5;
+      }
+      update_popup_dimensions();
+      return;
+    }
+
+    // Attribute Rows Click & Drag
+    if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
+      var rIdx = Math.floor((my - rowsStartY) / 28);
+      if (rIdx >= 0 && rIdx < rows.length) {
+        var r = rows[rIdx];
+        var pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
+        var d = active_edit_dial;
+
+        if (r.is_slider || r.pct !== undefined) {
+          active_pop_target = r.target_id;
+          scroll_valBoxX = valBoxX;
+          scroll_valBoxW = valBoxW;
+          apply_slider_target(r.target_id, pct);
+          stop_scrolling();
+          if (scrollTask) scrollTask.repeat();
+        } else if (is_pop_tap) {
+          mark_dirty();
+          if (r.target_id === 102) set_direction(direction ? 0 : 1);
+          else if (r.target_id === 112) set_alignment(alignment ? 0 : 1);
+          else if (r.target_id === 125) set_mode(click_jump ? 0 : 1);
+          else if (r.target_id === 108) {
+            var nextM = mouse_modes[d >= 0 ? d : 0] ? 0 : 1;
+            if (d === -1) for (var ma = 0; ma < count; ma++) mouse_modes[ma] = nextM;
+            else mouse_modes[d] = nextM;
+          } else if (r.target_id === 109) {
+            var nextR = ((rotary_modes[d >= 0 ? d : 0] || 0) + 1) % 4;
+            if (d === -1) for (var rm = 0; rm < count; rm++) rotary_modes[rm] = nextR;
+            else rotary_modes[d] = nextR;
+          } else if (r.target_id === 110) {
+            var nextS = dial_styles[d >= 0 ? d : 0] ? 0 : 1;
+            if (d === -1) for (var ds = 0; ds < count; ds++) dial_styles[ds] = nextS;
+            else dial_styles[d] = nextS;
+          } else if (r.target_id === 111) {
+            var nextF = ribbon_fills[d >= 0 ? d : 0] ? 0 : 1;
+            if (d === -1) for (var rf = 0; rf < count; rf++) ribbon_fills[rf] = nextF;
+            else ribbon_fills[d] = nextF;
+          } else if (r.target_id === 107) {
+            var nextU = ((unit_modes[d >= 0 ? d : 0] || 0) + 1) % 5;
+            if (d === -1) for (var u = 0; u < count; u++) unit_modes[u] = nextU;
+            else unit_modes[d] = nextU;
+          } else if (r.target_id === 122) set_leading_zeros(leading_zeros ? 0 : 1);
+          else if (r.target_id === 201) set_label_mode((label_mode + 1) % 5);
+          else if (r.target_id === 202) set_case_mode((case_mode + 1) % 3);
+          else if (r.target_id === 203) set_font_style((font_style + 1) % 4);
+          else if (r.target_id === 301) set_borders(borders ? 0 : 1);
+          else if (r.target_id === 302) set_show_background(show_background ? 0 : 1);
+          else if (r.is_ticker) {
+            ensurePopupWindows();
+            active_ticker_target = r.key;
+            colorWindow.visible = 0;
+            if (popupWindow && popupWindow.pos) {
+              tickerWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + rowsStartY + rIdx * 28 + 14];
+            }
+            continuous_digit_floats = [];
+            tickerWindow.visible = 1;
+            tickerWindow.front();
+            draw_ticker_matrix_popup();
+          } else if (r.is_color) {
+            ensurePopupWindows();
+            active_color_target = r.key;
+            tickerWindow.visible = 0;
+            initPickerFromTarget();
+            if (popupWindow && popupWindow.pos) {
+              colorWindow.pos = [popupWindow.pos[0] + valBoxX, popupWindow.pos[1] + rowsStartY + rIdx * 28 + 14];
+            }
+            colorWindow.visible = 1;
+            colorWindow.front();
+            draw_color_picker_popup();
+          }
+          redraw_all();
+        }
+        draw_popup_to_window();
+      }
+    }
+  }
+}
+
+// =============================================================
+// 13. ATTRIBUTE GETTERS & SETTERS
+// =============================================================
+function set_active_mask_tab(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) {
+    active_mask_tab = clamp(p, 0, 4);
+    update_popup_dimensions();
+  }
+}
+function get_active_mask_tab() { return active_mask_tab; }
+
+function set_count(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) {
+    count = clamp(p, 1, max_dials);
+    sync_arrays();
+    var minDims = get_popup_min_size();
+    popup_mini_w = Math.max(popup_mini_w, minDims.w);
+    popup_mini_h = Math.max(popup_mini_h, minDims.h);
+    update_popup_dimensions();
+    redraw_all();
+    if (typeof notifyclients === "function") notifyclients();
+  }
+}
+function get_count() { return count; }
+
+function set_direction(v) {
+  if (typeof v === "string") {
+    direction = (v.toLowerCase().indexOf("vert") !== -1 || v === "1") ? 1 : 0;
+  } else {
+    direction = parseInt(v, 10) ? 1 : 0;
+  }
+  var minDims = get_popup_min_size();
+  popup_mini_w = minDims.w;
+  popup_mini_h = minDims.h;
+  update_popup_dimensions();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_direction() { return direction; }
+
+function set_alignment(v) {
+  if (typeof v === "string") {
+    alignment = (v.toLowerCase().indexOf("offset") !== -1 || v === "1") ? 1 : 0;
+  } else {
+    alignment = parseInt(v, 10) ? 1 : 0;
+  }
+  var minDims = get_popup_min_size();
+  popup_mini_w = Math.max(popup_mini_w, minDims.w);
+  popup_mini_h = Math.max(popup_mini_h, minDims.h);
+  update_popup_dimensions();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_alignment() { return alignment; }
+
+function set_offset_amount(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) offset_amount = clamp(p, 0.0, 1.0);
+  var minDims = get_popup_min_size();
+  popup_mini_w = Math.max(popup_mini_w, minDims.w);
+  popup_mini_h = Math.max(popup_mini_h, minDims.h);
+  update_popup_dimensions();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_offset_amount() { return offset_amount; }
+
+function set_dial_spacing(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) dial_spacing = Math.max(0.0, p);
+  var minDims = get_popup_min_size();
+  popup_mini_w = Math.max(popup_mini_w, minDims.w);
+  popup_mini_h = Math.max(popup_mini_h, minDims.h);
+  update_popup_dimensions();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_dial_spacing() { return dial_spacing; }
+
+function set_dial_size() {
+  var a = arrayfromargs(arguments);
+  if (a.length === 0) return;
+
+  if (a.length > 1) {
+    for (var i = 0; i < max_dials && i < a.length; i++) {
+      var val = Number(a[i]);
+      if (val > 1.0) val = val / 100.0;
+      dial_sizes[i] = clamp(val, 0.0, 1.0);
+    }
+  } else {
+    var p = parseFloat(a[0]);
+    if (!isNaN(p)) {
+      if (p > 1.0) p = p / 100.0;
+      var clamped = clamp(p, 0.0, 1.0);
+      if (active_edit_dial === -1) {
+        for (var k = 0; k < count; k++) dial_sizes[k] = clamped;
+      } else {
+        dial_sizes[active_edit_dial] = clamped;
+      }
+    }
+  }
+  mark_dirty();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+
+function get_dial_size() { 
+  var d = (active_edit_dial >= 0) ? active_edit_dial : 0;
+  return dial_sizes[d]; 
+}
+
+function set_dial_sizes() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) {
+    dial_sizes[i] = clamp(Number(a[i]), 0.0, 1.0);
+  }
+  mark_dirty();
+  redraw_all();
+}
+
+function set_mode(v) {
+  if (typeof v === "string") {
+    var s = v.toLowerCase();
+    click_jump = (s === "mouse" || s === "click" || s === "1" || s === "true" || s === "on") ? 1 : 0;
+  } else {
+    click_jump = parseInt(v, 10) ? 1 : 0;
+  }
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_mode() { return click_jump; }
+
+function set_decimal_digits(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) decimal_digits = clamp(p, 0, 8);
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_decimal_digits() { return decimal_digits; }
+
+function set_integer_digits(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) integer_digits = clamp(p, 1, 12);
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_integer_digits() { return integer_digits; }
+
+function set_leading_zeros(v) {
+  leading_zeros = parseInt(v, 10) ? 1 : 0;
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_leading_zeros() { return leading_zeros; }
+
+function set_step_speed_ms(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) step_speed_ms = clamp(p, 1, 500);
+  redraw_all();
+}
+function get_step_speed_ms() { return step_speed_ms; }
+
+function set_curve_exponent(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) curve_exponent = clamp(p, 0.0, 2.0);
+  redraw_all();
+}
+function get_curve_exponent() { return curve_exponent; }
+
+function set_slider_speed(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) slider_speed = clamp(p, 0.1, 5.0);
+  redraw_all();
+}
+function get_slider_speed() { return slider_speed; }
+
+function set_borders(v) { borders = parseInt(v, 10) ? 1 : 0; redraw_all(); }
+function get_borders() { return borders; }
+
+function set_show_background(v) { show_background = parseInt(v, 10) ? 1 : 0; redraw_all(); }
+function get_show_background() { return show_background; }
+
+function set_border_radius(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) border_radius = Math.max(0.0, p);
+  redraw_all();
+}
+function get_border_radius() { return border_radius; }
+
+function set_border_thickness(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) border_thickness = Math.max(0.0, p);
+  redraw_all();
+}
+function get_border_thickness() { return border_thickness; }
+
+function set_border_extension(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) border_extension = Math.max(0.0, p);
+  redraw_all();
+}
+function get_border_extension() { return border_extension; }
+
+function set_labels() {
+  var args = arrayfromargs(arguments);
+  labels_raw = args.join(" ");
+  sync_arrays();
+  redraw_all();
+  if (typeof notifyclients === "function") notifyclients();
+}
+function get_labels() { return labels_raw; }
+
+function set_label_mode(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) label_mode = clamp(p, 0, 4);
+  redraw_all();
+}
+function get_label_mode() { return label_mode; }
+
+function set_case_mode(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) case_mode = clamp(p, 0, 2);
+  redraw_all();
+}
+function get_case_mode() { return case_mode; }
+
+function set_font_name(v) {
+  if (v !== undefined && v !== null) font_name = String(v);
+  redraw_all();
+}
+function get_font_name() { return font_name; }
+
+function set_text_size(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) text_size = Math.max(6, p);
+  redraw_all();
+}
+function get_text_size() { return text_size; }
+
+function set_font_style(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) font_style = clamp(p, 0, 3);
+  redraw_all();
+}
+function get_font_style() { return font_style; }
+
+function set_track_breadth(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) track_breadth = Math.max(0.5, p);
+  redraw_all();
+}
+function get_track_breadth() { return track_breadth; }
+
+function set_handle_size(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) handle_size = Math.max(1.0, p);
+  redraw_all();
+}
+function get_handle_size() { return handle_size; }
+
+function set_needle_thickness(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) needle_thickness = Math.max(0.5, p);
+  redraw_all();
+}
+function get_needle_thickness() { return needle_thickness; }
+
+function set_allow_popup(v) {
+  allow_popup = parseInt(v, 10) ? 1 : 0;
+  if (!allow_popup && showSettings) {
+    showSettings = 0;
+    if (popupWindow) popupWindow.visible = 0;
+    if (colorWindow) colorWindow.visible = 0;
+    if (tickerWindow) tickerWindow.visible = 0;
+  }
+  redraw_all();
+}
+function get_allow_popup() { return allow_popup; }
+
+function set_show_settings_attrs(v) {
+  show_settings_attrs = parseInt(v, 10) ? 1 : 0;
+  update_popup_dimensions();
+}
+function get_show_settings_attrs() { return show_settings_attrs; }
+
+function set_popup_mini_size(w, h) {
+  var pw = parseFloat(w), ph = parseFloat(h);
+  var minDims = get_popup_min_size();
+  if (!isNaN(pw)) popup_mini_w = Math.max(minDims.w, Math.min(pw, 3840));
+  if (!isNaN(ph)) popup_mini_h = Math.max(minDims.h, Math.min(ph, 2160));
+  update_popup_dimensions();
+}
+function get_popup_mini_size() { return [popup_mini_w, popup_mini_h]; }
+
+function set_bg_color() { bg_color = rgba_values(arguments, bg_color); mark_dirty(); redraw_all(); }
+function get_bg_color() { return bg_color; }
+function set_border_color() { border_color = rgba_values(arguments, border_color); mark_dirty(); redraw_all(); }
+function get_border_color() { return border_color; }
+function set_track_color() { track_color = rgba_values(arguments, track_color); mark_dirty(); redraw_all(); }
+function get_track_color() { return track_color; }
+function set_handle_color() { handle_color = rgba_values(arguments, handle_color); mark_dirty(); redraw_all(); }
+function get_handle_color() { return handle_color; }
+function set_text_color() { text_color = rgba_values(arguments, text_color); mark_dirty(); redraw_all(); }
+function get_text_color() { return text_color; }
+function set_mode_color() { mode_color = rgba_values(arguments, mode_color); mark_dirty(); redraw_all(); }
+function get_mode_color() { return mode_color; }
+function set_popup_dot_color() { popup_dot_color = rgba_values(arguments, popup_dot_color); mark_dirty(); redraw_all(); }
+function get_popup_dot_color() { return popup_dot_color; }
+
+function set_pop_bgcolor() { pop_bgcolor = rgba_values(arguments, pop_bgcolor); mark_dirty(); redraw_all(); }
+function get_pop_bgcolor() { return pop_bgcolor; }
+function set_attr_bg_color() { attr_bg_color = rgba_values(arguments, attr_bg_color); mark_dirty(); redraw_all(); }
+function get_attr_bg_color() { return attr_bg_color; }
+function set_attr_border_color() { attr_border_color = rgba_values(arguments, attr_border_color); mark_dirty(); redraw_all(); }
+function get_attr_border_color() { return attr_border_color; }
+function set_attr_slider_color() { attr_slider_color = rgba_values(arguments, attr_slider_color); mark_dirty(); redraw_all(); }
+function get_attr_slider_color() { return attr_slider_color; }
+function set_attr_text_color() { attr_text_color = rgba_values(arguments, attr_text_color); mark_dirty(); redraw_all(); }
+function get_attr_text_color() { return attr_text_color; }
+
+function set_min_vals() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) min_vals[i] = Number(a[i]);
+  mark_dirty();
+  redraw_all();
+}
+function set_max_vals() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) max_vals[i] = Number(a[i]);
+  mark_dirty();
+  redraw_all();
+}
+function set_step_amounts() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) step_amounts[i] = Math.max(0.0001, Number(a[i]));
+  mark_dirty();
+  redraw_all();
+}
+function set_mouse_modes() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) mouse_modes[i] = parseInt(a[i], 10) ? 1 : 0;
+  mark_dirty();
+  redraw_all();
+}
+function set_rotary_modes() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) rotary_modes[i] = clamp(parseInt(a[i], 10) || 0, 0, 3);
+  mark_dirty();
+  redraw_all();
+}
+function set_dial_styles() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) dial_styles[i] = parseInt(a[i], 10) ? 1 : 0;
+  mark_dirty();
+  redraw_all();
+}
+function set_ribbon_fills() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) ribbon_fills[i] = parseInt(a[i], 10) ? 1 : 0;
+  mark_dirty();
+  redraw_all();
+}
+function set_unit_modes() {
+  var a = arrayfromargs(arguments);
+  for (var i = 0; i < max_dials && i < a.length; i++) unit_modes[i] = clamp(parseInt(a[i], 10) || 0, 0, 4);
+  mark_dirty();
+  redraw_all();
+}
+
+// =============================================================
+// 14. INLET MESSAGE PARSER
+// =============================================================
+function msg_int(v) { msg_float(v); }
+
+function msg_float(v) {
+  var parsed = parseFloat(v);
+  if (isNaN(parsed)) return;
+  var span = max_vals[0] - min_vals[0];
+  vals[0] = clamp(span !== 0 ? (parsed - min_vals[0]) / span : 0.0, 0.0, 1.0);
+  target_vals[0] = vals[0];
+  redraw_all();
+  output_dial_event(0);
+}
+
+function list() {
+  var args = arrayfromargs(arguments);
+  if (args.length === 0) return;
+
+  if (args.length === 2 && typeof args[0] === "number" && args[0] >= 1 && args[0] <= count) {
+    var dIdx = Math.floor(args[0]) - 1;
+    var span = max_vals[dIdx] - min_vals[dIdx];
+    vals[dIdx] = clamp(span !== 0 ? (Number(args[1]) - min_vals[dIdx]) / span : 0.0, 0.0, 1.0);
+    target_vals[dIdx] = vals[dIdx];
+    redraw_all();
+    output_dial_event(dIdx);
+    return;
+  }
+
+  for (var i = 0; i < count && i < args.length; i++) {
+    var span2 = max_vals[i] - min_vals[i];
+    vals[i] = clamp(span2 !== 0 ? (Number(args[i]) - min_vals[i]) / span2 : 0.0, 0.0, 1.0);
+    target_vals[i] = vals[i];
+  }
+  redraw_all();
+  output_all_values();
+}
+
+function anything() {
+  var args = arrayfromargs(arguments);
+  var msg = messagename.toLowerCase();
+
+  for (var b = 0; b < count; b++) {
+    var bTag = String(get_dial_tag(b)).toLowerCase();
+    if (msg === bTag && args.length > 0) {
+      var valIn = Number(args[0]);
+      var span = max_vals[b] - min_vals[b];
+      vals[b] = clamp(span !== 0 ? (valIn - min_vals[b]) / span : 0.0, 0.0, 1.0);
+      target_vals[b] = vals[b];
+      redraw_all();
+      output_dial_event(b);
+      return;
+    }
+  }
+
+  if (msg === "update" || msg === "theme_update" || msg === "refresh" || msg === "refresh_theme") {
+    if (themeBus && themeBus.theme) onThemeUpdate(themeBus.theme);
+    else loadThemeFromDict();
+    return;
+  }
+
+  var name = msg.replace(/^set_?/, "");
+  if (name === "size" || name === "dial_radius" || name === "dial_scale") name = "dial_size";
+  if (name === "spacing") name = "dial_spacing";
+  if (name === "orientation") name = "direction";
+  if (name === "align" || name === "layout") name = "alignment";
+  if (name === "num_dials" || name === "dials") name = "count";
+  if (name === "corner_radius") name = "border_radius";
+  if (name === "bordersize" || name === "border_size") name = "border_thickness";
+  if (name === "corners" || name === "border") name = "borders";
+  if (name === "bg" || name === "background") name = "show_background";
+
+  if (name === "decimals" || name === "decimaldigits" || name === "precision") name = "decimal_digits";
+  if (name === "integers" || name === "integerdigits") name = "integer_digits";
+  if (name === "leadingzeros" || name === "lead_zeros") name = "leading_zeros";
+  if (name === "touch" || name === "mode") name = "mode";
+  if (name === "linesize" || name === "line_size") name = "needle_thickness";
+
+  if (typeof this["set_" + name] === "function") {
+    this["set_" + name].apply(this, args);
+  }
+  redraw_all();
+}
+
+// =============================================================
+// 15. MAX DECLAREATTRIBUTE DEFINITIONS
+// NOTE: embed: 0 on dial_size prevents Max from overriding individual
+// per-dial sizes with a single scalar attribute on patch reload.
+// =============================================================
+declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry", "3. Settings", "4. Styles", "5. Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 1 });
+declareattribute("count", { type: "int", label: "Dial Count", setter: "set_count", getter: "get_count", category: "Geometry", min: 1, max: 8, embed: 1 });
+declareattribute("direction", { type: "int", style: "enumindex", enumvals: ["Horizontal", "Vertical"], label: "Strip Orientation", setter: "set_direction", getter: "get_direction", category: "Geometry", embed: 1 });
+declareattribute("alignment", { type: "int", style: "enumindex", enumvals: ["Strip", "Offset"], label: "Alignment Mode", setter: "set_alignment", getter: "get_alignment", category: "Geometry", embed: 1 });
+declareattribute("offset_amount", { type: "float", label: "Offset Shift", setter: "set_offset_amount", getter: "get_offset_amount", category: "Geometry", min: 0.0, max: 1.0, embed: 1 });
+declareattribute("dial_spacing", { type: "float", label: "Dial Spacing", setter: "set_dial_spacing", getter: "get_dial_spacing", category: "Geometry", min: 0.0, max: 200.0, embed: 1 });
+declareattribute("dial_size", { type: "float", label: "Dial Size Ratio", setter: "set_dial_size", getter: "get_dial_size", category: "Geometry", min: 0.0, max: 1.0, embed: 0 });
+declareattribute("mode", { type: "int", style: "enumindex", enumvals: ["Touch", "Mouse"], label: "Interaction Mode", setter: "set_mode", getter: "get_mode", category: "Performance", embed: 1 });
+
+declareattribute("decimal_digits", { type: "int", label: "Decimal Digits", setter: "set_decimal_digits", getter: "get_decimal_digits", category: "Performance", embed: 1 });
+declareattribute("integer_digits", { type: "int", label: "Integer Digits", setter: "set_integer_digits", getter: "get_integer_digits", category: "Performance", embed: 1 });
+declareattribute("leading_zeros", { type: "int", style: "onoff", label: "Leading Zeros", setter: "set_leading_zeros", getter: "get_leading_zeros", category: "Performance", embed: 1 });
+
+declareattribute("labels", { type: "symbol", label: "Dial Labels (space separated)", setter: "set_labels", getter: "get_labels", category: "Settings", embed: 1 });
+declareattribute("label_mode", { type: "int", style: "enumindex", enumvals: ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"], label: "Label Style", setter: "set_label_mode", getter: "get_label_mode", category: "Settings", embed: 1 });
+declareattribute("case_mode", { type: "int", style: "enumindex", enumvals: ["First Cap", "All Cap", "All Small"], label: "Case Style", setter: "set_case_mode", getter: "get_case_mode", category: "Settings", embed: 1 });
+declareattribute("font_name", { type: "symbol", style: "font", label: "Font Face", setter: "set_font_name", getter: "get_font_name", category: "Settings", embed: 1 });
+declareattribute("text_size", { type: "int", label: "Font Size", setter: "set_text_size", getter: "get_text_size", category: "Settings", embed: 1 });
+declareattribute("font_style", { type: "int", style: "enumindex", enumvals: ["Regular", "Bold", "Italic", "Bold Italic"], label: "Font Style", setter: "set_font_style", getter: "get_font_style", category: "Settings", embed: 1 });
+
+declareattribute("borders", { type: "int", style: "onoff", label: "Show Outer Borders", setter: "set_borders", getter: "get_borders", category: "Styles", embed: 1 });
+declareattribute("show_background", { type: "int", style: "onoff", label: "Show Background", setter: "set_show_background", getter: "get_show_background", category: "Styles", embed: 1 });
+declareattribute("border_radius", { type: "float", label: "Border Radius", setter: "set_border_radius", getter: "get_border_radius", category: "Styles", embed: 1 });
+declareattribute("border_thickness", { type: "float", label: "Border Thickness", setter: "set_border_thickness", getter: "get_border_thickness", category: "Styles", embed: 1 });
+declareattribute("border_extension", { type: "float", label: "Border Extension", setter: "set_border_extension", getter: "get_border_extension", category: "Styles", embed: 1 });
+
+declareattribute("track_breadth", { type: "float", label: "Track Breadth", setter: "set_track_breadth", getter: "get_track_breadth", category: "Styles", embed: 1 });
+declareattribute("handle_size", { type: "float", label: "Handle Size (Orb)", setter: "set_handle_size", getter: "get_handle_size", category: "Styles", embed: 1 });
+declareattribute("needle_thickness", { type: "float", label: "Line Size (Needle)", setter: "set_needle_thickness", getter: "get_needle_thickness", category: "Styles", embed: 1 });
+
+declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Popup", setter: "set_allow_popup", getter: "get_allow_popup", category: "Popup", embed: 1 });
+declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", setter: "set_show_settings_attrs", getter: "get_show_settings_attrs", category: "Popup", embed: 1 });
+declareattribute("popup_mini_size", { type: "float", size: 2, label: "Mini Size (W H)", setter: "set_popup_mini_size", getter: "get_popup_mini_size", category: "Popup", embed: 1 });
+
+declareattribute("bg_color", { type: "rgba", style: "rgba", label: "Face / BG Color", setter: "set_bg_color", getter: "get_bg_color", category: "Colors", embed: 1 });
+declareattribute("border_color", { type: "rgba", style: "rgba", label: "Border Color", setter: "set_border_color", getter: "get_border_color", category: "Colors", embed: 1 });
+declareattribute("track_color", { type: "rgba", style: "rgba", label: "Track Rail Color", setter: "set_track_color", getter: "get_track_color", category: "Colors", embed: 1 });
+declareattribute("handle_color", { type: "rgba", style: "rgba", label: "Needle / Fill Color", setter: "set_handle_color", getter: "get_handle_color", category: "Colors", embed: 1 });
+declareattribute("text_color", { type: "rgba", style: "rgba", label: "Text Color", setter: "set_text_color", getter: "get_text_color", category: "Colors", embed: 1 });
+declareattribute("mode_color", { type: "rgba", style: "rgba", label: "Mode Color", setter: "set_mode_color", getter: "get_mode_color", category: "Colors", embed: 1 });
+declareattribute("popup_dot_color", { type: "rgba", style: "rgba", label: "Popup Dot Color", setter: "set_popup_dot_color", getter: "get_popup_dot_color", category: "Colors", embed: 1 });
+declareattribute("pop_bgcolor", { type: "rgba", style: "rgba", label: "Popup BG Color", setter: "set_pop_bgcolor", getter: "get_pop_bgcolor", category: "Colors", embed: 1 });
+
+declareattribute("attr_bg_color", { type: "rgba", style: "rgba", label: "Attr BG Color", setter: "set_attr_bg_color", getter: "get_attr_bg_color", category: "Popup Colors", embed: 1 });
+declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Attr Border Color", setter: "set_attr_border_color", getter: "get_attr_border_color", category: "Popup Colors", embed: 1 });
+declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", setter: "set_attr_slider_color", getter: "get_attr_slider_color", category: "Popup Colors", embed: 1 });
+declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 1 });
+
+// =============================================================
+// 16. WIRELESS THEME BUS SUBSCRIBER
+// =============================================================
+var themeBus = new Global("touch_theme_bus");
+if (!themeBus.subscribers || typeof themeBus.subscribers !== "object") {
+  themeBus.subscribers = {};
+}
+
+function loadThemeFromDict() {
+  var initDict = new Dict("touch_theme_store");
+  if (!initDict) return;
+  try {
+    if (initDict.contains("bg_color")) bg_color = rgba_values(initDict.get("bg_color"), bg_color);
+    if (initDict.contains("border_color")) border_color = rgba_values(initDict.get("border_color"), border_color);
+    if (initDict.contains("border_radius")) border_radius = Math.max(0.0, Number(initDict.get("border_radius")));
+    if (initDict.contains("border_thickness")) border_thickness = Math.max(0.0, Number(initDict.get("border_thickness")));
+    if (initDict.contains("border_extension")) border_extension = Math.max(0.0, Number(initDict.get("border_extension")));
+
+    if (initDict.contains("text_color")) text_color = rgba_values(initDict.get("text_color"), text_color);
+    if (initDict.contains("mode_color")) mode_color = rgba_values(initDict.get("mode_color"), mode_color);
+
+    var kVal = initDict.contains("slider_handle_color") ? initDict.get("slider_handle_color") : (initDict.contains("highlight_color") ? initDict.get("highlight_color") : null);
+    if (kVal) handle_color = rgba_values(kVal, handle_color);
+
+    var rColVal = initDict.contains("slider_rail_color") ? initDict.get("slider_rail_color") : (initDict.contains("track_color") ? initDict.get("track_color") : null);
+    if (rColVal) track_color = rgba_values(rColVal, track_color);
+
+    if (initDict.contains("popup_dot_color")) popup_dot_color = rgba_values(initDict.get("popup_dot_color"), popup_dot_color);
+    if (initDict.contains("pop_bgcolor")) pop_bgcolor = rgba_values(initDict.get("pop_bgcolor"), pop_bgcolor);
+    if (initDict.contains("attr_bg_color")) attr_bg_color = rgba_values(initDict.get("attr_bg_color"), attr_bg_color);
+    if (initDict.contains("attr_border_color")) attr_border_color = rgba_values(initDict.get("attr_border_color"), attr_border_color);
+    if (initDict.contains("attr_slider_color")) attr_slider_color = rgba_values(initDict.get("attr_slider_color"), attr_slider_color);
+    if (initDict.contains("attr_text_color")) attr_text_color = rgba_values(initDict.get("attr_text_color"), attr_text_color);
+
+    mgraphics.redraw();
+  } catch(e) {}
+}
+
+function onThemeUpdate(theme) {
+  if (!theme) return;
+  try {
+    if (theme.bg_color) bg_color = rgba_values(theme.bg_color, bg_color);
+    if (theme.border_color) border_color = rgba_values(theme.border_color, border_color);
+    if (theme.border_radius !== undefined) border_radius = Math.max(0.0, Number(theme.border_radius));
+    if (theme.border_thickness !== undefined) border_thickness = Math.max(0.0, Number(theme.border_thickness));
+    if (theme.border_extension !== undefined) border_extension = Math.max(0.0, Number(theme.border_extension));
+
+    if (theme.text_color) text_color = rgba_values(theme.text_color, text_color);
+    if (theme.mode_color) mode_color = rgba_values(theme.mode_color, mode_color);
+
+    var knobColor = theme.slider_handle_color || theme.handle_color || theme.highlight_color || theme.accent_color;
+    if (knobColor) handle_color = rgba_values(knobColor, handle_color);
+
+    var railColor = theme.slider_rail_color || theme.track_color;
+    if (railColor) track_color = rgba_values(railColor, track_color);
+
+    if (theme.popup_dot_color) popup_dot_color = rgba_values(theme.popup_dot_color, popup_dot_color);
+    if (theme.pop_bgcolor) pop_bgcolor = rgba_values(theme.pop_bgcolor, pop_bgcolor);
+    if (theme.attr_bg_color) attr_bg_color = rgba_values(theme.attr_bg_color, attr_bg_color);
+    if (theme.attr_border_color) attr_border_color = rgba_values(theme.attr_border_color, attr_border_color);
+    if (theme.attr_slider_color) attr_slider_color = rgba_values(theme.attr_slider_color, attr_slider_color);
+    if (theme.attr_text_color) attr_text_color = rgba_values(theme.attr_text_color, attr_text_color);
+
+    mgraphics.redraw();
+  } catch(e) {}
+}
+
+themeBus.subscribers[uniqueID] = onThemeUpdate;
+if (themeBus && themeBus.theme && (themeBus.theme.bg_color || themeBus.theme.border_color || themeBus.theme.handle_color)) {
+  onThemeUpdate(themeBus.theme);
+} else {
+  loadThemeFromDict();
+}
+
+// =============================================================
+// 17. PERSISTENCE (SAVE) & LIFECYCLE DESTRUCTION
+// =============================================================
+function save() {
+  embedmessage("set_active_mask_tab", active_mask_tab);
+  embedmessage("set_count", count);
+  embedmessage("set_direction", direction);
+  embedmessage("set_alignment", alignment);
+  embedmessage("set_offset_amount", offset_amount);
+  embedmessage("set_dial_spacing", dial_spacing);
+  embedmessage("set_labels", labels_raw);
+
+  embedmessage("set_mode", click_jump);
+  embedmessage("set_decimal_digits", decimal_digits);
+  embedmessage("set_integer_digits", integer_digits);
+  embedmessage("set_leading_zeros", leading_zeros);
+  embedmessage("set_step_speed_ms", step_speed_ms);
+  embedmessage("set_curve_exponent", curve_exponent);
+  embedmessage("set_slider_speed", slider_speed);
+
+  embedmessage("set_label_mode", label_mode);
+  embedmessage("set_case_mode", case_mode);
+  embedmessage("set_font_name", font_name);
+  embedmessage("set_text_size", text_size);
+  embedmessage("set_font_style", font_style);
+
+  embedmessage("set_borders", borders);
+  embedmessage("set_show_background", show_background);
+  embedmessage("set_border_radius", border_radius);
+  embedmessage("set_border_thickness", border_thickness);
+  embedmessage("set_border_extension", border_extension);
+
+  embedmessage("set_track_breadth", track_breadth);
+  embedmessage("set_handle_size", handle_size);
+  embedmessage("set_needle_thickness", needle_thickness);
+
+  embedmessage("set_allow_popup", allow_popup);
+  embedmessage("set_show_settings_attrs", show_settings_attrs);
+  embedmessage("set_popup_mini_size", popup_mini_w, popup_mini_h);
+
+  embedmessage("set_bg_color", bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+  embedmessage("set_border_color", border_color[0], border_color[1], border_color[2], border_color[3]);
+  embedmessage("set_track_color", track_color[0], track_color[1], track_color[2], track_color[3]);
+  embedmessage("set_handle_color", handle_color[0], handle_color[1], handle_color[2], handle_color[3]);
+  embedmessage("set_text_color", text_color[0], text_color[1], text_color[2], text_color[3]);
+  embedmessage("set_mode_color", mode_color[0], mode_color[1], mode_color[2], mode_color[3]);
+  embedmessage("set_popup_dot_color", popup_dot_color[0], popup_dot_color[1], popup_dot_color[2], popup_dot_color[3]);
+
+  embedmessage("set_pop_bgcolor", pop_bgcolor[0], pop_bgcolor[1], pop_bgcolor[2], pop_bgcolor[3]);
+  embedmessage("set_attr_bg_color", attr_bg_color[0], attr_bg_color[1], attr_bg_color[2], attr_bg_color[3]);
+  embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], attr_border_color[2], attr_border_color[3]);
+  embedmessage("set_attr_slider_color", attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], attr_slider_color[3]);
+  embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
+
+  // Persist all 8 slots so individual dial parameters survive patch save & reload:
+  embedmessage.apply(this, ["set_dial_sizes"].concat(dial_sizes));
+  embedmessage.apply(this, ["set_min_vals"].concat(min_vals));
+  embedmessage.apply(this, ["set_max_vals"].concat(max_vals));
+  embedmessage.apply(this, ["set_step_amounts"].concat(step_amounts));
+  embedmessage.apply(this, ["set_mouse_modes"].concat(mouse_modes));
+  embedmessage.apply(this, ["set_rotary_modes"].concat(rotary_modes));
+  embedmessage.apply(this, ["set_dial_styles"].concat(dial_styles));
+  embedmessage.apply(this, ["set_ribbon_fills"].concat(ribbon_fills));
+  embedmessage.apply(this, ["set_unit_modes"].concat(unit_modes));
+  embedmessage.apply(this, ["list"].concat(getAllScaledValues()));
+}
+
+function notifydeleted() {
+  if (render_task) { try { render_task.cancel(); } catch(e) {} }
+  if (scrollTask) { try { scrollTask.cancel(); } catch(e) {} }
+  if (backgroundTask) { try { backgroundTask.cancel(); } catch(e) {} }
+  try { if (themeBus && themeBus.subscribers && themeBus.subscribers[uniqueID]) delete themeBus.subscribers[uniqueID]; } catch(e) {}
+
+  try { if (windowListener) windowListener.subjectname = ""; } catch(e) {}
+  try { if (colorListener) colorListener.subjectname = ""; } catch(e) {}
+  try { if (tickerListener) tickerListener.subjectname = ""; } catch(e) {}
+
+  try { if (popupWindow) popupWindow.visible = 0; } catch(e) {}
+  try { if (colorWindow) colorWindow.visible = 0; } catch(e) {}
+  try { if (tickerWindow) tickerWindow.visible = 0; } catch(e) {}
+
+  try { if (popupWindow) popupWindow.free(); } catch(e) {}
+  try { if (colorWindow) colorWindow.free(); } catch(e) {}
+  try { if (tickerWindow) tickerWindow.free(); } catch(e) {}
+
+  try { if (outMatrix) outMatrix.freepeer(); } catch(e) {}
+  try { if (colorMatrix) colorMatrix.freepeer(); } catch(e) {}
+  try { if (tickerMatrix) tickerMatrix.freepeer(); } catch(e) {}
+
+  popupWindow = null;
+  colorWindow = null;
+  tickerWindow = null;
+  outMatrix = null;
+  colorMatrix = null;
+  tickerMatrix = null;
+}
+
+// Initial Sync
+sync_arrays();
