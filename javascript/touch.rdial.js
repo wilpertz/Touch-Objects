@@ -19,6 +19,17 @@ setoutletassist(0, "Scaled dial output value");
 
 var uniqueID = Math.floor(Math.random() * 1000000);
 
+var meter_levels = [];
+
+function meter() {
+  var args = arrayfromargs(arguments);
+  meter_levels = [];
+  for (var i = 0; i < args.length; i++) {
+    meter_levels.push(clamp(Number(args[i]), 0.0, 1.0));
+  }
+  mgraphics.redraw();
+}
+
 // =============================================================
 // 1. STATE & ROTARY ENGINES
 // =============================================================
@@ -52,7 +63,7 @@ var ribbon_fill_names = ["Single Line", "Arc Fill"];
 var rotary_mode = 0;
 var rotary_mode_names = ["270", "360 Top", "360 Bottom", "360 Continuous"];
 
-var mouse_mode = 1; // Default: Radial (TOUCH Design)
+var mouse_mode = 1; // 0 = Vertical, 1 = Radial (TOUCH Design)
 var mouse_mode_names = ["Vertical", "Radial"];
 
 var click_jump = 0;
@@ -125,7 +136,7 @@ var mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 
 var showSettings = 0;
 var popup_window_width = 280;
-var popup_window_fixed_h = 550; // Snug height for 13 rows
+var popup_window_fixed_h = 574;
 var popup_mini_w       = 190;
 var popup_mini_h       = 190;
 var start_resize_w     = 190;
@@ -199,7 +210,7 @@ function recycleMatrix(mat, w, h) {
 }
 
 // =============================================================
-// 4. LOCAL PRESET HOOKS (touch.status GLIDE & WINDOW FRAMING)
+// 4. PRESET ENGINE HOOKS (touch.status GLIDE: VAL, MIN, MAX, STEP)
 // =============================================================
 function get_state() {
   return {
@@ -504,7 +515,7 @@ function draw_dial_face(ctx, w, h, is_preview) {
   var hasLabel = (dispLbl.length > 0 && label_mode !== 4);
   var valStr = get_formatted_value(getScaledValue());
 
-  // Background Plate
+  // 1. Background Plate
   if (show_background === 1 && bg_color && bg_color[3] > 0.001) {
     var bR = Math.max(0, (parseFloat(border_radius) || 0) * (is_preview ? scaleRatio : 1.0));
     var maxBR = Math.min(w, h) * 0.5;
@@ -527,7 +538,7 @@ function draw_dial_face(ctx, w, h, is_preview) {
     ctx.fill();
   }
 
-  // Corner Borders
+  // 2. Corner Borders
   if (borders === 1 && border_thickness > 0 && border_color && border_color[3] > 0.001) {
     var bScale = is_preview ? scaleRatio : 1.0;
     var cR = Math.max(0, (parseFloat(border_radius) || 0) * bScale);
@@ -537,61 +548,57 @@ function draw_dial_face(ctx, w, h, is_preview) {
     var ext = Math.max(0, (parseFloat(border_extension) || 0) * bScale);
     var thick = Math.max(0.5, (parseFloat(border_thickness) || 1.0) * (is_preview ? Math.min(bScale, 1.5) : 1.0));
     var inset = thick * 0.5;
-    var rw = w - thick, rh = h - thick;
+    var rw = Math.max(1, w - thick);
+    var rh = Math.max(1, h - thick);
+    var ew = Math.min(ext, Math.max(0, (rw - 2 * cR) * 0.5));
+    var eh = Math.min(ext, Math.max(0, (rh - 2 * cR) * 0.5));
 
     ctx.set_line_width(thick);
     ctx.set_source_rgba(border_color);
 
     // Top-Left
     ctx.new_path();
-    ctx.move_to(inset, inset + cR + ext);
-    ctx.line_to(inset, inset + cR);
     if (cR > 0) ctx.arc(inset + cR, inset + cR, cR, Math.PI, Math.PI * 1.5);
     else ctx.move_to(inset, inset);
-    ctx.line_to(inset + cR + ext, inset);
+    ctx.line_to(inset + cR + ew, inset);
+    ctx.move_to(inset, inset + cR);
+    ctx.line_to(inset, inset + cR + eh);
     ctx.stroke();
 
     // Top-Right
     ctx.new_path();
-    ctx.move_to(inset + rw - cR - ext, inset);
-    ctx.line_to(inset + rw - cR, inset);
-    if (cR > 0) ctx.arc(inset + rw - cR, inset + cR, cR, Math.PI * 1.5, Math.PI * 2.0);
+    if (cR > 0) ctx.arc(inset + rw - cR, inset + cR, cR, -Math.PI / 2, 0);
     else ctx.move_to(inset + rw, inset);
-    ctx.line_to(inset + rw, inset + cR + ext);
+    ctx.line_to(inset + rw, inset + cR + eh);
+    ctx.move_to(inset + rw - cR - ew, inset);
+    ctx.line_to(inset + rw - cR, inset);
     ctx.stroke();
 
     // Bottom-Right
     ctx.new_path();
-    ctx.move_to(inset + rw, inset + rh - cR - ext);
-    ctx.line_to(inset + rw, inset + rh - cR);
     if (cR > 0) ctx.arc(inset + rw - cR, inset + rh - cR, cR, 0, Math.PI * 0.5);
     else ctx.move_to(inset + rw, inset + rh);
-    ctx.line_to(inset + rw - cR - ext, inset + rh);
+    ctx.line_to(inset + rw - cR - ew, inset + rh);
+    ctx.move_to(inset + rw, inset + rh - cR);
+    ctx.line_to(inset + rw, inset + rh - cR - eh);
     ctx.stroke();
 
     // Bottom-Left
     ctx.new_path();
-    ctx.move_to(inset + cR + ext, inset + rh);
-    ctx.line_to(inset + cR, inset + rh);
     if (cR > 0) ctx.arc(inset + cR, inset + rh - cR, cR, Math.PI * 0.5, Math.PI);
     else ctx.move_to(inset, inset + rh);
-    ctx.line_to(inset, inset + rh - cR - ext);
+    ctx.line_to(inset, inset + rh - cR - eh);
+    ctx.move_to(inset + cR + ew, inset + rh);
+    ctx.line_to(inset + cR, inset + rh);
     ctx.stroke();
   }
 
-  // Dial Geometry Layout
+  // 3. Dial Geometry Layout
   var previewLabelPad = (is_preview && hasLabel) ? (fontHeight + 6.0) : 0.0;
   var cy = is_preview ? ((h - previewLabelPad) * 0.5 + 2.0) : (h * 0.5);
 
   var margin = is_preview ? 8.0 : dial_margin;
   var outerRadius = Math.max(8.0, Math.min(cx - margin, cy - margin));
-
-  var ang = get_dial_angles();
-  var pVal = clamp(val, 0.0, 1.0);
-  var bipolarMode = isBipolar();
-
-  ctx.set_line_cap("butt");
-  ctx.set_line_join("miter");
 
   var tBreadth = Math.max(1.0, track_breadth * (is_preview ? scaleRatio : 1.0));
   var nThick   = Math.max(0.75, needle_thickness * (is_preview ? scaleRatio : 1.0));
@@ -599,6 +606,52 @@ function draw_dial_face(ctx, w, h, is_preview) {
 
   var trackRadius = outerRadius - tBreadth * 0.5 - 2.0;
   if (trackRadius < 4.0) trackRadius = 4.0;
+
+  // =========================================================
+  // 4. FULL-DIAL LIQUID METER GLOW (0.50 OPACITY)
+  // =========================================================
+  if (meter_levels && meter_levels.length > 0) {
+    var peakLvl = 0.0;
+    for (var mIdx = 0; mIdx < meter_levels.length; mIdx++) {
+      if (meter_levels[mIdx] > peakLvl) peakLvl = meter_levels[mIdx];
+    }
+    peakLvl = clamp(peakLvl, 0.0, 1.0);
+
+    if (peakLvl > 0.005) {
+      var fillR = Math.max(2.0, trackRadius - tBreadth * 0.5);
+
+      var meterPat = ctx.pattern_create_linear(0, cy + fillR, 0, cy - fillR);
+      meterPat.add_color_stop_rgba(0.00, 0.15, 0.85, 0.35, 0.50); // Green
+      meterPat.add_color_stop_rgba(0.65, 0.95, 0.80, 0.20, 0.50); // Amber
+      meterPat.add_color_stop_rgba(0.90, 1.00, 0.22, 0.22, 0.52); // Red
+      ctx.set_source(meterPat);
+
+      if (peakLvl >= 0.99) {
+        ctx.new_path();
+        ctx.arc(cx, cy, fillR, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        var hFill = peakLvl * 2.0 * fillR;
+        var d = fillR - hFill;
+        var dx = Math.sqrt(Math.max(0, fillR * fillR - d * d));
+        var a1 = Math.atan2(d, dx);
+        var a2 = Math.atan2(d, -dx);
+
+        ctx.new_path();
+        ctx.arc(cx, cy, fillR, a1, a2);
+        ctx.close_path();
+        ctx.fill();
+      }
+    }
+  }
+
+  // 5. Track Rail
+  var ang = get_dial_angles();
+  var pVal = clamp(val, 0.0, 1.0);
+  var bipolarMode = isBipolar();
+
+  ctx.set_line_cap("butt");
+  ctx.set_line_join("miter");
 
   ctx.set_source_rgba(track_color);
   ctx.set_line_width(tBreadth);
@@ -618,13 +671,12 @@ function draw_dial_face(ctx, w, h, is_preview) {
     ctx.stroke();
   }
 
-  // Active Value
+  // 6. Active Value Fill
   var curAngle = ang.start + pVal * ang.span;
 
   if (dial_style === 0) {
     if (ribbon_fill === 1) {
       if (bipolarMode) {
-        // Calculate dynamic zero point between min and max
         var zeroNorm = clamp((0.0 - min_val) / (max_val - min_val), 0.0, 1.0);
         var zeroAngle = ang.start + zeroNorm * ang.span;
         var aStart = Math.min(zeroAngle, curAngle);
@@ -683,7 +735,7 @@ function draw_dial_face(ctx, w, h, is_preview) {
     ctx.fill();
   }
 
-  // Typography
+  // 7. Typography & Labels
   var valTm = ctx.text_measure(valStr);
   var valW = valTm ? valTm[0] : (curFontSize * 1.8);
   var unitStr = (unit_mode === 1) ? "%" : (unit_mode === 2) ? "dB" : (unit_mode === 3) ? "ms" : "";
@@ -763,7 +815,7 @@ function draw_dial_face(ctx, w, h, is_preview) {
     }
   }
 
-  // Red Popup Dot
+  // 8. Red Popup Dot
   if (!is_preview && allow_popup === 1) {
     var dotR = Math.max(1.5, Math.min(2.8, Math.min(w, h) * 0.08));
     var dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
@@ -780,7 +832,7 @@ function paint() {
 }
 
 // =============================================================
-// 9. TOUCH STEPPING & ROTARY EASING SCHEDULER
+// 9. TOUCH STEPPING & ROTARY SCHEDULER
 // =============================================================
 function set(v) {
   if (arguments.length > 0) v = arguments[0];
@@ -1189,6 +1241,7 @@ function draw_popup_to_window_deferred() {
   var row_map = get_visible_rows_map();
   var has_rows = row_map.length > 0;
 
+  // Close Button
   pCtx.set_source_rgba(0.85, 0.2, 0.2, 1.0);
   pCtx.arc(14, 14, 5.5, 0, Math.PI * 2);
   pCtx.fill();
@@ -1199,6 +1252,7 @@ function draw_popup_to_window_deferred() {
   pCtx.move_to(24, 17);
   pCtx.show_text("close");
 
+  // Toggle Hide/Show Button
   var tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
   pCtx.set_source_rgba(attr_bg_color);
   pCtx.rectangle_rounded(tglX, tglY, tglW, tglH, 3, 3);
@@ -1217,6 +1271,7 @@ function draw_popup_to_window_deferred() {
   pCtx.move_to(tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5, tglY + 11.5);
   pCtx.show_text(tglLabel);
 
+  // Preview Dial
   var previewSz, previewX, previewY;
   if (has_rows) {
     previewSz = Math.min(120, w - 40);
@@ -1243,6 +1298,7 @@ function draw_popup_to_window_deferred() {
     pCtx.stroke();
   }
 
+  // Carousel & Attribute Rows
   if (has_rows) {
     var divY = previewY + previewSz + 10;
     pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
@@ -1305,11 +1361,13 @@ function draw_popup_to_window_deferred() {
       pCtx.rectangle(rowX, rY, rowW, 26);
       pCtx.fill();
 
+      // Row Label
       pCtx.set_source_rgba(attr_text_color);
       pCtx.set_font_size(10);
       pCtx.move_to(rowX + 6, rY + 17);
       pCtx.show_text(r.name);
 
+      // Center Divider
       pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
       pCtx.set_line_width(1.0);
       pCtx.move_to(midX, rY + 3); pCtx.line_to(midX, rY + 23); pCtx.stroke();
@@ -1536,7 +1594,7 @@ function draw_color_picker_popup() {
 }
 
 function colorWindowListenerCallback(event) {
-  if (event.eventname === "close") { colorWindow.visible = 0; picker_drag_zone = 0; return; }
+  if (event.eventname === "close") { showColorWindow = 0; picker_drag_zone = 0; return; }
   if (event.eventname === "mouse") {
     var args = arrayfromargs(event.args);
     var mx = args[0], my = args[1], mbut = args[2];
@@ -1544,7 +1602,7 @@ function colorWindowListenerCallback(event) {
 
     if (mbut) {
       if (mx < 24 && my < 24) {
-        colorWindow.visible = 0; picker_drag_zone = 0; redraw_all(); return;
+        showColorWindow = 0; colorWindow.visible = 0; picker_drag_zone = 0; redraw_all(); return;
       }
       if (picker_drag_zone === 0) {
         if (mx >= 10 && mx <= 190 && my >= 24 && my <= 46) picker_drag_zone = 1;
@@ -2281,68 +2339,68 @@ function anything() {
 }
 
 // =============================================================
-// 16. DECLAREATTRIBUTE DEFINITIONS
+// 16. DECLAREATTRIBUTE DEFINITIONS (embed: 0 protects local save)
 // =============================================================
-declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry / Labels", "3. Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 1 });
-declareattribute("style", { type: "int", style: "enumindex", enumvals: ["Ribbon", "Rail"], label: "Dial Style", setter: "set_dial_style", getter: "get_dial_style", category: "Behavior", embed: 1 });
-declareattribute("rotary_mode", { type: "int", style: "enumindex", enumvals: ["270", "360 Top", "360 Bottom", "360 Continuous"], label: "Rotary Mode", setter: "set_rotary_mode", getter: "get_rotary_mode", category: "Behavior", embed: 1 });
-declareattribute("mode", { type: "int", style: "enumindex", enumvals: ["Touch", "Mouse"], label: "Interaction Mode", setter: "set_mode", getter: "get_mode", category: "Behavior", embed: 1 });
-declareattribute("mouse_mode", { type: "int", style: "enumindex", enumvals: ["Vertical", "Radial"], label: "Mouse Drag Axis", setter: "set_mouse_mode", getter: "get_mouse_mode", category: "Behavior", embed: 1 });
+declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry / Labels", "3. Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 0 });
+declareattribute("style", { type: "int", style: "enumindex", enumvals: ["Ribbon", "Rail"], label: "Dial Style", setter: "set_dial_style", getter: "get_dial_style", category: "Behavior", embed: 0 });
+declareattribute("rotary_mode", { type: "int", style: "enumindex", enumvals: ["270", "360 Top", "360 Bottom", "360 Continuous"], label: "Rotary Mode", setter: "set_rotary_mode", getter: "get_rotary_mode", category: "Behavior", embed: 0 });
+declareattribute("mode", { type: "int", style: "enumindex", enumvals: ["Touch", "Mouse"], label: "Interaction Mode", setter: "set_mode", getter: "get_mode", category: "Behavior", embed: 0 });
+declareattribute("mouse_mode", { type: "int", style: "enumindex", enumvals: ["Vertical", "Radial"], label: "Mouse Drag Axis", setter: "set_mouse_mode", getter: "get_mouse_mode", category: "Behavior", embed: 0 });
 
-declareattribute("borders", { type: "int", style: "onoff", label: "Show Borders (Corners)", setter: "set_borders", getter: "get_borders", category: "Geometry", embed: 1 });
-declareattribute("show_background", { type: "int", style: "onoff", label: "Show Background", setter: "set_show_background", getter: "get_show_background", category: "Dial Colors", embed: 1 });
-declareattribute("border_radius", { type: "float", label: "Border Radius", setter: "set_border_radius", getter: "get_border_radius", category: "Geometry", embed: 1 });
-declareattribute("border_thickness", { type: "float", label: "Border Thickness", setter: "set_border_thickness", getter: "get_border_thickness", category: "Geometry", embed: 1 });
-declareattribute("border_extension", { type: "float", label: "Border Extension", setter: "set_border_extension", getter: "get_border_extension", category: "Geometry", embed: 1 });
+declareattribute("borders", { type: "int", style: "onoff", label: "Show Borders (Corners)", setter: "set_borders", getter: "get_borders", category: "Geometry", embed: 0 });
+declareattribute("show_background", { type: "int", style: "onoff", label: "Show Background", setter: "set_show_background", getter: "get_show_background", category: "Dial Colors", embed: 0 });
+declareattribute("border_radius", { type: "float", label: "Border Radius", setter: "set_border_radius", getter: "get_border_radius", category: "Geometry", embed: 0 });
+declareattribute("border_thickness", { type: "float", label: "Border Thickness", setter: "set_border_thickness", getter: "get_border_thickness", category: "Geometry", embed: 0 });
+declareattribute("border_extension", { type: "float", label: "Border Extension", setter: "set_border_extension", getter: "get_border_extension", category: "Geometry", embed: 0 });
 
-declareattribute("min_val", { type: "float", label: "1. Min Val", setter: "set_min_val", getter: "get_min_val", category: "Behavior", embed: 1 });
-declareattribute("max_val", { type: "float", label: "2. Max Val", setter: "set_max_val", getter: "get_max_val", category: "Behavior", embed: 1 });
+declareattribute("min_val", { type: "float", label: "1. Min Val", setter: "set_min_val", getter: "get_min_val", category: "Behavior", embed: 0 });
+declareattribute("max_val", { type: "float", label: "2. Max Val", setter: "set_max_val", getter: "get_max_val", category: "Behavior", embed: 0 });
 
-declareattribute("decimal_digits", { type: "int", label: "Decimal Digits", setter: "set_decimal_digits", getter: "get_decimal_digits", category: "Behavior", embed: 1 });
-declareattribute("integer_digits", { type: "int", label: "Integer Digits", setter: "set_integer_digits", getter: "get_integer_digits", category: "Behavior", embed: 1 });
-declareattribute("leading_zeros", { type: "int", style: "onoff", label: "Leading Zeros", setter: "set_leading_zeros", getter: "get_leading_zeros", category: "Behavior", embed: 1 });
+declareattribute("decimal_digits", { type: "int", label: "Decimal Digits", setter: "set_decimal_digits", getter: "get_decimal_digits", category: "Behavior", embed: 0 });
+declareattribute("integer_digits", { type: "int", label: "Integer Digits", setter: "set_integer_digits", getter: "get_integer_digits", category: "Behavior", embed: 0 });
+declareattribute("leading_zeros", { type: "int", style: "onoff", label: "Leading Zeros", setter: "set_leading_zeros", getter: "get_leading_zeros", category: "Behavior", embed: 0 });
 
-declareattribute("step_amount", { type: "float", label: "Step Size", setter: "set_step_amount", getter: "get_step_amount", category: "Behavior", embed: 1 });
-declareattribute("step_speed_ms", { type: "int", label: "Hold Timer (ms)", setter: "set_step_speed_ms", getter: "get_step_speed_ms", category: "Behavior", embed: 1 });
-declareattribute("curve_exponent", { type: "float", label: "Curve Exponent", setter: "set_curve_exponent", getter: "get_curve_exponent", category: "Behavior", embed: 1 });
-declareattribute("slider_speed", { type: "float", label: "Drag Speed", setter: "set_slider_speed", getter: "get_slider_speed", category: "Behavior", embed: 1 });
+declareattribute("step_amount", { type: "float", label: "Step Size", setter: "set_step_amount", getter: "get_step_amount", category: "Behavior", embed: 0 });
+declareattribute("step_speed_ms", { type: "int", label: "Hold Timer (ms)", setter: "set_step_speed_ms", getter: "get_step_speed_ms", category: "Behavior", embed: 0 });
+declareattribute("curve_exponent", { type: "float", label: "Curve Exponent", setter: "set_curve_exponent", getter: "get_curve_exponent", category: "Behavior", embed: 0 });
+declareattribute("slider_speed", { type: "float", label: "Drag Speed", setter: "set_slider_speed", getter: "get_slider_speed", category: "Behavior", embed: 0 });
 
-declareattribute("ribbon_fill", { type: "int", style: "enumindex", enumvals: ["Single Line", "Arc Fill"], label: "Ribbon Style", setter: "set_ribbon_fill", getter: "get_ribbon_fill", category: "Dial Colors", embed: 1 });
+declareattribute("ribbon_fill", { type: "int", style: "enumindex", enumvals: ["Single Line", "Arc Fill"], label: "Ribbon Style", setter: "set_ribbon_fill", getter: "get_ribbon_fill", category: "Dial Colors", embed: 0 });
 
-declareattribute("label_mode", { type: "int", style: "enumindex", enumvals: ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"], label: "Label Style", setter: "set_label_mode", getter: "get_label_mode", category: "Labels", embed: 1 });
-declareattribute("case_mode", { type: "int", style: "enumindex", enumvals: ["First Cap", "All Cap", "All Small"], label: "Case Style", setter: "set_case_mode", getter: "get_case_mode", category: "Labels", embed: 1 });
-declareattribute("label_text", { type: "symbol", label: "Label Text", setter: "set_label_text", getter: "get_label_text", category: "Labels", embed: 1 });
+declareattribute("label_mode", { type: "int", style: "enumindex", enumvals: ["Full", "No Vowels", "Caps Only", "First Letter", "No Text"], label: "Label Style", setter: "set_label_mode", getter: "get_label_mode", category: "Labels", embed: 0 });
+declareattribute("case_mode", { type: "int", style: "enumindex", enumvals: ["First Cap", "All Cap", "All Small"], label: "Case Style", setter: "set_case_mode", getter: "get_case_mode", category: "Labels", embed: 0 });
+declareattribute("label_text", { type: "symbol", label: "Label Text", setter: "set_label_text", getter: "get_label_text", category: "Labels", embed: 0 });
 
-declareattribute("track_breadth", { type: "float", label: "Track Breadth", setter: "set_track_breadth", getter: "get_track_breadth", category: "Geometry", embed: 1 });
-declareattribute("handle_size", { type: "float", label: "Handle Size (Orb)", setter: "set_handle_size", getter: "get_handle_size", category: "Geometry", embed: 1 });
-declareattribute("needle_thickness", { type: "float", label: "Needle Size (Line)", setter: "set_needle_thickness", getter: "get_needle_thickness", category: "Geometry", embed: 1 });
-declareattribute("dial_margin", { type: "float", label: "Dial Margin", setter: "set_dial_margin", getter: "get_dial_margin", category: "Geometry", embed: 1 });
+declareattribute("track_breadth", { type: "float", label: "Track Breadth", setter: "set_track_breadth", getter: "get_track_breadth", category: "Geometry", embed: 0 });
+declareattribute("handle_size", { type: "float", label: "Handle Size (Orb)", setter: "set_handle_size", getter: "get_handle_size", category: "Geometry", embed: 0 });
+declareattribute("needle_thickness", { type: "float", label: "Needle Size (Line)", setter: "set_needle_thickness", getter: "get_needle_thickness", category: "Geometry", embed: 0 });
+declareattribute("dial_margin", { type: "float", label: "Dial Margin", setter: "set_dial_margin", getter: "get_dial_margin", category: "Geometry", embed: 0 });
 
-declareattribute("font_name", { type: "symbol", style: "font", label: "Font Face", setter: "set_font_name", getter: "get_font_name", category: "Typography", embed: 1 });
-declareattribute("font_size", { type: "int", label: "Font Size", setter: "set_font_size", getter: "get_font_size", category: "Typography", embed: 1 });
-declareattribute("font_style", { type: "int", style: "enumindex", enumvals: ["Regular", "Bold", "Italic", "Bold Italic"], label: "Font Style", setter: "set_font_style", getter: "get_font_style", category: "Typography", embed: 1 });
+declareattribute("font_name", { type: "symbol", style: "font", label: "Font Face", setter: "set_font_name", getter: "get_font_name", category: "Typography", embed: 0 });
+declareattribute("font_size", { type: "int", label: "Font Size", setter: "set_font_size", getter: "get_font_size", category: "Typography", embed: 0 });
+declareattribute("font_style", { type: "int", style: "enumindex", enumvals: ["Regular", "Bold", "Italic", "Bold Italic"], label: "Font Style", setter: "set_font_style", getter: "get_font_style", category: "Typography", embed: 0 });
 
-declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Popup", setter: "set_allow_popup", getter: "get_allow_popup", category: "Popup", embed: 1 });
-declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", setter: "set_show_settings_attrs", getter: "get_show_settings_attrs", category: "Popup", embed: 1 });
-declareattribute("popup_mini_size", { type: "float", size: 2, label: "Mini Size (W H)", setter: "set_popup_mini_size", getter: "get_popup_mini_size", category: "Popup", embed: 1 });
+declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Popup", setter: "set_allow_popup", getter: "get_allow_popup", category: "Popup", embed: 0 });
+declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", setter: "set_show_settings_attrs", getter: "get_show_settings_attrs", category: "Popup", embed: 0 });
+declareattribute("popup_mini_size", { type: "float", size: 2, label: "Mini Size (W H)", setter: "set_popup_mini_size", getter: "get_popup_mini_size", category: "Popup", embed: 0 });
 
-declareattribute("bg_color", { type: "rgba", style: "rgba", label: "Face / Background Color", setter: "set_bg_color", getter: "get_bg_color", category: "Dial Colors", embed: 1 });
-declareattribute("border_color", { type: "rgba", style: "rgba", label: "Border Color", setter: "set_border_color", getter: "get_border_color", category: "Dial Colors", embed: 1 });
-declareattribute("track_color", { type: "rgba", style: "rgba", label: "Track Rail Color", setter: "set_track_color", getter: "get_track_color", category: "Dial Colors", embed: 1 });
-declareattribute("handle_color", { type: "rgba", style: "rgba", label: "Needle / Fill Color", setter: "set_handle_color", getter: "get_handle_color", category: "Dial Colors", embed: 1 });
-declareattribute("text_color", { type: "rgba", style: "rgba", label: "Text Color", setter: "set_text_color", getter: "get_text_color", category: "Dial Colors", embed: 1 });
-declareattribute("mode_color", { type: "rgba", style: "rgba", label: "Mode / Label Prefix Color", setter: "set_mode_color", getter: "get_mode_color", category: "Dial Colors", embed: 1 });
-declareattribute("popup_dot_color", { type: "rgba", style: "rgba", label: "Popup Dot Color", setter: "set_popup_dot_color", getter: "get_popup_dot_color", category: "Dial Colors", embed: 1 });
+declareattribute("bg_color", { type: "rgba", style: "rgba", label: "Face / Background Color", setter: "set_bg_color", getter: "get_bg_color", category: "Dial Colors", embed: 0 });
+declareattribute("border_color", { type: "rgba", style: "rgba", label: "Border Color", setter: "set_border_color", getter: "get_border_color", category: "Dial Colors", embed: 0 });
+declareattribute("track_color", { type: "rgba", style: "rgba", label: "Track Rail Color", setter: "set_track_color", getter: "get_track_color", category: "Dial Colors", embed: 0 });
+declareattribute("handle_color", { type: "rgba", style: "rgba", label: "Needle / Fill Color", setter: "set_handle_color", getter: "get_handle_color", category: "Dial Colors", embed: 0 });
+declareattribute("text_color", { type: "rgba", style: "rgba", label: "Text Color", setter: "set_text_color", getter: "get_text_color", category: "Dial Colors", embed: 0 });
+declareattribute("mode_color", { type: "rgba", style: "rgba", label: "Mode / Label Prefix Color", setter: "set_mode_color", getter: "get_mode_color", category: "Dial Colors", embed: 0 });
+declareattribute("popup_dot_color", { type: "rgba", style: "rgba", label: "Popup Dot Color", setter: "set_popup_dot_color", getter: "get_popup_dot_color", category: "Dial Colors", embed: 0 });
 
-declareattribute("pop_bgcolor", { type: "rgba", style: "rgba", label: "Popup BG Color", setter: "set_pop_bgcolor", getter: "get_pop_bgcolor", category: "Popup Colors", embed: 1 });
-declareattribute("attr_bg_color", { type: "rgba", style: "rgba", label: "Attr BG Color", setter: "set_attr_bg_color", getter: "get_attr_bg_color", category: "Popup Colors", embed: 1 });
-declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Attr Border Color", setter: "set_attr_border_color", getter: "get_attr_border_color", category: "Popup Colors", embed: 1 });
-declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", setter: "set_attr_slider_color", getter: "get_attr_slider_color", category: "Popup Colors", embed: 1 });
-declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 1 });
-declareattribute("unit_mode", { type: "int", style: "enumindex", enumvals: ["None", "%", "dB", "ms"], label: "Unit Suffix", setter: "set_unit_mode", getter: "get_unit_mode", category: "Labels", embed: 1 });
+declareattribute("pop_bgcolor", { type: "rgba", style: "rgba", label: "Popup BG Color", setter: "set_pop_bgcolor", getter: "get_pop_bgcolor", category: "Popup Colors", embed: 0 });
+declareattribute("attr_bg_color", { type: "rgba", style: "rgba", label: "Attr BG Color", setter: "set_attr_bg_color", getter: "get_attr_bg_color", category: "Popup Colors", embed: 0 });
+declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Attr Border Color", setter: "set_attr_border_color", getter: "get_attr_border_color", category: "Popup Colors", embed: 0 });
+declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", setter: "set_attr_slider_color", getter: "get_attr_slider_color", category: "Popup Colors", embed: 0 });
+declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 0 });
+declareattribute("unit_mode", { type: "int", style: "enumindex", enumvals: ["None", "%", "dB", "ms"], label: "Unit Suffix", setter: "set_unit_mode", getter: "get_unit_mode", category: "Labels", embed: 0 });
 
 // =============================================================
-// 17. WIRELESS THEME BUS SUBSCRIBER
+// 17. THEME BUS SUBSCRIBER
 // =============================================================
 var themeBus = new Global("touch_theme_bus");
 if (!themeBus.subscribers || typeof themeBus.subscribers !== "object") {
@@ -2475,12 +2533,12 @@ function save() {
 
   embedmessage("set_pop_bgcolor", pop_bgcolor[0], pop_bgcolor[1], pop_bgcolor[2], pop_bgcolor[3]);
   embedmessage("set_attr_bg_color", attr_bg_color[0], attr_bg_color[1], attr_bg_color[2], attr_bg_color[3]);
-  embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], border_color[2], attr_border_color[3]);
+  embedmessage("set_attr_border_color", attr_border_color[0], attr_border_color[1], attr_border_color[2], attr_border_color[3]);
   embedmessage("set_attr_slider_color", attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], attr_slider_color[3]);
   embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
 
-  embedmessage("msg_float", getScaledValue());
   embedmessage("set_unit_mode", unit_mode);
+  embedmessage("set", getScaledValue());
 }
 
 function notifydeleted() {

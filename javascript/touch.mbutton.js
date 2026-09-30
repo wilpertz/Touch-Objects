@@ -32,7 +32,7 @@ var uniqueID = Math.floor(Math.random() * 1000000);
 var count = 1;             // Default to 1 (scales up to 64)
 var direction = 0;         // 0 = Horizontal strip, 1 = Vertical strip
 var group_mode = 0;        // 0 = Independent, 1 = Live (exclusive live.tab mode)
-var global_mode = 2;       // 0 = Momentary, 1 = Toggle, 2 = Touch-Hold (Default)
+var global_mode = 2;       // 0 = Momentary, 1 = Toggle, 2 = Touch-Hold (Default Init)
 var mode_names = ["Momentary", "Toggle", "Touch-Hold"];
 var flash_time = 100;      // Milliseconds for momentary flash (mode 0)
 var allow_popup = 1;
@@ -98,9 +98,9 @@ var mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 var showSettings       = 0;
 var showColorWindow    = 0;
 var popup_window_width = 280;
-var popup_window_fixed_h = 406; // Height tailored to max row count (11 rows)
-var popup_mini_w       = 270;   // Horizontal default width
-var popup_mini_h       = 90;    // Horizontal default height
+var popup_window_fixed_h = 406;
+var popup_mini_w       = 270;
+var popup_mini_h       = 90;
 var start_resize_w     = 270;
 var start_resize_h     = 90;
 var is_resizing_window = 0;
@@ -121,7 +121,6 @@ var lastMouseY  = 0;
 var start_click_x = 0;
 var start_click_y = 0;
 
-// Persistent task for popup slider scrolling (avoids GC churn)
 var scroll_valBoxX = 0;
 var scroll_valBoxW = 100;
 var scrollTask = new Task(function () {
@@ -172,7 +171,7 @@ function recycleMatrix(mat, w, h) {
 }
 
 // =============================================================
-// PRESET ENGINE HOOKS (touch.status & 50% Snap Morphing)
+// PRESET ENGINE HOOKS
 // =============================================================
 function get_state() {
   var s = (count === 1) ? (states[0] || 0) : states.slice(0, count);
@@ -211,7 +210,7 @@ function morph_state(a, b, frac) {
 }
 
 // =============================================================
-// PATTR HOOKS: ONLY TOGGLE BUTTONS SAVE TO PRESETS
+// PATTR HOOKS
 // =============================================================
 function getvalueof() {
   var saved = [];
@@ -243,7 +242,7 @@ function setvalueof() {
 }
 
 // =============================================================
-// 4. MATH, UTILITIES & HSV ENGINES
+// 4. MATH & UTILITIES
 // =============================================================
 function clamp(val, min, max) {
   return Math.min(Math.max(val, min), max);
@@ -354,7 +353,7 @@ function redraw_all() {
 }
 
 // =============================================================
-// 5. ARRAY MANAGEMENT, ROUTE TAGS & AUTOPADDING
+// 5. ARRAY MANAGEMENT & LABELS
 // =============================================================
 function parse_tokens(str) {
   if (!str || typeof str !== "string") return [];
@@ -377,7 +376,7 @@ function sync_arrays() {
 
   for (var i = 0; i < count; i++) {
     states.push(i < oldStates.length ? oldStates[i] : 0);
-    newModes.push(i < button_modes.length ? button_modes[i] : global_mode);
+    newModes.push((button_modes && button_modes[i] !== undefined) ? button_modes[i] : global_mode);
   }
   button_modes = newModes;
 
@@ -476,14 +475,13 @@ function get_effective_cell_text_color(cellIdx) {
 }
 
 // =============================================================
-// 6. OUTPUT ENGINE: LIST (0) -> ROUTE (1) -> SIGNUM (2)
+// 6. OUTPUT ENGINE
 // =============================================================
 function output_state(changed_index) {
   if (is_transmitting) return;
   is_transmitting = true;
 
   try {
-    // Outlet 2 (Right): Signum / Activity Gate (1 if any on, 0 if all off)
     var anyActive = 0;
     for (var i = 0; i < count; i++) {
       if (states[i] > 0) {
@@ -493,7 +491,6 @@ function output_state(changed_index) {
     }
     outlet(2, anyActive);
 
-    // Outlet 1 (Middle): Name + Value [tag state] for [route]
     if (changed_index !== undefined && changed_index >= 0 && changed_index < count) {
       var tag = get_button_tag(changed_index);
       outlet(1, [tag, states[changed_index]]);
@@ -504,7 +501,6 @@ function output_state(changed_index) {
       }
     }
 
-    // Outlet 0 (Left): All states as list [0 1 0 ...]
     var full_list = [];
     for (var s = 0; s < count; s++) {
       full_list.push(states[s] > 0 ? 1 : 0);
@@ -968,7 +964,7 @@ function paint() {
 }
 
 // =============================================================
-// 9. MAIN CANVAS MOUSE ENGINE (BIDIRECTIONAL SCRUB/RESTORE)
+// 9. MOUSE ENGINE WITH ALL-TOGGLE DRAG GUARD
 // =============================================================
 function get_hit_cell(x, y, w, h, dir) {
   var d = (dir !== undefined) ? dir : direction;
@@ -976,7 +972,6 @@ function get_hit_cell(x, y, w, h, dir) {
   var rw = Math.max(1, w - b * 2);
   var rh = Math.max(1, h - b * 2);
 
-  // Cross-Axis Boundary Detection
   if (d === 0) {
     if (y < 0 || y > h) return -1;
     var cellW = rw / count;
@@ -1033,15 +1028,31 @@ function ondrag(x, y, button) {
   }
   if (drag_start_cell === -1) return;
 
+  // Radio / Live Mode
+  if (group_mode === 1) {
+    var dims = get_dimensions();
+    var hit = get_hit_cell(x, y, dims.w, dims.h, direction);
+    if (hit !== -1 && hit !== last_drag_cell) {
+      last_drag_cell = hit;
+      handle_cell_press(hit);
+    }
+    return;
+  }
+
+  // GUARD: Only allow drag-scrubbing if ALL buttons are Toggle (mode 1).
+  // If ANY button is momentary (0) or touch-hold (2), stop dragging immediately!
+  for (var k = 0; k < count; k++) {
+    var m = button_modes[k] !== undefined ? button_modes[k] : global_mode;
+    if (m !== 1) {
+      return; 
+    }
+  }
+
+  // Scrubbing/paint logic (only reached if all buttons are Toggle)
   var dims = get_dimensions();
   var hit = get_hit_cell(x, y, dims.w, dims.h, direction);
   if (hit === -1 || hit === last_drag_cell) return;
   last_drag_cell = hit;
-
-  if (group_mode === 1) {
-    handle_cell_press(hit);
-    return;
-  }
 
   var minC = Math.min(drag_start_cell, hit);
   var maxC = Math.max(drag_start_cell, hit);
@@ -1099,14 +1110,12 @@ function get_visible_rows_map() {
   var list = [];
 
   if (active_mask_tab === 0) {
-    // 1. Performance / Operation
     list.push({ name: "Button Count", val: count, pct: (count - 1) / 63.0, is_slider: true, target_id: 101 });
     list.push({ name: "Orientation", val: direction === 1 ? "Vertical" : "Horizontal", is_toggle: true, target_id: 102 });
     list.push({ name: "Group Mode", val: group_mode === 1 ? "Live" : "Independent", is_toggle: true, target_id: 103 });
     list.push({ name: "Set All Modes", val: mode_names[global_mode], is_toggle: true, target_id: 104 });
     list.push({ name: "Flash Time", val: flash_time + "ms", pct: (flash_time - 1) / 999.0, is_slider: true, target_id: 105 });
   } else if (active_mask_tab === 1) {
-    // 2. Geometry & Labels
     list.push({ name: "Label Style", val: label_mode_names[label_mode], is_toggle: true, target_id: 201 });
     list.push({ name: "Case Style", val: case_mode_names[case_mode], is_toggle: true, target_id: 202 });
     list.push({ name: "Font Style", val: font_style_names[font_style], is_toggle: true, target_id: 203 });
@@ -1115,8 +1124,6 @@ function get_visible_rows_map() {
     list.push({ name: "Extension", val: border_extension.toFixed(1), pct: border_extension / 50.0, is_slider: true, target_id: 303 });
     list.push({ name: "Font Size", val: text_size, pct: (text_size - 6) / 36.0, is_slider: true, target_id: 304 });
   } else if (active_mask_tab === 2) {
-    // 3. Colors
-    
     list.push({ name: "Btn Color Off", val: btn_color_off, is_color: true, key: "btn_color_off" });
     list.push({ name: "Highlight (On)", val: btn_color_on, is_color: true, key: "btn_color_on" });
     list.push({ name: "Border Color", val: border_color, is_color: true, key: "border_color" });
@@ -1217,7 +1224,7 @@ function draw_popup_to_window_deferred() {
   pCtx.move_to(tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5, tglY + 11.5);
   pCtx.show_text(tglLabel);
 
-  // ADAPTIVE PREVIEW CHASSIS
+  // Preview Chassis
   var prevX = 12, prevY = 28;
   var prevW = Math.max(40, w - 24);
   var prevH = get_preview_height(has_rows);
@@ -1232,7 +1239,6 @@ function draw_popup_to_window_deferred() {
   draw_mbutton_strip(pCtx, stripW, prevH, true);
   pCtx.restore();
 
-  // Directional Pull Grips (Mini mode only)
   if (!has_rows) {
     pCtx.new_path();
     pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.6);
@@ -1247,14 +1253,13 @@ function draw_popup_to_window_deferred() {
     pCtx.stroke();
   }
 
-  // Carousel & 50/50 Attribute Rows
+  // Carousel & Attribute Rows
   if (has_rows) {
     var divY = prevY + prevH + 8;
     pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
     pCtx.set_line_width(1.0);
     pCtx.move_to(10, divY); pCtx.line_to(w - 10, divY); pCtx.stroke();
 
-    // Carousel Navigation Bar
     var navY = divY + 6;
     var navH = 22;
     var navW = w - 24;
@@ -1294,7 +1299,6 @@ function draw_popup_to_window_deferred() {
     pCtx.move_to(navX + (navW - tabTW) * 0.5, navY + 15);
     pCtx.show_text(tabTitle);
 
-    // Rows
     var rowsStartY = navY + navH + 8;
     var rowW = w - 24;
     var rowX = 12;
@@ -1311,18 +1315,18 @@ function draw_popup_to_window_deferred() {
       pCtx.rectangle(rowX, rY, rowW, 26);
       pCtx.fill();
 
-      // Left 50%: Name
+      // Left: Name
       pCtx.set_source_rgba(attr_text_color);
       pCtx.set_font_size(10);
       pCtx.move_to(rowX + 6, rY + 17);
       pCtx.show_text(r.name);
 
-      // Center Divider Notch
+      // Divider
       pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
       pCtx.set_line_width(1.0);
       pCtx.move_to(midX, rY + 3); pCtx.line_to(midX, rY + 23); pCtx.stroke();
 
-      // Right 50%: Control
+      // Right: Value/Slider
       var vY = rY + 4, vH = 18;
 
       if (r.is_color) {
@@ -1379,7 +1383,7 @@ function draw_popup_to_window_deferred() {
 }
 
 // =============================================================
-// 11. 1-AXIS FULL-SCREEN MINI DRAG SIZING
+// 11. FULL-SCREEN MINI DRAG SIZING
 // =============================================================
 function apply_slider_target(target_id, targetPct) {
   if (target_id === 101) set_count(Math.round(1 + targetPct * 63));
@@ -1452,7 +1456,6 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // 1-Axis Full-Screen Mini Drag
     if (is_resizing_window && !has_rows) {
       var deltaW = mx - start_click_x;
       var deltaH = my - start_click_y;
@@ -1494,7 +1497,6 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // Interactive Preview Click
     var prevMaxY = pr.y + pr.h;
     if (mbut && my >= pr.y && my <= prevMaxY && mx >= pr.x && mx <= pr.x + pr.w && active_pop_target === -1) {
       var localX = mx - pr.x;
@@ -1509,7 +1511,6 @@ function windowListenerCallback(event) {
 
     if (!has_rows) return;
 
-    // Carousel Navigation Click Hit
     if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
       if (mx <= navX + btnW + 4) {
         active_mask_tab = (active_mask_tab - 1 + 3) % 3;
@@ -1522,7 +1523,6 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // 50/50 Attrui Rows Click & Drag
     if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
       var rIdx = Math.floor((my - rowsStartY) / 28);
       if (rIdx >= 0 && rIdx < rows.length) {
@@ -1544,7 +1544,6 @@ function windowListenerCallback(event) {
           else if (r.target_id === 201) set_label_mode((label_mode + 1) % 5);
           else if (r.target_id === 202) set_case_mode((case_mode + 1) % 3);
           else if (r.target_id === 203) set_font_style((font_style + 1) % 4);
-          
           else if (r.is_color) {
             ensurePopupWindows();
             active_color_target = r.key;
@@ -1565,7 +1564,7 @@ function windowListenerCallback(event) {
 }
 
 // =============================================================
-// 12. SUB-WINDOW: MODERN HSV COLOR PICKER
+// 12. COLOR PICKER
 // =============================================================
 function get_color_target(name) {
   if (name === "btn_color_off" || name === "bg_color") return btn_color_off;
@@ -1827,7 +1826,7 @@ function set_modes() {
   var tokens = [];
   for (var a = 0; a < args.length; a++) {
     var str = String(args[a]).trim();
-    var parts = str.split(/\s+/);
+    var parts = str.split(/[\s,]+/);
     for (var p = 0; p < parts.length; p++) {
       if (parts[p].length > 0) tokens.push(parts[p]);
     }
@@ -2048,7 +2047,7 @@ function set_popup_mini_size(w, h) {
 function get_popup_mini_size() { return [popup_mini_w, popup_mini_h]; }
 
 // =============================================================
-// 14. DEDICATED MESSAGE ROUTER
+// 14. MESSAGE ROUTER
 // =============================================================
 function anything() {
   var args = arrayfromargs(arguments);
@@ -2059,7 +2058,6 @@ function anything() {
     return;
   }
 
-  // Dual-State slash parsing for named routes (checks both halves)
   for (var b = 0; b < count; b++) {
     var rawTok = parsed_labels[b] !== undefined ? parsed_labels[b] : "";
     if (rawTok && rawTok !== "<empty>") {
@@ -2125,14 +2123,16 @@ function anything() {
 }
 
 // =============================================================
-// 15. MAX DECLAREATTRIBUTE DEFINITIONS
+// 15. DECLAREATTRIBUTE DEFINITIONS
 // =============================================================
 declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry / Labels", "3. Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 1 });
 
 declareattribute("count", { type: "int", label: "Button Count", setter: "set_count", getter: "get_count", category: "Performance", min: 1, max: 64, embed: 1 });
 declareattribute("direction", { type: "int", style: "enumindex", enumvals: ["Horizontal", "Vertical"], label: "Strip Orientation", setter: "set_direction", getter: "get_direction", category: "Performance", embed: 1 });
 declareattribute("group_mode", { type: "int", style: "enumindex", enumvals: ["Independent", "Live"], label: "Group Mode", setter: "set_group_mode", getter: "get_group_mode", category: "Performance", embed: 1 });
-declareattribute("modes", { type: "symbol", label: "Per-Button Modes (0=Mom, 1=Tog, 2=Hold)", setter: "set_modes", getter: "get_modes", category: "Performance", embed: 1 });
+
+// Fixed: removed { type: "symbol" } so all numbers in "1 0 0 1" are received
+declareattribute("modes", { label: "Per-Button Modes (0=Mom, 1=Tog, 2=Hold)", setter: "set_modes", getter: "get_modes", category: "Performance", embed: 1 });
 declareattribute("flash_time", { type: "int", label: "Flash Time (ms)", setter: "set_flash_time", getter: "get_flash_time", category: "Performance", min: 1, max: 1000, embed: 1 });
 
 declareattribute("labels", { type: "symbol", label: "Labels List (use / for Off/On)", setter: "set_labels", getter: "get_labels", category: "Labels", embed: 1 });
@@ -2164,7 +2164,7 @@ declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Att
 declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", setter: "set_attr_text_color", getter: "get_attr_text_color", category: "Popup Colors", embed: 1 });
 
 // =============================================================
-// 16. WIRELESS THEME BUS SUBSCRIBER
+// 16. THEME BUS SUBSCRIBER
 // =============================================================
 var themeBus = new Global("touch_theme_bus");
 if (!themeBus.subscribers || typeof themeBus.subscribers !== "object") {
@@ -2236,7 +2236,7 @@ if (themeBus && themeBus.theme && (themeBus.theme.bg_color || themeBus.theme.bor
 }
 
 // =============================================================
-// 17. PERSISTENCE (SAVE) & LIFECYCLE DESTRUCTION
+// 17. PERSISTENCE (SAVE) & LIFECYCLE
 // =============================================================
 function save() {
   embedmessage("set_active_mask_tab", active_mask_tab);
@@ -2262,7 +2262,6 @@ function save() {
   embedmessage("set_show_settings_attrs", show_settings_attrs);
   embedmessage("set_popup_mini_size", popup_mini_w, popup_mini_h);
 
-  
   embedmessage("set_btn_color_off", btn_color_off[0], btn_color_off[1], btn_color_off[2], btn_color_off[3]);
   embedmessage("set_btn_color_on", btn_color_on[0], btn_color_on[1], btn_color_on[2], btn_color_on[3]);
   embedmessage("set_border_color", border_color[0], border_color[1], border_color[2], border_color[3]);
