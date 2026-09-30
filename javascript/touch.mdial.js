@@ -181,11 +181,10 @@ var is_mouse_down_anywhere = 0;
 var picker_drag_zone = 0;
 var cur_h = 0.0, cur_s = 1.0, cur_v = 1.0, cur_a = 1.0;
 
-var whole_digits          = 4;
-var ticker_decimal_digits = 2;
-var continuous_digit_floats = [];
-var slider_width_px       = 32;
-var slider_gap_px         = 6;
+var whole_digits          = 4;  // 1000s, 100s, 10s, 1s
+var ticker_decimal_digits = 3;  // .1 (tenths), .01 (hundredths), .001 (thousandths)
+var slider_width_px       = 24; // Slimmed slightly so all 7 columns fit comfortably
+var slider_gap_px         = 5;
 
 var lastMouseX = 0;
 var lastMouseY = 0;
@@ -382,8 +381,9 @@ function getAllScaledValues() {
 function getGainValue(idx) {
   var mult = (multipliers[idx] !== undefined) ? multipliers[idx] : 1.0;
   var scaled = getScaledValue(idx) * mult;
+  var sign = scaled < 0 ? -1.0 : 1.0;
   if (use_gain_curve) {
-    return Math.pow(clamp(scaled, 0.0, 1.0), gain_exponent);
+    return sign * Math.pow(Math.abs(scaled), gain_exponent);
   } else {
     return scaled;
   }
@@ -1836,15 +1836,16 @@ function draw_color_picker_popup() {
   ctx.rectangle(0, 0, winW, winH);
   ctx.fill();
 
+  // Close red dot
   ctx.set_source_rgba(0.8, 0.2, 0.2, 1.0);
-  ctx.arc(14, 14, 6.0, 0, Math.PI * 2);
+  ctx.arc(14, 14, 5.5, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.select_font_face("Arial", "normal", "bold");
-  ctx.set_font_size(9);
-  ctx.set_source_rgba(0.85, 0.88, 0.92, 1.0);
-  ctx.move_to(28, 17);
-  ctx.show_text(get_color_target_label(active_color_target));
+  // Sign indicator (+ / -) - shifted right so it doesn't overlap
+  ctx.set_source_rgba(attr_text_color);
+  ctx.set_font_size(15);
+  ctx.move_to(34, 19);
+  ctx.show_text(ticker_data.sign < 0 ? "-" : "+");
 
   var hueX = 10, hueY = 28, hueW = 180, hueH = 16;
   var huePat = ctx.pattern_create_linear(hueX, 0, hueX + hueW, 0);
@@ -1960,9 +1961,9 @@ function colorWindowListenerCallback(event) {
 // 11. SUB-WINDOW: BOUND TICKER
 // =============================================================
 function get_ticker_digit_array(current_val) {
+  var total = whole_digits + ticker_decimal_digits;
   var fixed_str = Math.abs(current_val).toFixed(ticker_decimal_digits);
   var clean_str = fixed_str.replace(".", "");
-  var total = whole_digits + ticker_decimal_digits;
   while (clean_str.length < total) clean_str = "0" + clean_str;
   var digits = [];
   for (var i = 0; i < total; i++) digits.push(parseInt(clean_str.charAt(i), 10));
@@ -1978,7 +1979,7 @@ function rebuild_ticker_value(digits_obj) {
 
 function draw_ticker_matrix_popup() {
   ensurePopupWindows();
-  var winW = 230, winH = 200;
+  var winW = 240, winH = 200;
   tickerMatrix = recycleMatrix(tickerMatrix, winW, winH);
 
   var ctx = new MGraphics(winW, winH);
@@ -1986,27 +1987,32 @@ function draw_ticker_matrix_popup() {
   ctx.rectangle(0, 0, winW, winH);
   ctx.fill();
 
+  // Close red dot
   ctx.set_source_rgba(0.8, 0.2, 0.2, 1.0);
   ctx.arc(15, 15, 7.5, 0, Math.PI * 2);
   ctx.fill();
 
+  // Retrieve current value for target
   var dSafe = (active_edit_dial >= 0) ? active_edit_dial : 0;
   var current_val = min_vals[dSafe];
   if (active_ticker_target === "max_val") current_val = max_vals[dSafe];
   if (active_ticker_target === "step_amount") current_val = step_amounts[dSafe];
   if (active_ticker_target === "multiplier") current_val = multipliers[dSafe];
 
+  var total_cols = whole_digits + ticker_decimal_digits;
   var ticker_data = get_ticker_digit_array(current_val);
 
+  // Sign indicator (+ / -) cleanly separated from the red dot
   ctx.set_source_rgba(attr_text_color);
   ctx.set_font_size(14);
   ctx.move_to(35, 22);
   ctx.show_text(ticker_data.sign < 0 ? "-" : "+");
 
-  var total_cols = whole_digits + ticker_decimal_digits;
+  var startX = 14;
+
   for (var i = 0; i < total_cols; i++) {
-    var xOffset = 30 + i * (slider_width_px + slider_gap_px);
-    if (i >= whole_digits) xOffset += 10;
+    var xOffset = startX + i * (slider_width_px + slider_gap_px);
+    if (i >= whole_digits) xOffset += 8; // Spacer for decimal dot
 
     ctx.set_source_rgba(0, 0, 0, 0.25);
     ctx.rectangle(xOffset, 35, slider_width_px, 125);
@@ -2026,9 +2032,10 @@ function draw_ticker_matrix_popup() {
     ctx.move_to(xOffset + slider_width_px / 2 - 4, 185);
     ctx.show_text(String(ticker_data.arr[i] || 0));
 
+    // Decimal point drawn between 4th and 5th columns
     if (i === whole_digits - 1) {
       ctx.set_source_rgba(attr_text_color);
-      ctx.arc(xOffset + slider_width_px + slider_gap_px * 0.5, 155, 2, 0, Math.PI * 2);
+      ctx.arc(xOffset + slider_width_px + 4, 155, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -2056,7 +2063,7 @@ function update_ticker_value_and_redraw() {
       if (active_ticker_target === "min_val") min_vals[k] = rebuilt;
       else if (active_ticker_target === "max_val") max_vals[k] = rebuilt;
       else if (active_ticker_target === "step_amount") step_amounts[k] = Math.max(0.0001, rebuilt);
-      else if (active_ticker_target === "multiplier") multipliers[k] = Math.max(0.00001, rebuilt);
+      else if (active_ticker_target === "multiplier") multipliers[k] = rebuilt; // Allows negative & zero
     }
     output_all_values();
   } else {
@@ -2064,7 +2071,7 @@ function update_ticker_value_and_redraw() {
     if (active_ticker_target === "min_val") min_vals[d] = rebuilt;
     else if (active_ticker_target === "max_val") max_vals[d] = rebuilt;
     else if (active_ticker_target === "step_amount") step_amounts[d] = Math.max(0.0001, rebuilt);
-    else if (active_ticker_target === "multiplier") multipliers[d] = Math.max(0.00001, rebuilt);
+    else if (active_ticker_target === "multiplier") multipliers[d] = rebuilt; // Allows negative & zero
     output_dial_event(d);
   }
 
@@ -2079,9 +2086,11 @@ function tickerWindowListenerCallback(event) {
     var mx = args[0], my = args[1], mbut = args[2];
     if (mbut === 0) { active_ticker_column = -1; return; }
     if (mbut) {
+      // Red dot close
       if (mx >= 4 && mx <= 26 && my >= 4 && my <= 26) {
         tickerWindow.visible = 0; active_ticker_column = -1; redraw_all(); return;
       }
+
       var dSafe = (active_edit_dial >= 0) ? active_edit_dial : 0;
       var current_val = min_vals[dSafe];
       if (active_ticker_target === "max_val") current_val = max_vals[dSafe];
@@ -2089,6 +2098,7 @@ function tickerWindowListenerCallback(event) {
       if (active_ticker_target === "multiplier") current_val = multipliers[dSafe];
       var ticker_data = get_ticker_digit_array(current_val);
 
+      // Sign toggle hit (+ / -)
       if (mx >= 35 && mx <= 55 && my >= 5 && my <= 25 && active_ticker_column === -1) {
         ticker_data.sign = ticker_data.sign * -1;
         var updated = rebuild_ticker_value(ticker_data);
@@ -2097,24 +2107,31 @@ function tickerWindowListenerCallback(event) {
             if (active_ticker_target === "min_val") min_vals[k] = updated;
             else if (active_ticker_target === "max_val") max_vals[k] = updated;
             else if (active_ticker_target === "step_amount") step_amounts[k] = Math.max(0.0001, updated);
-            else if (active_ticker_target === "multiplier") multipliers[k] = Math.max(0.00001, updated);
+            else if (active_ticker_target === "multiplier") multipliers[k] = updated; // Allows negative & zero
           }
         } else {
           var d = active_edit_dial;
           if (active_ticker_target === "min_val") min_vals[d] = updated;
           else if (active_ticker_target === "max_val") max_vals[d] = updated;
           else if (active_ticker_target === "step_amount") step_amounts[d] = Math.max(0.0001, updated);
-          else if (active_ticker_target === "multiplier") multipliers[d] = Math.max(0.00001, updated);
+          else if (active_ticker_target === "multiplier") multipliers[d] = updated; // Allows negative & zero
         }
         mark_dirty();
-        draw_ticker_matrix_popup(); redraw_all(); active_ticker_column = 99; return;
+        draw_ticker_matrix_popup(); 
+        redraw_all(); 
+        active_ticker_column = 99; 
+        return;
       }
 
+      // Column sliders
       if (active_ticker_column === -1 || active_ticker_column === 99) {
         var total_cols = whole_digits + ticker_decimal_digits;
+        var startX = 14;
+
         for (var i = 0; i < total_cols; i++) {
-          var xOffset = 30 + i * (slider_width_px + slider_gap_px);
-          if (i >= whole_digits) xOffset += 10;
+          var xOffset = startX + i * (slider_width_px + slider_gap_px);
+          if (i >= whole_digits) xOffset += 8;
+
           if (mx >= xOffset && mx <= xOffset + slider_width_px && my >= 35 && my <= 160) {
             active_ticker_column = i;
             var target_val_col = clamp((160 - my) / 125, 0, 1) * 9.0;

@@ -44,7 +44,7 @@
                     "maxclass": "inlet",
                     "numinlets": 0,
                     "numoutlets": 1,
-                    "outlettype": [ "multichannelsignal" ],
+                    "outlettype": [ "" ],
                     "patching_rect": [ 156.0, 87.0, 30.0, 30.0 ]
                 }
             },
@@ -124,7 +124,7 @@
                         [ "set_alignment", 0 ],
                         [ "set_offset_amount", 0.5 ],
                         [ "set_dial_spacing", 13 ],
-                        [ "set_labels", "LiveOut RecOut" ],
+                        [ "set_labels", "Thresh Preamp" ],
                         [ "set_mode", 0 ],
                         [ "set_decimal_digits", 1 ],
                         [ "set_integer_digits", 2 ],
@@ -197,7 +197,7 @@
                         [ "handle_size", 4.5 ],
                         [ "integer_digits", 2 ],
                         [ "label_mode", 0 ],
-                        [ "labels", "LiveOut RecOut" ],
+                        [ "labels", "Thresh Preamp" ],
                         [ "mode", 0 ],
                         [ "mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
                         [ "multiplier", 0.01 ],
