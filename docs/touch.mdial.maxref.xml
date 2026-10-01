@@ -1,0 +1,654 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="touch.mdial" module="max" category="UI">
+	<digest>Multi-Dial Strip / Platter Array with MC Gain and Metering</digest>
+	<description>
+		A versatile multichannel rotary dial strip for Max 9 (v8ui / jsui) supporting up to 8 dials in horizontal, vertical, or zigzag offset arrangements. Features dual-domain output (linear list unpack alongside dedicated <o>mc.line~</o> target ramps with phase-preserving power gain curves), liquid audio level metering, per-dial physics and typography, discrete touch stepping, and a popup inspector with HSV color pickers and precision bound tickers.
+	</description>
+
+	<!-- METADATA -->
+	<metadatalist>
+		<metadata name="author">Touch JSUI Suite</metadata>
+		<metadata name="tag">UI</metadata>
+		<metadata name="tag">dial</metadata>
+		<metadata name="tag">multichannel</metadata>
+		<metadata name="tag">mc</metadata>
+		<metadata name="tag">touch</metadata>
+		<metadata name="tag">jsui</metadata>
+		<metadata name="tag">v8ui</metadata>
+	</metadatalist>
+
+	<!-- INLETS -->
+	<inletlist>
+		<inlet id="0" type="float/list/meter/messages">
+			<digest>Value input, meter list, tag messages, or configuration</digest>
+			<description>
+				Accepts floats to set the first dial, indexed lists <m>[index value]</m> to set a specific dial, lists of values across all dials, <m>meter</m> lists (0.0 to 1.0) for liquid audio feedback, <m>[tag value]</m> pairs matching dial labels, or configuration/theme messages.
+			</description>
+		</inlet>
+	</inletlist>
+
+	<!-- OUTLETS -->
+	<outletlist>
+		<outlet id="0" type="list">
+			<digest>Full scaled value list for [unpack]</digest>
+			<description>
+				Outputs an array of all current dial values mapped to their respective <m>min_val</m> and <m>max_val</m> ranges. Designed for direct connection to <o>unpack</o>.
+			</description>
+		</outlet>
+		<outlet id="1" type="list">
+			<digest>MC Line messages for [mc.line~]</digest>
+			<description>
+				Dispatches channel targeting and ramp messages for multichannel DSP line smoothing. Outputs pairs in the format <m>target &lt;chan&gt;</m> followed by <m>&lt;gain_value&gt; &lt;ramp_time&gt;</m>, applying the power gain curve when enabled.
+			</description>
+		</outlet>
+		<outlet id="2" type="list">
+			<digest>Event message [tag value] for [route]</digest>
+			<description>
+				Dispatches an tagged pair <m>[tag value]</m> whenever a dial is adjusted, where <m>tag</m> is the dial's custom label or 1-based index. Designed for direct connection to <o>route</o>.
+			</description>
+		</outlet>
+		<outlet id="3" type="int">
+			<digest>Active dial index (1..count, 0 on release)</digest>
+			<description>
+				Outputs the 1-based index of the currently active/dragged dial, followed by <m>0</m> when released.
+			</description>
+		</outlet>
+		<outlet id="4" type="int">
+			<digest>Active channel count integer (for @chans)</digest>
+			<description>
+				Outputs the active number of configured dials. Ideal for dynamically setting the <m>@chans</m> attribute of downstream MC objects.
+			</description>
+		</outlet>
+	</outletlist>
+
+	<!-- METHODS / MESSAGES -->
+	<methodlist>
+		<method name="bang">
+			<digest>Output all values and channel count</digest>
+			<description>
+				Triggers output of the current channel count (outlet 4) and dumps all dial states across outlets 0, 1, 2, and 3.
+			</description>
+		</method>
+
+		<method name="float">
+			<digest>Set dial 1 and output</digest>
+			<description>
+				Sets the value of the first dial according to its scaled range and triggers output.
+			</description>
+		</method>
+
+		<method name="int">
+			<digest>Set dial 1 and output</digest>
+			<description>
+				Converted to a float to set the first dial's position, triggering output.
+			</description>
+		</method>
+
+		<method name="list">
+			<digest>Set dial values</digest>
+			<description>
+				If given a two-element list where the first element is an integer between 1 and <m>count</m>, it sets that specific dial's value. If given an arbitrary list of numbers, values are mapped sequentially across all active dials.
+			</description>
+		</method>
+
+		<method name="meter">
+			<digest>Liquid audio meter levels</digest>
+			<description>
+				Accepts a list of floating-point values between 0.0 and 1.0 representing audio signal energy across each dial's channel to render the liquid meter fill.
+			</description>
+		</method>
+
+		<method name="popup">
+			<digest>Toggle inspector window</digest>
+			<description>
+				Opens, closes, or toggles the floating parameter inspector window. An optional argument of <m>1</m> or <m>0</m> explicitly opens or closes the window.
+			</description>
+		</method>
+
+		<method name="update">
+			<digest>Refresh theme from bus or persistent store</digest>
+			<description>
+				Forces the component to reload styling attributes from the shared theme bus (<m>touch_theme_bus</m>) or persistent dict (<m>touch_theme_store</m>). Also accepts aliases <m>theme_update</m>, <m>refresh</m>, and <m>refresh_theme</m>.
+			</description>
+		</method>
+
+		<method name="anything">
+			<digest>Tagged input or attribute setter</digest>
+			<description>
+				If the message selector matches a dial's label tag, the dial value is updated. Otherwise, dynamically routes to attribute setters (such as <m>min_val</m>, <m>max_val</m>, <m>multiplier</m>, etc.).
+			</description>
+		</method>
+	</methodlist>
+
+	<!-- ATTRIBUTES -->
+	<attributelist>
+		<!-- Performance (Tab 1) -->
+		<attribute name="mode" get="1" set="1" type="int" size="1">
+			<digest>Interaction Mode</digest>
+			<description>
+				Selects between touch and mouse handling:
+				<br />0 = <b>Touch</b> (discrete stepping on tap, hold-to-repeat, distance-based inertia easing on drag)
+				<br />1 = <b>Mouse</b> (direct rotary or linear pointer drag tracking)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Interaction Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Touch Mouse" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="decimal_digits" get="1" set="1" type="int" size="1">
+			<digest>Decimal Digits</digest>
+			<description>
+				Number of decimal places shown in numerical text readouts (0 to 8).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Decimal Digits" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="integer_digits" get="1" set="1" type="int" size="1">
+			<digest>Integer Digits</digest>
+			<description>
+				Minimum number of integer digits displayed with leading zero padding (1 to 12).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Integer Digits" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="multiplier" get="1" set="1" type="float" size="1">
+			<digest>Gain Multiplier</digest>
+			<description>
+				Linear scaling coefficient applied to the scaled value before computing MC DSP gain.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Gain Multiplier" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="gain_exponent" get="1" set="1" type="float" size="1">
+			<digest>mc.line~ Gain Exponent</digest>
+			<description>
+				Exponential power curve factor applied to values sent to outlet 1 (default: 1.6). Preserves phase sign for bipolar output.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="mc.line~ Gain Exponent" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="use_gain_curve" get="1" set="1" type="int" size="1">
+			<digest>Output Gain Curve for mc.line~</digest>
+			<description>
+				Toggles between exponential power-curve shaping (1) and linear gain multiplication (0) for outlet 1.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Output Gain Curve for mc.line~" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Performance" />
+			</attributelist>
+		</attribute>
+
+		<!-- Geometry (Tab 2) -->
+		<attribute name="count" get="1" set="1" type="int" size="1">
+			<digest>Dial Count</digest>
+			<description>
+				Number of active dials in the strip array (1 to 8).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Dial Count" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="direction" get="1" set="1" type="int" size="1">
+			<digest>Strip Orientation</digest>
+			<description>
+				Array strip layout direction:
+				<br />0 = <b>Horizontal</b>
+				<br />1 = <b>Vertical</b>
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Strip Orientation" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Horizontal Vertical" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="alignment" get="1" set="1" type="int" size="1">
+			<digest>Alignment Mode</digest>
+			<description>
+				Dial alignment layout mode:
+				<br />0 = <b>Strip</b> (straight linear array)
+				<br />1 = <b>Offset Up</b> (alternating zigzag offset shifted up/left)
+				<br />2 = <b>Offset Down</b> (alternating zigzag offset shifted down/right)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Alignment Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Strip &quot;Offset Up&quot; &quot;Offset Down&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="dial_spacing" get="1" set="1" type="float" size="1">
+			<digest>Dial Spacing</digest>
+			<description>
+				Pixel spacing distance between consecutive dials along the primary strip axis.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Dial Spacing" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="dial_size" get="1" set="1" type="float" size="1">
+			<digest>Dial Size Ratio</digest>
+			<description>
+				Relative radius of the dial platter (0.0 to 1.0). Can be set globally or as a list of per-dial values.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Dial Size Ratio" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="dial_style" get="1" set="1" type="int" size="1">
+			<digest>Dial Style</digest>
+			<description>
+				Visual styling of the rotary indicator:
+				<br />0 = <b>Ribbon</b> (donut rail with filled arc or line)
+				<br />1 = <b>Rail</b> (thin guide rail with sliding orb knob and needle crossbar)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Dial Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Ribbon Rail" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="ribbon_fill" get="1" set="1" type="int" size="1">
+			<digest>Ribbon Fill</digest>
+			<description>
+				Indicator fill type for Ribbon style:
+				<br />0 = <b>Single Line</b> (thin radial needle indicator)
+				<br />1 = <b>Arc Fill</b> (solid arc fill from start or center zero)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Ribbon Fill" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;Single Line&quot; &quot;Arc Fill&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="rotary_mode" get="1" set="1" type="int" size="1">
+			<digest>Rotary Mode</digest>
+			<description>
+				Angular span and boundary behavior:
+				<br />0 = <b>270</b> (standard 270° horseshoe arc with bottom gap)
+				<br />1 = <b>360 Top</b> (clamped 360° circle with origin/stop at 12:00)
+				<br />2 = <b>360 Bottom</b> (clamped 360° circle with origin/stop at 6:00)
+				<br />3 = <b>360 Continuous</b> (endless continuous 360° rotary wrapping)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Rotary Mode" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="270 &quot;360 Top&quot; &quot;360 Bottom&quot; &quot;360 Continuous&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Geometry" />
+			</attributelist>
+		</attribute>
+
+		<!-- Settings (Tab 3) -->
+		<attribute name="labels" get="1" set="1" type="symbol" size="1">
+			<digest>Dial Labels</digest>
+			<description>
+				Space-separated list of token labels applied sequentially across the dials (e.g., <m>"Gain Freq Res Pan"</m>).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Dial Labels (space separated)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="slider_speed" get="1" set="1" type="float" size="1">
+			<digest>Drag Speed</digest>
+			<description>
+				Sensitivity multiplier for pointer dragging and mouse wheel rotation (0.1 to 5.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Drag Speed" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="step_speed_ms" get="1" set="1" type="int" size="1">
+			<digest>Hold Timer (ms)</digest>
+			<description>
+				Repeat rate in milliseconds for continuous discrete stepping when holding down in Touch mode (1 to 500 ms).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Hold Timer (ms)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="curve_exponent" get="1" set="1" type="float" size="1">
+			<digest>Rotary Curve Exp</digest>
+			<description>
+				Exponential factor governing distance-dependent proximity easing in Touch mode (0.0 to 2.0).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Rotary Curve Exp" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="unit_mode" get="1" set="1" type="int" size="1">
+			<digest>Unit Suffix</digest>
+			<description>
+				Appends an automatic unit string suffix to the readout:
+				<br />0 = <b>None</b>
+				<br />1 = <b>%</b>
+				<br />2 = <b>dB</b>
+				<br />3 = <b>ms</b>
+				<br />4 = <b>Hz</b>
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Unit Suffix" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="None % dB ms Hz" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_name" get="1" set="1" type="symbol" size="1">
+			<digest>Font Face</digest>
+			<description>
+				Font family used to render numerical text and dial labels.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Face" />
+				<attribute name="style" get="1" set="1" type="symbol" value="font" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_size" get="1" set="1" type="int" size="1">
+			<digest>Font Size</digest>
+			<description>
+				Base font point size for dial text rendering (6 to 48 pt).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Size" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="font_style" get="1" set="1" type="int" size="1">
+			<digest>Font Style</digest>
+			<description>
+				Font typography weight and slant:
+				<br />0 = <b>Regular</b>
+				<br />1 = <b>Bold</b>
+				<br />2 = <b>Italic</b>
+				<br />3 = <b>Bold Italic</b>
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Font Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Regular Bold Italic &quot;Bold Italic&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="label_mode" get="1" set="1" type="int" size="1">
+			<digest>Label Style</digest>
+			<description>
+				Text formatting filter applied to dial labels:
+				<br />0 = <b>Full</b> (renders full string)
+				<br />1 = <b>No Vowels</b> (removes inner vowels to save space)
+				<br />2 = <b>Caps Only</b> (preserves uppercase letters and numbers)
+				<br />3 = <b>First Letter</b> (abbreviates to initials)
+				<br />4 = <b>No Text</b> (hides label text completely)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Label Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="Full &quot;No Vowels&quot; &quot;Caps Only&quot; &quot;First Letter&quot; &quot;No Text&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="case_mode" get="1" set="1" type="int" size="1">
+			<digest>Case Style</digest>
+			<description>
+				Text capitalization mode:
+				<br />0 = <b>First Cap</b> (Title Case)
+				<br />1 = <b>All Cap</b> (Uppercase)
+				<br />2 = <b>All Small</b> (Lowercase)
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Case Style" />
+				<attribute name="style" get="1" set="1" type="symbol" value="enumindex" />
+				<attribute name="enumvals" get="1" set="1" type="atom" value="&quot;First Cap&quot; &quot;All Cap&quot; &quot;All Small&quot;" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Settings" />
+			</attributelist>
+		</attribute>
+
+		<!-- Styles (Tab 4) -->
+		<attribute name="borders" get="1" set="1" type="int" size="1">
+			<digest>Show Outer Borders</digest>
+			<description>
+				Toggles rendering of the outer chassis corner brackets (1 = ON, 0 = OFF).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Outer Borders" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="show_background" get="1" set="1" type="int" size="1">
+			<digest>Show Background</digest>
+			<description>
+				Toggles solid background fill for the entire component bounding box (1 = ON, 0 = OFF).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Show Background" />
+				<attribute name="style" get="1" set="1" type="symbol" value="onoff" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_radius" get="1" set="1" type="float" size="1">
+			<digest>Border Radius</digest>
+			<description>
+				Corner radius in pixels for chassis borders and background panel rounding (0 to 50).
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Radius" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_thickness" get="1" set="1" type="float" size="1">
+			<digest>Border Thickness</digest>
+			<description>
+				Stroke width in pixels of the chassis perimeter brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Thickness" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_extension" get="1" set="1" type="float" size="1">
+			<digest>Border Extension</digest>
+			<description>
+				Length in pixels of the chassis corner bracket arms.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Extension" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="track_breadth" get="1" set="1" type="float" size="1">
+			<digest>Track Breadth</digest>
+			<description>
+				Stroke width of the circular guide rail / arc ribbon.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Track Breadth" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="handle_size" get="1" set="1" type="float" size="1">
+			<digest>Handle Size (Orb)</digest>
+			<description>
+				Radius in pixels of the circular handle orb when using Rail style.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Handle Size (Orb)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="needle_thickness" get="1" set="1" type="float" size="1">
+			<digest>Line Size (Needle)</digest>
+			<description>
+				Stroke thickness of the radial needle indicator line.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Line Size (Needle)" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Styles" />
+			</attributelist>
+		</attribute>
+
+		<!-- Colors (Tab 5) -->
+		<attribute name="bg_color" get="1" set="1" type="rgba" size="4">
+			<digest>Face / BG Color</digest>
+			<description>
+				RGBA color for the component chassis background.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Face / BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="border_color" get="1" set="1" type="rgba" size="4">
+			<digest>Border Color</digest>
+			<description>
+				RGBA color of the chassis corner border brackets.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Border Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="track_color" get="1" set="1" type="rgba" size="4">
+			<digest>Track Rail Color</digest>
+			<description>
+				RGBA color of the inactive background circular guide track.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Track Rail Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="handle_color" get="1" set="1" type="rgba" size="4">
+			<digest>Needle / Fill Color</digest>
+			<description>
+				RGBA color of the active arc fill, needle indicator, and knob orb.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Needle / Fill Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="text_color" get="1" set="1" type="rgba" size="4">
+			<digest>Text Color</digest>
+			<description>
+				RGBA color for the scaled numerical value readout text.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Text Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="mode_color" get="1" set="1" type="rgba" size="4">
+			<digest>Mode Color</digest>
+			<description>
+				RGBA color for dial labels and unit suffix text.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Mode Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="popup_dot_color" get="1" set="1" type="rgba" size="4">
+			<digest>Popup Dot Color</digest>
+			<description>
+				RGBA color of the top-right inspector launcher dot.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup Dot Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+
+		<attribute name="pop_bgcolor" get="1" set="1" type="rgba" size="4">
+			<digest>Popup BG Color</digest>
+			<description>
+				RGBA background color of the floating inspector window.
+			</description>
+			<attributelist>
+				<attribute name="label" get="1" set="1" type="symbol" value="Popup BG Color" />
+				<attribute name="style" get="1" set="1" type="symbol" value="rgba" />
+				<attribute name="category" get="1" set="1" type="symbol" value="Colors" />
+			</attributelist>
+		</attribute>
+	</attributelist>
+
+	<!-- SEE ALSO -->
+	<seealsolist>
+		<seealso name="touch.dialitin" />
+		<seealso name="touch.hslider" />
+		<seealso name="touch.vslider" />
+		<seealso name="touch.pfunction" />
+		<seealso name="touch.button" />
+		<seealso name="touch.panel" />
+		<seealso name="touch.master" />
+		<seealso name="mc.line~" />
+		<seealso name="unpack" />
+		<seealso name="function" />
+		<seealso name="dial" />
+		<seealso name="live.dial" />
+		<seealso name="jsui" />
+		<seealso name="v8ui" />
+	</seealsolist>
+</c74object>
