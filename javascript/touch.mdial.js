@@ -71,7 +71,7 @@ var integer_digits    = [1, 1, 1, 1, 1, 1, 1, 1];       // 1 to 12 integer paddi
 var multipliers       = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]; // Scale for DSP gain
 
 // --- TAB 2: GEOMETRY ARRAYS (Per-Dial) ---
-var dial_sizes    = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]; // 0.0 to 1.0 (relative radius)
+var dial_sizes    = [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25]; // 0.0 to 1.0 (relative radius)
 var dial_styles   = [0, 0, 0, 0, 0, 0, 0, 0];                 // 0 = Ribbon, 1 = Rail
 var ribbon_fills  = [1, 1, 1, 1, 1, 1, 1, 1];                 // 0 = Single Line, 1 = Arc Fill
 var rotary_modes  = [0, 0, 0, 0, 0, 0, 0, 0];                 // 0 = 270, 1 = 360 Top, 2 = 360 Bottom, 3 = Continuous
@@ -658,9 +658,9 @@ function get_dial_geometry(w, h, inset, dir, is_preview) {
 
   var rawRadii = [];
   for (var i = 0; i < totalDials; i++) {
-    var sz = dial_sizes[i] !== undefined ? dial_sizes[i] : 0.5;
-    rawRadii.push(18.0 + clamp(sz, 0.0, 1.0) * 42.0);
-  }
+  var sz = dial_sizes[i] !== undefined ? dial_sizes[i] : 0.25;
+  rawRadii.push(18.0 + clamp(sz, 0.0, 1.0) * 42.0);
+}
 
   var rawCoords = [];
   if (d === 0) {
