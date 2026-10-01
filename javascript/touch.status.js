@@ -1,6 +1,6 @@
 // ============================================================================
 // touch.status.js - Max 9 v8ui / jsui
-// Local Preset Engine + Downward Scanner + Scanned Controls Inspector +
+// Local Preset Engine + Downward Scanner + Hierarchical Dictionary Inspector +
 // Multi-Curve Array Glider + Interactive 3-Tab Carousel Inspector
 // ============================================================================
 
@@ -287,7 +287,7 @@ const mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 
 let showSettings       = 0;
 let popup_window_width = 280;
-let popup_window_fixed_h = 456; // Tailored height to eliminate bottom gap
+let popup_window_fixed_h = 456;
 let popup_mini_w       = 320;
 let popup_mini_h       = 110;
 
@@ -321,6 +321,12 @@ let cur_h = 0.0, cur_s = 1.0, cur_v = 1.0, cur_a = 1.0;
 
 let lastMouseX = 0;
 let lastMouseY = 0;
+
+// Scanned Clients Inspector Controls & Tree State
+let client_view_mode = 0; // 0 = Hierarchical Dictionary Tree, 1 = Flat List
+let client_sort_mode = 0; // 0 = Natural Alphanumeric (A-Z), 1 = Raw Patch Order
+let clients_collapsed_paths = {}; // Tracks folded branches
+let clients_cached_rows = []; // Linear visual rows currently rendered
 
 let clientsScrollOffset = 0;
 let isClientsDragging   = 0;
@@ -529,24 +535,19 @@ function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
       const rawA = (typeof valA === "object" && valA !== null && valA.val !== undefined) ? valA.val : valA;
       const rawB = (typeof valB === "object" && valB !== null && valB.val !== undefined) ? valB.val : valB;
 
-      // 1. Single float numbers (Dials, Faders)
       if (typeof rawA === "number" && typeof rawB === "number") {
         const blended = lerp(rawA, rawB, blendRatio);
         if (typeof o.setvalueof === "function") o.setvalueof(blended);
         else o.message("float", blended);
-      } 
-      // 2. Arrays: Envelopes (pfunction) vs Binary Buttons (mbutton)
-      else if (Array.isArray(rawA) && Array.isArray(rawB)) {
+      } else if (Array.isArray(rawA) && Array.isArray(rawB)) {
         const isButtonA = rawA.length > 0 && rawA.every(n => Number(n) === 0 || Number(n) === 1);
         const isButtonB = rawB.length > 0 && rawB.every(n => Number(n) === 0 || Number(n) === 1);
 
         if (isButtonA && isButtonB) {
-          // Discrete 50% Snap for Buttons & Toggles (mbutton)
           const snapTarget = (blendRatio >= 0.5) ? rawB : rawA;
           if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
           else o.message("list", snapTarget);
         } else {
-          // Continuous Element-by-Element Interpolation for Envelopes (pfunction)
           const maxLen = Math.max(rawA.length, rawB.length);
           const blendedArr = [];
           for (let i = 0; i < maxLen; i++) {
@@ -557,9 +558,7 @@ function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
           if (typeof o.setvalueof === "function") o.setvalueof(blendedArr);
           else o.message("list", blendedArr);
         }
-      } 
-      // 3. Fallback Snap for discrete non-numeric states
-      else {
+      } else {
         const snapTarget = (blendRatio >= 0.5) ? rawB : rawA;
         if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
         else o.message(snapTarget);
@@ -722,7 +721,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
   const cellW = availW / cols;
   const cellH = availH / rows_count;
 
-  // 1. VERTICAL LAUNCHER STRIP (Hidden in preview mode to remove distracting white bar)
   if (!is_preview) {
     const stripX = inset + padX;
     const stripY = inset + padY;
@@ -741,7 +739,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.arc(midSX, midSY + 6, 1.2, 0, Math.PI * 2); ctx.fill();
   }
 
-  // 2. SLOTS
   for (let i = 0; i < slots.length; i++) {
     const c = i % cols, row = Math.floor(i / cols);
     const sX = slotStartX + c * cellW;
@@ -795,7 +792,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.show_text(dispTxt);
   }
 
-  // Right Red Dot: Status Config Settings
   if (!is_preview && allow_popup === 1) {
     const dotR = Math.max(1.5, Math.min(2.8, Math.min(w, h) * 0.08));
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
@@ -1017,13 +1013,13 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   const cellH = (h - b - padY * 2) / rows_count;
   const stripH = (grid_rows > 1) ? ((cellH * grid_rows) - 3) : (cellH - 3);
 
-  // 1. VERTICAL STRIP HIT -> Scanned Controls Window
+  // Strip hit -> Toggle Scanned Controls
   if (x >= stripX - 3 && x <= stripX + stripW + 3 && y >= stripY && y <= stripY + stripH) {
     toggle_clients_window();
     return;
   }
 
-  // 2. RIGHT RED DOT -> Status Config Settings
+  // Red Dot hit -> Settings
   if (allow_popup === 1) {
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
     const dotX = w - dotMargin, dotY = dotMargin;
@@ -1041,7 +1037,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
     return;
   }
 
-  // 3. SLOTS HIT
   const slotStartX = stripX + stripW + padX;
   const availW = (w - b - padX) - slotStartX;
   const availH = (h - b) - padY * 2;
@@ -1058,7 +1053,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
 
   const now = new Date().getTime();
 
-  // Double-tap: Palette
   if (now - last_tap_time < double_tap_threshold && clickedSlot === last_tap_slot) {
     last_tap_time = 0;
     stop_hold_watchdog();
@@ -1080,7 +1074,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   clickStartY = y;
   pendingSlot = clickedSlot;
 
-  // Long-hold: Save
   if (allow_hold_save === 1) {
     holdTask = new Task(() => {
       if (isMouseDown === 1 && pendingSlot !== -1 && !isDragging && !has_dragged) {
@@ -1163,11 +1156,11 @@ function broadcast_to_master() {
 }
 
 // =============================================================
-// 9. CLIENT OBJECTS INSPECTOR
+// 9. CLIENT OBJECTS INSPECTOR (DICTIONARY TREE + FLAT)
 // =============================================================
-const WIN_W = 440;
-const WIN_H = 500;
-const HEADER_H = 42;
+const WIN_W = 480;
+const WIN_H = 520;
+const HEADER_H = 46;
 
 function getClientsWindow() {
   if (!clientsWindow) {
@@ -1204,6 +1197,115 @@ function toggle_clients_window(v) {
   }
 }
 
+// Natural alphanumeric sorting comparison helper
+function naturalCompare(a, b) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
+
+// Builds the linear visual rows based on View Mode (Dictionary Tree vs Flat)
+function build_clients_render_rows() {
+  let keys = Object.keys(discoveredControls);
+
+  if (client_sort_mode === 0) {
+    keys.sort(naturalCompare);
+  }
+
+  if (client_view_mode === 1) {
+    // FLAT VIEW MODE
+    return keys.map(k => ({
+      type: "leaf",
+      depth: 0,
+      label: k,
+      fullKey: k
+    }));
+  }
+
+  // HIERARCHICAL DICTIONARY TREE MODE
+  const root = { children: {} };
+
+  for (let i = 0; i < keys.length; i++) {
+    const fullKey = keys[i];
+    const parts = fullKey.split("::");
+    let curr = root;
+
+    for (let p = 0; p < parts.length; p++) {
+      const part = parts[p];
+      const isLast = (p === parts.length - 1);
+      const nodePath = parts.slice(0, p + 1).join("::");
+
+      if (!curr.children[part]) {
+        curr.children[part] = {
+          name: part,
+          children: {},
+          isLeaf: isLast,
+          path: nodePath,
+          fullKey: isLast ? fullKey : ""
+        };
+      }
+      curr = curr.children[part];
+    }
+  }
+
+  const rows = [];
+
+  function walk(node, depth) {
+    let childNames = Object.keys(node.children);
+    if (client_sort_mode === 0) {
+      childNames.sort(naturalCompare);
+    }
+
+    for (let i = 0; i < childNames.length; i++) {
+      const child = node.children[childNames[i]];
+      const hasChildren = Object.keys(child.children).length > 0;
+
+      if (hasChildren) {
+        // Container branch (renders as "name:")
+        const isCollapsed = !!clients_collapsed_paths[child.path];
+        rows.push({
+          type: "branch",
+          depth: depth,
+          label: `${child.name}:`,
+          path: child.path,
+          collapsed: isCollapsed
+        });
+
+        if (!isCollapsed) {
+          walk(child, depth + 1);
+        }
+      } else {
+        // Leaf control
+        rows.push({
+          type: "leaf",
+          depth: depth,
+          label: child.name,
+          fullKey: child.fullKey
+        });
+      }
+    }
+  }
+
+  walk(root, 0);
+  return rows;
+}
+
+function toggle_all_tree_collapse() {
+  const hasAnyCollapsed = Object.keys(clients_collapsed_paths).some(k => clients_collapsed_paths[k]);
+  if (hasAnyCollapsed) {
+    clients_collapsed_paths = {}; // Expand all
+  } else {
+    // Collapse all branches
+    const keys = Object.keys(discoveredControls);
+    for (let i = 0; i < keys.length; i++) {
+      const parts = keys[i].split("::");
+      for (let p = 1; p < parts.length; p++) {
+        const branchPath = parts.slice(0, p).join("::");
+        clients_collapsed_paths[branchPath] = true;
+      }
+    }
+  }
+  draw_clients_window();
+}
+
 function draw_clients_window() {
   if (!showClientsWindow || !clientsWindow) return;
   const win = getClientsWindow();
@@ -1216,66 +1318,103 @@ function draw_clients_window() {
   ctx.rectangle(0, 0, WIN_W, WIN_H);
   ctx.fill();
 
-  const keys = Object.keys(discoveredControls);
-  const rowH = 30, gap = 4;
-  const topListY = HEADER_H + 4;
+  clients_cached_rows = build_clients_render_rows();
+  const rows = clients_cached_rows;
+
+  const rowH = 28, gap = 3;
+  const topListY = HEADER_H + 6;
   const viewH = WIN_H - topListY - 8;
-  const totalContentH = keys.length * (rowH + gap);
+  const totalContentH = rows.length * (rowH + gap);
   const maxScroll = Math.max(0, totalContentH - viewH);
 
   clientsScrollOffset = clamp(clientsScrollOffset, 0, maxScroll);
   const startY = topListY - clientsScrollOffset;
   const margin = 12, rowW = WIN_W - margin * 2 - 14;
 
-  for (let i = 0; i < keys.length; i++) {
-    const k = keys[i];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     const rY = startY + i * (rowH + gap);
     if (rY + rowH < 0 || rY > WIN_H) continue;
 
-    const o = discoveredControls[k];
-    const liveVal = get_control_live_val(o);
-    const isSelected = (k === highlightedControlKey);
+    const indentX = margin + (r.depth * 18);
+    const itemW = rowW - (r.depth * 18);
 
-    ctx.set_source_rgba(isSelected ? [highlight_color[0], highlight_color[1], highlight_color[2], 0.25] : attr_bg_color);
-    ctx.rectangle_rounded(margin, rY, rowW, rowH, 4, 4);
-    ctx.fill();
+    if (r.type === "branch") {
+      // Branch row (dictionary outline category)
+      ctx.set_source_rgba(0.08, 0.09, 0.11, 0.85);
+      ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
+      ctx.fill();
 
-    ctx.set_source_rgba(isSelected ? highlight_color : attr_border_color);
-    ctx.set_line_width(isSelected ? 1.0 : 0.6);
-    ctx.rectangle_rounded(margin, rY, rowW, rowH, 4, 4);
-    ctx.stroke();
+      ctx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.6);
+      ctx.set_line_width(0.6);
+      ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
+      ctx.stroke();
 
-    ctx.set_source_rgba(accent_bar_color);
-    ctx.arc(margin + 10, rY + rowH * 0.5, 3.0, 0, Math.PI * 2);
-    ctx.fill();
+      // Branch expand/collapse indicator (▼ / ►)
+      ctx.select_font_face("Arial", "normal", "bold");
+      ctx.set_font_size(9);
+      ctx.set_source_rgba(highlight_color);
+      ctx.move_to(indentX + 8, rY + rowH * 0.5 + 3.5);
+      ctx.show_text(r.collapsed ? "►" : "▼");
 
-    ctx.select_font_face("Arial", "normal", isSelected ? "bold" : "normal");
-    ctx.set_font_size(11);
-    ctx.set_source_rgba(isSelected ? [1, 1, 1, 1] : [0.94, 0.95, 0.98, 1.0]);
-    let keyText = fit_text_to_width(ctx, k, rowW - 140);
-    ctx.move_to(margin + 20, rY + rowH * 0.5 + 4.0);
-    ctx.show_text(keyText);
+      // Dictionary category name with colon
+      ctx.set_font_size(11);
+      ctx.set_source_rgba(0.92, 0.94, 0.98, 1.0);
+      const bText = fit_text_to_width(ctx, r.label, itemW - 32);
+      ctx.move_to(indentX + 22, rY + rowH * 0.5 + 4.0);
+      ctx.show_text(bText);
+    } else {
+      // Leaf control row
+      const isSelected = (r.fullKey === highlightedControlKey);
+      const o = discoveredControls[r.fullKey];
+      const liveVal = get_control_live_val(o);
 
-    const vBoxW = 120, vBoxH = 22;
-    const vBoxX = margin + rowW - vBoxW - 6;
-    const vBoxY = rY + (rowH - vBoxH) * 0.5;
+      ctx.set_source_rgba(isSelected ? [highlight_color[0], highlight_color[1], highlight_color[2], 0.25] : attr_bg_color);
+      ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
+      ctx.fill();
 
-    ctx.set_source_rgba(0.06, 0.07, 0.09, 0.95);
-    ctx.rectangle_rounded(vBoxX, vBoxY, vBoxW, vBoxH, 3, 3);
-    ctx.fill();
-    ctx.set_source_rgba(attr_border_color);
-    ctx.set_line_width(0.6);
-    ctx.rectangle_rounded(vBoxX, vBoxY, vBoxW, vBoxH, 3, 3);
-    ctx.stroke();
+      ctx.set_source_rgba(isSelected ? highlight_color : attr_border_color);
+      ctx.set_line_width(isSelected ? 1.0 : 0.6);
+      ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
+      ctx.stroke();
 
-    ctx.select_font_face("Arial", "normal", "bold");
-    ctx.set_font_size(10.5);
-    ctx.set_source_rgba(liveVal === "---" ? [0.5, 0.5, 0.5, 0.8] : highlight_color);
-    const vTm = ctx.text_measure(String(liveVal));
-    ctx.move_to(vBoxX + Math.max(4, (vBoxW - vTm[0]) * 0.5), vBoxY + 15.0);
-    ctx.show_text(String(liveVal));
+      // Small control dot
+      ctx.set_source_rgba(accent_bar_color);
+      ctx.arc(indentX + 10, rY + rowH * 0.5, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.select_font_face("Arial", "normal", isSelected ? "bold" : "normal");
+      ctx.set_font_size(10.5);
+      ctx.set_source_rgba(isSelected ? [1, 1, 1, 1] : [0.88, 0.90, 0.94, 1.0]);
+
+      const vBoxW = 120, vBoxH = 20;
+      const vBoxX = indentX + itemW - vBoxW - 5;
+      const vBoxY = rY + (rowH - vBoxH) * 0.5;
+
+      const leafText = fit_text_to_width(ctx, r.label, itemW - vBoxW - 24);
+      ctx.move_to(indentX + 18, rY + rowH * 0.5 + 4.0);
+      ctx.show_text(leafText);
+
+      // Live value box
+      ctx.set_source_rgba(0.06, 0.07, 0.09, 0.95);
+      ctx.rectangle_rounded(vBoxX, vBoxY, vBoxW, vBoxH, 3, 3);
+      ctx.fill();
+
+      ctx.set_source_rgba(attr_border_color);
+      ctx.set_line_width(0.6);
+      ctx.rectangle_rounded(vBoxX, vBoxY, vBoxW, vBoxH, 3, 3);
+      ctx.stroke();
+
+      ctx.select_font_face("Arial", "normal", "bold");
+      ctx.set_font_size(10);
+      ctx.set_source_rgba(liveVal === "---" ? [0.5, 0.5, 0.5, 0.8] : highlight_color);
+      const vTm = ctx.text_measure(String(liveVal));
+      ctx.move_to(vBoxX + Math.max(4, (vBoxW - vTm[0]) * 0.5), vBoxY + 14.0);
+      ctx.show_text(String(liveVal));
+    }
   }
 
+  // Scrollbar
   if (maxScroll > 0) {
     const sbTrackX = WIN_W - 12, sbTrackY = topListY, sbTrackH = viewH;
     ctx.set_source_rgba(0.06, 0.06, 0.08, 0.6);
@@ -1289,59 +1428,112 @@ function draw_clients_window() {
     ctx.fill();
   }
 
+  // -------------------------------------------------------------
+  // TOP HEADER BAR & CONTROLS / MODE SWITCHERS
+  // -------------------------------------------------------------
   ctx.set_source_rgba(pop_bgcolor);
   ctx.rectangle(0, 0, WIN_W, HEADER_H);
   ctx.fill();
 
+  // Close red dot
   ctx.set_source_rgba(0.85, 0.2, 0.2, 1.0);
-  ctx.arc(14, 16, 6.0, 0, Math.PI * 2);
+  ctx.arc(14, 16, 5.5, 0, Math.PI * 2);
   ctx.fill();
 
+  // Title with total scanned count
   ctx.select_font_face("Arial", "normal", "bold");
-  ctx.set_font_size(11);
+  ctx.set_font_size(10.5);
   ctx.set_source_rgba(0.92, 0.94, 0.98, 1.0);
-  ctx.move_to(28, 20);
-  ctx.show_text(`SCANNED CONTROLS (${keys.length})`);
+  ctx.move_to(26, 20);
+  ctx.show_text(`SCANNED (${Object.keys(discoveredControls).length})`);
 
-  const rBtnW = 72, rBtnH = 22, rBtnX = WIN_W - rBtnW - 74, rBtnY = 6;
+  const btnY = 8, btnH = 22;
+
+  // 1. View Mode Switcher Pill (TREE / FLAT)
+  const vBtnX = 168, vBtnW = 54;
   ctx.set_source_rgba(attr_bg_color);
-  ctx.rectangle_rounded(rBtnX, rBtnY, rBtnW, rBtnH, 4, 4);
+  ctx.rectangle_rounded(vBtnX, btnY, vBtnW, btnH, 3, 3);
   ctx.fill();
-  ctx.set_source_rgba(accent_bar_color);
+  ctx.set_source_rgba(client_view_mode === 0 ? highlight_color : attr_border_color);
   ctx.set_line_width(0.8);
-  ctx.rectangle_rounded(rBtnX, rBtnY, rBtnW, rBtnH, 4, 4);
+  ctx.rectangle_rounded(vBtnX, btnY, vBtnW, btnH, 3, 3);
   ctx.stroke();
 
   ctx.select_font_face("Arial", "normal", "bold");
-  ctx.set_font_size(9.5);
-  ctx.set_source_rgba(accent_bar_color);
-  const rTm = ctx.text_measure("RESCAN");
-  ctx.move_to(rBtnX + (rBtnW - rTm[0]) * 0.5, rBtnY + 15.5);
-  ctx.show_text("RESCAN");
+  ctx.set_font_size(9);
+  ctx.set_source_rgba(client_view_mode === 0 ? highlight_color : attr_text_color);
+  const vLbl = client_view_mode === 0 ? "TREE" : "FLAT";
+  const vTm = ctx.text_measure(vLbl);
+  ctx.move_to(vBtnX + (vBtnW - vTm[0]) * 0.5, btnY + 15.0);
+  ctx.show_text(vLbl);
 
-  const stepUpX = WIN_W - 64, stepDwnX = WIN_W - 36, stepBtnW = 24, stepBtnH = 22;
+  // 2. Sort Mode Switcher Pill (A-Z / RAW)
+  const sBtnX = 228, sBtnW = 46;
   ctx.set_source_rgba(attr_bg_color);
-  ctx.rectangle_rounded(stepUpX, rBtnY, stepBtnW, stepBtnH, 3, 3);
-  ctx.rectangle_rounded(stepDwnX, rBtnY, stepBtnW, stepBtnH, 3, 3);
+  ctx.rectangle_rounded(sBtnX, btnY, sBtnW, btnH, 3, 3);
+  ctx.fill();
+  ctx.set_source_rgba(client_sort_mode === 0 ? highlight_color : attr_border_color);
+  ctx.set_line_width(0.8);
+  ctx.rectangle_rounded(sBtnX, btnY, sBtnW, btnH, 3, 3);
+  ctx.stroke();
+
+  ctx.set_source_rgba(client_sort_mode === 0 ? highlight_color : attr_text_color);
+  const sLbl = client_sort_mode === 0 ? "A–Z" : "RAW";
+  const sTm = ctx.text_measure(sLbl);
+  ctx.move_to(sBtnX + (sBtnW - sTm[0]) * 0.5, btnY + 15.0);
+  ctx.show_text(sLbl);
+
+  // 3. Tree Expand/Collapse All Pill
+  const fBtnX = 280, fBtnW = 34;
+  ctx.set_source_rgba(attr_bg_color);
+  ctx.rectangle_rounded(fBtnX, btnY, fBtnW, btnH, 3, 3);
   ctx.fill();
   ctx.set_source_rgba(attr_border_color);
   ctx.set_line_width(0.8);
-  ctx.rectangle_rounded(stepUpX, rBtnY, stepBtnW, stepBtnH, 3, 3);
-  ctx.rectangle_rounded(stepDwnX, rBtnY, stepBtnW, stepBtnH, 3, 3);
+  ctx.rectangle_rounded(fBtnX, btnY, fBtnW, btnH, 3, 3);
+  ctx.stroke();
+
+  ctx.set_source_rgba(attr_text_color);
+  const fTm = ctx.text_measure("±");
+  ctx.move_to(fBtnX + (fBtnW - fTm[0]) * 0.5, btnY + 15.0);
+  ctx.show_text("±");
+
+  // 4. RESCAN Button
+  const rBtnX = 320, rBtnW = 66;
+  ctx.set_source_rgba(attr_bg_color);
+  ctx.rectangle_rounded(rBtnX, btnY, rBtnW, btnH, 3, 3);
+  ctx.fill();
+  ctx.set_source_rgba(accent_bar_color);
+  ctx.set_line_width(0.8);
+  ctx.rectangle_rounded(rBtnX, btnY, rBtnW, btnH, 3, 3);
+  ctx.stroke();
+
+  ctx.set_source_rgba(accent_bar_color);
+  const rTm = ctx.text_measure("RESCAN");
+  ctx.move_to(rBtnX + (rBtnW - rTm[0]) * 0.5, btnY + 15.0);
+  ctx.show_text("RESCAN");
+
+  // 5. Scroll Step Arrows (▲ / ▼)
+  const upX = 392, dwnX = 418, stepW = 22;
+  ctx.set_source_rgba(attr_bg_color);
+  ctx.rectangle_rounded(upX, btnY, stepW, btnH, 3, 3);
+  ctx.rectangle_rounded(dwnX, btnY, stepW, btnH, 3, 3);
+  ctx.fill();
+  ctx.set_source_rgba(attr_border_color);
+  ctx.set_line_width(0.8);
+  ctx.rectangle_rounded(upX, btnY, stepW, btnH, 3, 3);
+  ctx.rectangle_rounded(dwnX, btnY, stepW, btnH, 3, 3);
   ctx.stroke();
 
   ctx.set_source_rgba(text_color);
-  ctx.set_font_size(10);
-  ctx.move_to(stepUpX + 8, rBtnY + 15.5); ctx.show_text("▲");
-  ctx.move_to(stepDwnX + 8, rBtnY + 15.5); ctx.show_text("▼");
+  ctx.set_font_size(9.5);
+  ctx.move_to(upX + 7, btnY + 15.0); ctx.show_text("▲");
+  ctx.move_to(dwnX + 7, btnY + 15.0); ctx.show_text("▼");
 
+  // Bottom dividing line
   ctx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
   ctx.set_line_width(1.0);
   ctx.move_to(8, HEADER_H); ctx.line_to(WIN_W - 8, HEADER_H); ctx.stroke();
-
-  ctx.set_source_rgba(pop_bgcolor);
-  ctx.rectangle(0, WIN_H - 6, WIN_W, 6);
-  ctx.fill();
 
   const img = new Image(ctx);
   img.tonamedmatrix(clientsMatrix.name);
@@ -1353,40 +1545,68 @@ function clientsWindowListenerCallback(event) {
   const a = arrayfromargs(event.args);
   const mx = a[0], my = a[1], mbut = a[2];
 
-  const keys = Object.keys(discoveredControls);
-  const rowH = 30, gap = 4, topListY = HEADER_H + 4;
+  const rows = clients_cached_rows;
+  const rowH = 28, gap = 3, topListY = HEADER_H + 6;
   const viewH = WIN_H - topListY - 8;
-  const totalContentH = keys.length * (rowH + gap);
+  const totalContentH = rows.length * (rowH + gap);
   const maxScroll = Math.max(0, totalContentH - viewH);
 
   if (event.eventname === "mouse") {
     if (mbut === 0) { isClientsDragging = 0; return; }
 
     if (mbut === 1 && !isClientsDragging) {
+      // HEADER BAR HITS
       if (my <= HEADER_H) {
         if (mx < 24 && my < 24) { showClientsWindow = 0; toggle_clients_window(0); return; }
-        const rBtnW = 72, rBtnX = WIN_W - rBtnW - 74;
-        if (mx >= rBtnX && mx <= rBtnX + rBtnW && my >= 4 && my <= 28) {
+
+        // Mode Switcher: Tree vs Flat
+        if (mx >= 168 && mx <= 222 && my >= 8 && my <= 30) {
+          client_view_mode = (client_view_mode === 0) ? 1 : 0;
+          clientsScrollOffset = 0;
+          draw_clients_window();
+          return;
+        }
+
+        // Sort Switcher: A-Z vs Raw
+        if (mx >= 228 && mx <= 274 && my >= 8 && my <= 30) {
+          client_sort_mode = (client_sort_mode === 0) ? 1 : 0;
+          clientsScrollOffset = 0;
+          draw_clients_window();
+          return;
+        }
+
+        // Expand / Collapse All
+        if (mx >= 280 && mx <= 314 && my >= 8 && my <= 30) {
+          toggle_all_tree_collapse();
+          return;
+        }
+
+        // RESCAN
+        if (mx >= 320 && mx <= 386 && my >= 8 && my <= 30) {
           scan_local_controls();
           clientsScrollOffset = 0;
           draw_clients_window();
           return;
         }
-        const stepUpX = WIN_W - 64;
-        if (mx >= stepUpX && mx <= stepUpX + 24 && my >= 4 && my <= 28) {
+
+        // Up arrow
+        if (mx >= 392 && mx <= 414 && my >= 8 && my <= 30) {
           clientsScrollOffset = clamp(clientsScrollOffset - (rowH + gap) * 3, 0, maxScroll);
           draw_clients_window();
           return;
         }
-        const stepDwnX = WIN_W - 36;
-        if (mx >= stepDwnX && mx <= stepDwnX + 24 && my >= 4 && my <= 28) {
+
+        // Down arrow
+        if (mx >= 418 && mx <= 440 && my >= 8 && my <= 30) {
           clientsScrollOffset = clamp(clientsScrollOffset + (rowH + gap) * 3, 0, maxScroll);
           draw_clients_window();
           return;
         }
+
         return;
       }
 
+      // Scrollbar track click
       if (mx >= WIN_W - 18 && maxScroll > 0) {
         const thumbPct = clamp((my - topListY) / viewH, 0.0, 1.0);
         clientsScrollOffset = thumbPct * maxScroll;
@@ -1394,13 +1614,23 @@ function clientsWindowListenerCallback(event) {
         return;
       }
 
+      // LIST ITEMS CLICK
       if (my >= topListY) {
         const clickedIdx = Math.floor((my - (topListY - clientsScrollOffset)) / (rowH + gap));
-        if (clickedIdx >= 0 && clickedIdx < keys.length) {
-          highlightedControlKey = keys[clickedIdx];
-          const o = discoveredControls[highlightedControlKey];
-          post(`[Selected] ${highlightedControlKey} -> Live Value: ${get_control_live_val(o)}\n`);
-          draw_clients_window();
+        if (clickedIdx >= 0 && clickedIdx < rows.length) {
+          const r = rows[clickedIdx];
+          if (r.type === "branch") {
+            // Fold / Unfold Dictionary Branch
+            clients_collapsed_paths[r.path] = !clients_collapsed_paths[r.path];
+            draw_clients_window();
+            return;
+          } else {
+            // Select Leaf Control
+            highlightedControlKey = r.fullKey;
+            const o = discoveredControls[highlightedControlKey];
+            post(`[Selected] ${highlightedControlKey} -> Live Value: ${get_control_live_val(o)}\n`);
+            draw_clients_window();
+          }
         }
       }
 
@@ -1795,14 +2025,12 @@ function get_visible_rows_map() {
   const list = [];
 
   if (active_mask_tab === 0) {
-    // 1. Performance / Operation
     list.push({ name: "Module Name / ID", val: module_name || "UNNAMED", is_name: true });
     list.push({ name: "Grid (Cols/Rows)", val: get_grid(), is_ticker: true, target_id: 100 });
     list.push({ name: "Hold to Save", val: allow_hold_save ? "ON" : "OFF", is_toggle: true, target_id: 101 });
     list.push({ name: "Hold Time", val: `${hold_threshold}ms`, pct: (hold_threshold - 200) / 800.0, is_slider: true, target_id: 102 });
     list.push({ name: "Double Tap Time", val: `${double_tap_threshold}ms`, pct: (double_tap_threshold - 150) / 450.0, is_slider: true, target_id: 103 });
   } else if (active_mask_tab === 1) {
-    // 2. Geometry & Labels
     list.push({ name: "Outer Borders", val: borders ? "ON" : "OFF", is_toggle: true, target_id: 201 });
     list.push({ name: "Border Radius", val: border_radius.toFixed(1), pct: border_radius / 25.0, is_slider: true, target_id: 301 });
     list.push({ name: "Border Size", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 302 });
@@ -1812,7 +2040,6 @@ function get_visible_rows_map() {
     list.push({ name: "Label Style", val: label_mode_names[label_mode], is_toggle: true, target_id: 202 });
     list.push({ name: "Case Style", val: case_mode_names[case_mode], is_toggle: true, target_id: 203 });
   } else if (active_mask_tab === 2) {
-    // 3. Colors
     list.push({ name: "Body Color", val: bg_color, is_color: true, key: "bg_color" });
     list.push({ name: "Highlight Color", val: highlight_color, is_color: true, key: "highlight_color" });
     list.push({ name: "Border Color", val: border_color, is_color: true, key: "border_color" });
@@ -1864,7 +2091,6 @@ function draw_settings_deferred() {
   const pCtx = new MGraphics(w, h);
   pCtx.set_source_rgba(pop_bgcolor); pCtx.rectangle(0, 0, w, h); pCtx.fill();
 
-  // Close Red Dot & label
   pCtx.set_source_rgba(0.85, 0.2, 0.2, 1.0); pCtx.arc(14, 14, 5.5, 0, Math.PI * 2); pCtx.fill();
   pCtx.select_font_face("Arial", "normal", "normal");
   pCtx.set_font_size(9);
@@ -1872,7 +2098,6 @@ function draw_settings_deferred() {
   pCtx.move_to(24, 17);
   pCtx.show_text("close");
 
-  // Toggle Hide/Show Button Pill
   const tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
   pCtx.set_source_rgba(attr_bg_color);
   pCtx.rectangle_rounded(tglX, tglY, tglW, tglH, 3, 3);
@@ -1891,7 +2116,6 @@ function draw_settings_deferred() {
   pCtx.move_to(tglX + (tglW - (tglTm ? tglTm[0] : 20)) * 0.5, tglY + 11.5);
   pCtx.show_text(tglLabel);
 
-  // PREVIEW CHASSIS (Launcher strip hidden in preview mode)
   const prevX = 12, prevY = 28, prevW = w - 24;
   const prevH = has_rows ? Math.max(50, Math.min(80, grid_rows * 32)) : Math.max(50, h - prevY - 14);
   cached_preview_rect = { x: prevX, y: prevY, w: prevW, h: prevH };
@@ -1907,7 +2131,6 @@ function draw_settings_deferred() {
     pCtx.set_line_width(1.0);
     pCtx.move_to(10, divY); pCtx.line_to(w - 10, divY); pCtx.stroke();
 
-    // Carousel Navigation Bar
     const navY = divY + 6, navH = 22, navW = w - 24, navX = 12;
 
     pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.85);
@@ -1944,7 +2167,6 @@ function draw_settings_deferred() {
     pCtx.move_to(navX + (navW - tabTW) * 0.5, navY + 15);
     pCtx.show_text(tabTitle);
 
-    // Rows
     const rowsStartY = navY + navH + 8;
     const rowW = w - 24, rowX = 12;
     const midX = 12 + rowW * 0.5;
@@ -2076,7 +2298,6 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    // Active Slider Dragging
     if (active_pop_target !== -1 && active_pop_target !== 50) {
       const dragPct = clamp((mx - valBoxX) / valBoxW, 0, 1);
       apply_slider_target(active_pop_target, dragPct);
@@ -2084,7 +2305,6 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    // Active Preview Chassis Dragging (Morphing via Preview)
     if (active_pop_target === 50) {
       const localX = mx - pr.x;
       const localY = my - pr.y;
@@ -2092,14 +2312,12 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    // Close Button Hit
     if (mbut && mx < 35 && my < 26) {
       showSettings = 0;
       update_settings_dimensions();
       return;
     }
 
-    // Toggle Hide/Show Pill Hit
     const tglW = 44, tglH = 16, tglX = w - tglW - 12, tglY = 6;
     if (is_pop_tap && mx >= tglX && mx <= tglX + tglW && my >= tglY && my <= tglY + tglH) {
       show_settings_attrs = show_settings_attrs ? 0 : 1;
@@ -2107,7 +2325,6 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    // Interactive Preview Chassis Click/Drag Hit (Preset recall / morphing)
     const prevMaxY = pr.y + prevH;
     if (mbut && my >= pr.y && my <= prevMaxY && mx >= pr.x && mx <= pr.x + pr.w && active_pop_target === -1) {
       active_pop_target = 50;
@@ -2141,7 +2358,6 @@ function settingsWindowListenerCallback(event) {
 
     if (!has_rows) return;
 
-    // Carousel Navigation Bar Hit
     if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
       if (mx <= navX + btnW + 4) {
         active_mask_tab = (active_mask_tab - 1 + 3) % 3;
@@ -2154,7 +2370,6 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    // Attribute Rows Click & Drag
     if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
       const rIdx = Math.floor((my - rowsStartY) / 28);
       if (rIdx >= 0 && rIdx < rows.length) {
