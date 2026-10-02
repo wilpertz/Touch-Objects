@@ -1,7 +1,8 @@
 // ============================================================================
 // touch.status.js - Max 9 v8ui / jsui
 // Local Preset Engine + Downward Scanner + Hierarchical Dictionary Inspector +
-// Multi-Curve Array Glider + Interactive 3-Tab Carousel Inspector
+// Multi-Curve Array Glider + 3-Way Composition Sequencer + Gen-Style Normalize
+// BLOCK 1 OF 6
 // ============================================================================
 
 autowatch = 1;
@@ -12,10 +13,10 @@ mgraphics.autofill = 0;
 
 inlets = 1;
 outlets = 3;
-setinletassist(0, "Inlet 0: int / float / [Cols/Rows] / text / messages");
+setinletassist(0, "Inlet 0: int / float (slot floats or 0-1 norm) / [Cols/Rows] / text / messages");
 setoutletassist(0, "Outlet 0: Active slot (int) / Morph value (float)");
 setoutletassist(1, "Outlet 1: Selected status info (set <name>)");
-setoutletassist(2, "Outlet 2: Storage notifications (stored, recalled, saved)");
+setoutletassist(2, "Outlet 2: Storage notifications (stored, recalled, saved, mode)");
 
 const uniqueID = Math.floor(Math.random() * 1000000);
 
@@ -89,7 +90,7 @@ function scan_local_controls() {
           const vname = String(o.varname);
 
           if (!vname || vname === "v8ui" || vname.startsWith("v8ui_") || vname.startsWith("p_panel")) {
-            // Skip
+            // Skip utility wrappers
           } else if (mclass === "jsui" || mclass === "v8ui") {
             const fullKey = pathPrefix ? `${pathPrefix}::${o.varname}` : o.varname;
             discoveredControls[fullKey] = o;
@@ -206,7 +207,7 @@ function clear_names() {
 }
 
 // =============================================================
-// 2. STATE & GRID TOPOLOGY (Cols / Rows)
+// 2. STATE, GRID & GEN-STYLE NORMALIZE ARCHITECTURE
 // =============================================================
 let active_slot = 0;
 let last_stored_slot = -1;
@@ -232,6 +233,132 @@ let name_bank = [
   "Drum 2/4", "Mute / Cut", "Sub Bass", "FX Riser"
 ];
 
+// --- Gen-Style Normalize, Directional Range & Timing Mode ---
+var normalize = 0;  // 0 = Absolute slot numbers (1.0 to N.0), 1 = Normalized phase (0.0 to 1.0 Gen style)
+var low_slot  = 1;  // Start slot boundary (supports reverse: low > high!)
+var high_slot = 4;  // End slot boundary
+var time_mode = 0;  // 0 = Poly Mode (Phase-locked 0-1 polyrhythm), 1 = Metric Mode (Step-locked step speed)
+var wrap      = 0;  // 0 = Clamp at ends, 1 = Circular wrap loop
+
+function set_normalize(v) {
+  normalize = parseInt(v, 10) ? 1 : 0;
+  redraw_all();
+}
+function get_normalize() { return normalize; }
+
+function set_low_slot(v) {
+  var val = parseInt(v, 10);
+  if (!isNaN(val) && val >= 1) {
+    low_slot = Math.max(1, Math.min(slots.length, val));
+    redraw_all();
+  }
+}
+function get_low_slot() { return low_slot; }
+
+function set_high_slot(v) {
+  var val = parseInt(v, 10);
+  if (!isNaN(val) && val >= 1) {
+    high_slot = Math.max(1, Math.min(slots.length, val));
+    redraw_all();
+  }
+}
+function get_high_slot() { return high_slot; }
+
+function set_time_mode(v) {
+  time_mode = parseInt(v, 10) ? 1 : 0;
+  redraw_all();
+}
+function get_time_mode() { return time_mode; }
+
+function set_wrap(v) {
+  wrap = parseInt(v, 10) ? 1 : 0;
+  redraw_all();
+}
+function get_wrap() { return wrap; }
+
+// --- Master 3-Way Mode & Composition Sequence States ---
+var master_mode    = 0;  // 0 = Normal, 1 = All Drag (Glide), 2 = All Snap (Jump)
+var slot_mutes     = []; // Dynamic boolean array (true = muted sustain)
+var slot_behaviors = []; // Transition rules: 0 = Glide (~), 1 = Snap (!)
+
+var mode_btn_w    = 18;  // Dynamically matches button height for 1:1 square
+var scanner_btn_w = 16;
+var btn_gap       = 4;
+
+function ensure_slot_mutes() {
+  if (!Array.isArray(slot_mutes)) slot_mutes = [];
+  var targetLen = slots.length;
+  while (slot_mutes.length < targetLen) slot_mutes.push(false);
+  while (slot_mutes.length > targetLen) slot_mutes.pop();
+}
+
+function is_slot_muted(idx) {
+  ensure_slot_mutes();
+  if (idx < 0 || idx >= slot_mutes.length) return false;
+  return !!slot_mutes[idx];
+}
+
+function toggle_slot_mute(idx) {
+  ensure_slot_mutes();
+  if (idx < 0 || idx >= slot_mutes.length) return;
+  slot_mutes[idx] = !slot_mutes[idx];
+  redraw_all();
+  if (typeof broadcast_to_master === "function") broadcast_to_master();
+}
+
+function ensure_slot_behaviors() {
+  if (!Array.isArray(slot_behaviors)) slot_behaviors = [];
+  var targetLen = slots.length;
+  while (slot_behaviors.length < targetLen) {
+    slot_behaviors.push(master_mode === 2 ? 1 : 0);
+  }
+  while (slot_behaviors.length > targetLen) slot_behaviors.pop();
+}
+
+function set_master_mode(m) {
+  master_mode = Math.max(0, Math.min(2, parseInt(m, 10) || 0));
+  ensure_slot_behaviors();
+
+  if (master_mode === 1) {
+    for (var i = 0; i < slot_behaviors.length; i++) slot_behaviors[i] = 0;
+  } else if (master_mode === 2) {
+    for (var i = 0; i < slot_behaviors.length; i++) slot_behaviors[i] = 1;
+  }
+
+  if (!is_transmitting) {
+    var modeNames = ["normal", "all_drag", "all_snap"];
+    outlet(2, ["master_mode", modeNames[master_mode]]);
+  }
+  redraw_all();
+}
+
+function get_master_mode() { return master_mode; }
+function toggle_master_mode() { set_master_mode((master_mode + 1) % 3); }
+
+// --- Stepper Auto-Repeat State (Inspector UI) ---
+var stepper_repeat_task = null;
+var stepper_target_id   = -1;
+var stepper_dir         = 0;
+
+function step_stepper_value(target_id, dir) {
+  if (target_id === 106) {
+    set_low_slot(low_slot + dir);
+  } else if (target_id === 107) {
+    set_high_slot(high_slot + dir);
+  }
+  if (showSettings && settingsWindow && settingsWindow.visible) draw_settings();
+}
+
+function stop_stepper_repeat() {
+  stepper_target_id = -1;
+  stepper_dir = 0;
+  if (stepper_repeat_task) {
+    try { stepper_repeat_task.cancel(); } catch(e) {}
+    stepper_repeat_task = null;
+  }
+}
+
+// Touch Gestures & Timing
 let allow_hold_save       = 1;
 let hold_threshold        = 500;
 let double_tap_threshold  = 320;
@@ -280,7 +407,6 @@ let attr_border_color = [0.28, 0.28, 0.32, 1.0];
 let attr_slider_color = [0.35, 0.38, 0.42, 1.0];
 let attr_text_color   = [0.88, 0.88, 0.88, 1.0];
 
-// 3-Tab Carousel Inspector State
 let show_settings_attrs = 1;
 let active_mask_tab = 0;
 const mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
@@ -322,11 +448,10 @@ let cur_h = 0.0, cur_s = 1.0, cur_v = 1.0, cur_a = 1.0;
 let lastMouseX = 0;
 let lastMouseY = 0;
 
-// Scanned Clients Inspector Controls & Tree State
-let client_view_mode = 0; // 0 = Hierarchical Dictionary Tree, 1 = Flat List
-let client_sort_mode = 0; // 0 = Natural Alphanumeric (A-Z), 1 = Raw Patch Order
-let clients_collapsed_paths = {}; // Tracks folded branches
-let clients_cached_rows = []; // Linear visual rows currently rendered
+let client_view_mode = 0;
+let client_sort_mode = 0;
+let clients_collapsed_paths = {};
+let clients_cached_rows = [];
 
 let clientsScrollOffset = 0;
 let isClientsDragging   = 0;
@@ -399,9 +524,9 @@ function stop_scrolling() {
     try { scrollTask.cancel(); } catch(e) {}
   }
 }
-
 // =============================================================
-// 3. THEME BUS
+// 3. THEME BUS & TEXT HELPERS
+// BLOCK 2 OF 6
 // =============================================================
 const themeBus = new Global("touch_theme_bus");
 if (!themeBus.subscribers) themeBus.subscribers = {};
@@ -459,7 +584,7 @@ function fit_text_to_width(ctx, txt, maxW) {
 }
 
 // =============================================================
-// 4. GRID SETUP & MORPHING ENGINE (SMOOTH GLIDE + 50% SNAP)
+// 4. GRID SETUP & MULTI-VALUE GLIDE / COMPOSITION ENGINE
 // =============================================================
 function sync_grid_slots() {
   let total = grid_cols * grid_rows;
@@ -473,6 +598,12 @@ function sync_grid_slots() {
   while (slots.length > total) slots.pop();
   if (active_slot >= slots.length) active_slot = Math.max(0, slots.length - 1);
   morph_weights = new Array(slots.length).fill(0.0);
+
+  ensure_slot_mutes();
+  ensure_slot_behaviors();
+
+  if (low_slot > slots.length) low_slot = slots.length;
+  if (high_slot > slots.length) high_slot = slots.length;
 }
 
 function set_grid() {
@@ -502,16 +633,56 @@ function set_grid() {
 }
 function get_grid() { return `${grid_cols}/${grid_rows}`; }
 
+function resolve_effective_slot(targetIdx) {
+  if (typeof is_slot_muted !== "function" || !is_slot_muted(targetIdx)) {
+    return targetIdx;
+  }
+  for (var i = targetIdx - 1; i >= 0; i--) {
+    if (!is_slot_muted(i)) return i;
+  }
+  for (var j = targetIdx + 1; j < slots.length; j++) {
+    if (!is_slot_muted(j)) return j;
+  }
+  return targetIdx;
+}
+
 function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
   if (!is_active_module()) return;
   const d = get_module_dict();
   if (!d) return;
 
+  var effA = slotA_idx;
+  var effB = slotB_idx;
+  var effectiveBlend = blendRatio;
+
+  // Evaluate composition rules in performance modes
+  if (master_mode > 0) {
+    const isMutedA = is_slot_muted(slotA_idx);
+    const isMutedB = is_slot_muted(slotB_idx);
+
+    if (isMutedB) {
+      effA = resolve_effective_slot(slotA_idx);
+      effB = effA;
+      effectiveBlend = 0.0;
+    } else if (isMutedA) {
+      effA = resolve_effective_slot(slotA_idx);
+      effB = slotB_idx;
+    }
+
+    const snapA = slot_behaviors[effA] === 1;
+    const snapB = slot_behaviors[effB] === 1;
+
+    // TO THIS:
+if (snapB) {
+  effectiveBlend = (blendRatio < 0.5) ? 0.0 : 1.0;
+}
+  }
+
   let dataA = null, dataB = null;
   try {
-    const rawA = d.get(`slot_${slotA_idx}`);
+    const rawA = d.get(`slot_${effA}`);
     if (rawA) dataA = (typeof rawA === "string") ? JSON.parse(rawA) : rawA;
-    const rawB = d.get(`slot_${slotB_idx}`);
+    const rawB = d.get(`slot_${effB}`);
     if (rawB) dataB = (typeof rawB === "string") ? JSON.parse(rawB) : rawB;
   } catch(e) {}
 
@@ -528,38 +699,45 @@ function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
 
     try {
       if (o.js && typeof o.js.morph_state === "function") {
-        o.js.morph_state(valA, valB, blendRatio);
+        o.js.morph_state(valA, valB, effectiveBlend);
         continue;
       }
 
       const rawA = (typeof valA === "object" && valA !== null && valA.val !== undefined) ? valA.val : valA;
       const rawB = (typeof valB === "object" && valB !== null && valB.val !== undefined) ? valB.val : valB;
 
+      // 1. Single Numbers (vsliders, simple dials)
       if (typeof rawA === "number" && typeof rawB === "number") {
-        const blended = lerp(rawA, rawB, blendRatio);
+        const blended = lerp(rawA, rawB, effectiveBlend);
         if (typeof o.setvalueof === "function") o.setvalueof(blended);
         else o.message("float", blended);
+
+      // 2. Multi-Value Arrays (pfunction curves & multi-dials point-by-point glide)
       } else if (Array.isArray(rawA) && Array.isArray(rawB)) {
-        const isButtonA = rawA.length > 0 && rawA.every(n => Number(n) === 0 || Number(n) === 1);
-        const isButtonB = rawB.length > 0 && rawB.every(n => Number(n) === 0 || Number(n) === 1);
+        const isButtonName = (k.toLowerCase().indexOf("button") !== -1 || k.toLowerCase().indexOf("toggle") !== -1);
+        const isButtonA = isButtonName && rawA.length > 0 && rawA.every(n => Number(n) === 0 || Number(n) === 1);
+        const isButtonB = isButtonName && rawB.length > 0 && rawB.every(n => Number(n) === 0 || Number(n) === 1);
 
         if (isButtonA && isButtonB) {
-          const snapTarget = (blendRatio >= 0.5) ? rawB : rawA;
+          const snapTarget = (effectiveBlend >= 0.5) ? rawB : rawA;
           if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
           else o.message("list", snapTarget);
         } else {
+          // Smooth point-by-point array glide
           const maxLen = Math.max(rawA.length, rawB.length);
           const blendedArr = [];
           for (let i = 0; i < maxLen; i++) {
             const nA = i < rawA.length ? Number(rawA[i]) : Number(rawA[rawA.length - 1]);
             const nB = i < rawB.length ? Number(rawB[i]) : Number(rawB[rawB.length - 1]);
-            blendedArr.push(lerp(nA, nB, blendRatio));
+            blendedArr.push(lerp(nA, nB, effectiveBlend));
           }
           if (typeof o.setvalueof === "function") o.setvalueof(blendedArr);
           else o.message("list", blendedArr);
         }
+
+      // 3. Fallback Snap for Strings / Non-interpolatables
       } else {
-        const snapTarget = (blendRatio >= 0.5) ? rawB : rawA;
+        const snapTarget = (effectiveBlend >= 0.5) ? rawB : rawA;
         if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
         else o.message(snapTarget);
       }
@@ -644,24 +822,29 @@ function calculate_2d_weights(localX, localY, totalW, totalH, is_preview) {
   const cols = Math.max(1, grid_cols);
   const rows = Math.max(1, grid_rows);
   const padX = 4, padY = 4;
-  const stripW = is_preview ? 0 : 14;
   const b = isNaN(border_thickness) ? 1.2 : border_thickness;
   const inset = b * 0.5;
 
-  const slotStartX = is_preview ? (inset + padX) : (inset + padX + stripW + padX);
-  const availW = Math.max(1, (totalW - b - padX) - slotStartX);
   const availH = Math.max(1, totalH - b - padY * 2);
-  const cellW = availW / cols;
-  const cellH = availH / rows;
+  const cellH  = availH / rows;
+  const btnH   = (rows > 1) ? ((cellH * rows) - 3) : (cellH - 3);
+
+  // Dynamic square width synchronized with drawing
+  mode_btn_w = Math.max(18, Math.round(btnH));
+
+  const totalUtilityW = is_preview ? 0 : (mode_btn_w + btn_gap + scanner_btn_w);
+  const slotStartX    = is_preview ? (inset + padX) : (inset + padX + totalUtilityW + padX);
+  const availW        = Math.max(1, (totalW - b - padX) - slotStartX);
+  const cellW         = availW / cols;
 
   const normX = cols > 1 ? clamp(((localX - slotStartX) - 0.5 * cellW) / Math.max(1, availW - cellW), 0.0, 1.0) : 0.0;
   const normY = rows > 1 ? clamp(((localY - (inset + padY)) - 0.5 * cellH) / Math.max(1, availH - cellH), 0.0, 1.0) : 0.0;
 
   apply_normalized_xy(normX, normY);
 }
-
 // =============================================================
-// 5. VECTOR DRAW ENGINE
+// 5. VECTOR DRAW ENGINE (SOLID "Y" SPACES & 10px HEADER BOXES)
+// BLOCK 3 OF 6
 // =============================================================
 function drawCorners(ctx, x, y, w, h, r, ew, eh, col, thick) {
   ctx.set_source_rgba(col);
@@ -685,6 +868,13 @@ function drawCorners(ctx, x, y, w, h, r, ew, eh, col, thick) {
 }
 
 function draw_status_strip(ctx, w, h, is_preview) {
+  ensure_slot_mutes();
+  ensure_slot_behaviors();
+
+  // --- Telemetry Colors ---
+  const COLOR_GLIDE = [0.40, 0.75, 1.00, 0.90]; // Cyan for ~ Glide
+  const COLOR_SNAP  = [0.95, 0.65, 0.15, 0.90]; // Amber for ! Snap
+
   const b = isNaN(border_thickness) ? 1.2 : border_thickness;
   const inset = b * 0.5;
   const rw = Math.max(1, w - b);
@@ -713,39 +903,138 @@ function draw_status_strip(ctx, w, h, is_preview) {
   const padX = 4, padY = 4;
   const cols = Math.max(1, grid_cols);
   const rows_count = Math.max(1, grid_rows);
-  const stripW = is_preview ? 0 : 14;
 
-  const slotStartX = is_preview ? (inset + padX) : (inset + padX + stripW + padX);
-  const availW = (rw - padX) - slotStartX;
-  const availH = rh - padY * 2;
-  const cellW = availW / cols;
-  const cellH = availH / rows_count;
+  const availH = Math.max(1, rh - padY * 2);
+  const cellH  = availH / rows_count;
+  const btnH   = (grid_rows > 1) ? ((cellH * grid_rows) - 3) : (cellH - 3);
+  const btnR   = Math.max(2, Math.min(4, border_radius * 0.5));
+
+  mode_btn_w = Math.max(18, Math.round(btnH));
+
+  const totalUtilityW = is_preview ? 0 : (mode_btn_w + btn_gap + scanner_btn_w);
+  const slotStartX    = is_preview ? (inset + padX) : (inset + padX + totalUtilityW + padX);
+  const availW        = Math.max(1, (rw - padX) - slotStartX);
+  const cellW         = availW / cols;
 
   if (!is_preview) {
-    const stripX = inset + padX;
-    const stripY = inset + padY;
-    const stripH = (grid_rows > 1) ? ((cellH * grid_rows) - 3) : (cellH - 3);
-    const stripR = Math.max(2, Math.min(4, border_radius * 0.5));
+    // -----------------------------------------------------------
+    // 1. MASTER 3-WAY "Y" BUTTON
+    // -----------------------------------------------------------
+    const modeX = inset + padX;
+    const modeY = inset + padY;
+    const midX  = modeX + mode_btn_w * 0.5;
+    const midY  = modeY + btnH * 0.5;
 
-    ctx.set_source_rgba(accent_bar_color);
-    ctx.rectangle_rounded(stripX, stripY, stripW, stripH, stripR, stripR);
+    // Background
+    ctx.set_source_rgba(attr_bg_color);
+    ctx.rectangle_rounded(modeX, modeY, mode_btn_w, btnH, btnR, btnR);
     ctx.fill();
 
-    ctx.set_source_rgba(0.08, 0.08, 0.10, 0.65);
-    const midSX = stripX + stripW * 0.5;
-    const midSY = stripY + stripH * 0.5;
+    // COLOR-MATCHED SECTOR FILLS
+    if (master_mode === 0) {
+      // TOP WEDGE: Uses custom highlight_color
+      ctx.set_source_rgba(highlight_color[0], highlight_color[1], highlight_color[2], 0.90);
+      ctx.new_path();
+      ctx.move_to(modeX, modeY);
+      ctx.line_to(modeX + mode_btn_w, modeY);
+      ctx.line_to(midX, midY);
+      ctx.close_path();
+      ctx.fill();
+
+    } else if (master_mode === 1) {
+      // BOTTOM-LEFT WEDGE: Cyan (matches Glide ~)
+      ctx.set_source_rgba(COLOR_GLIDE[0], COLOR_GLIDE[1], COLOR_GLIDE[2], 0.90);
+      ctx.new_path();
+      ctx.move_to(modeX, modeY);
+      ctx.line_to(midX, midY);
+      ctx.line_to(midX, modeY + btnH);
+      ctx.line_to(modeX, modeY + btnH);
+      ctx.close_path();
+      ctx.fill();
+
+    } else if (master_mode === 2) {
+      // BOTTOM-RIGHT WEDGE: Amber (matches Snap !)
+      ctx.set_source_rgba(COLOR_SNAP[0], COLOR_SNAP[1], COLOR_SNAP[2], 0.90);
+      ctx.new_path();
+      ctx.move_to(modeX + mode_btn_w, modeY);
+      ctx.line_to(midX, midY);
+      ctx.line_to(midX, modeY + btnH);
+      ctx.line_to(modeX + mode_btn_w, modeY + btnH);
+      ctx.close_path();
+      ctx.fill();
+    }
+
+    // DRAW THE "Y" DIVIDER LINES
+    ctx.set_source_rgba(0.08, 0.08, 0.10, 1.0);
+    ctx.set_line_width(2.0);
+    ctx.new_path(); ctx.move_to(modeX, modeY); ctx.line_to(midX, midY); ctx.stroke();
+    ctx.new_path(); ctx.move_to(modeX + mode_btn_w, modeY); ctx.line_to(midX, midY); ctx.stroke();
+    ctx.new_path(); ctx.move_to(midX, midY); ctx.line_to(midX, modeY + btnH); ctx.stroke();
+
+    // Outer border
+    ctx.set_source_rgba(attr_border_color);
+    ctx.set_line_width(1.0);
+    ctx.rectangle_rounded(modeX, modeY, mode_btn_w, btnH, btnR, btnR);
+    ctx.stroke();
+
+    // -----------------------------------------------------------
+    // 2. SCANNER BUTTON
+    // -----------------------------------------------------------
+    const scanX = modeX + mode_btn_w + btn_gap;
+    const scanY = modeY;
+
+    ctx.set_source_rgba(accent_bar_color);
+    ctx.rectangle_rounded(scanX, scanY, scanner_btn_w, btnH, btnR, btnR);
+    ctx.fill();
+
+    ctx.set_source_rgba(0.08, 0.08, 0.10, 0.7);
+    const midSX = scanX + scanner_btn_w * 0.5;
+    const midSY = scanY + btnH * 0.5;
     ctx.arc(midSX, midSY - 6, 1.2, 0, Math.PI * 2); ctx.fill();
     ctx.arc(midSX, midSY, 1.2, 0, Math.PI * 2); ctx.fill();
     ctx.arc(midSX, midSY + 6, 1.2, 0, Math.PI * 2); ctx.fill();
   }
 
-  for (let i = 0; i < slots.length; i++) {
-    const c = i % cols, row = Math.floor(i / cols);
-    const sX = slotStartX + c * cellW;
-    const sY = inset + padY + row * cellH;
-    const sW = cellW - 3;
-    const sH = cellH - 3;
+  // -------------------------------------------------------------
+  // 3. PRESET SLOTS & DYNAMIC TELEMETRY HIGHLIGHTS
+  // -------------------------------------------------------------
+  const showCompStrip = master_mode > 0 && !is_preview;
+  const compStripH    = 10;
 
+  for (let i = 0; i < slots.length; i++) {
+    const c     = i % cols, row = Math.floor(i / cols);
+    const sX    = slotStartX + c * cellW;
+    const sW    = cellW - 3;
+    const baseY = inset + padY + row * cellH;
+
+    const sY    = showCompStrip ? (baseY + compStripH + 2) : baseY;
+    const sH    = showCompStrip ? (cellH - compStripH - 5) : (cellH - 3);
+
+    const isMuted = is_slot_muted(i);
+    const isSnap  = slot_behaviors[i] === 1;
+
+    // Header strip (10px box above cell)
+    if (showCompStrip) {
+      const hY = baseY;
+      ctx.set_source_rgba(0.08, 0.09, 0.11, 0.9);
+      ctx.rectangle_rounded(sX, hY, sW, compStripH, 2, 2);
+      ctx.fill();
+
+      // Border: Cyan for Glide (~), Amber for Snap (!)
+      ctx.set_source_rgba(isSnap ? COLOR_SNAP : COLOR_GLIDE);
+      ctx.set_line_width(0.75);
+      ctx.rectangle_rounded(sX, hY, sW, compStripH, 2, 2);
+      ctx.stroke();
+
+      const glyph = isSnap ? "!" : "~";
+      ctx.select_font_face("Arial", "normal", "bold");
+      ctx.set_font_size(8);
+      const gTm = ctx.text_measure(glyph);
+      ctx.move_to(sX + (sW - gTm[0]) * 0.5, hY + 7.5);
+      ctx.show_text(glyph);
+    }
+
+    // Cell Highlight Alpha
     let highlightAlpha = 0.0;
     if (is_morphing && morph_weights.length === slots.length) {
       highlightAlpha = morph_weights[i] || 0.0;
@@ -753,17 +1042,34 @@ function draw_status_strip(ctx, w, h, is_preview) {
       if (i === active_slot) highlightAlpha = 1.0;
     }
 
-    ctx.set_source_rgba(bg_color);
-    ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
-    ctx.fill();
-
-    if (highlightAlpha > 0.01) {
-      ctx.set_source_rgba(highlight_color[0], highlight_color[1], highlight_color[2], highlight_color[3] * highlightAlpha);
-      ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
-      ctx.fill();
+    // Dynamic Color Determination
+    let activeCol = highlight_color;
+    if (master_mode > 0) {
+      activeCol = isSnap ? COLOR_SNAP : COLOR_GLIDE;
     }
 
-    if (i === last_stored_slot) {
+    if (isMuted && master_mode > 0) {
+      ctx.set_source_rgba(bg_color[0] * 0.4, bg_color[1] * 0.4, bg_color[2] * 0.4, 0.45);
+      ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
+      ctx.fill();
+
+      ctx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
+      ctx.set_line_width(0.7);
+      ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
+      ctx.stroke();
+    } else {
+      ctx.set_source_rgba(bg_color);
+      ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
+      ctx.fill();
+
+      if (highlightAlpha > 0.01) {
+        ctx.set_source_rgba(activeCol[0], activeCol[1], activeCol[2], (activeCol[3] || 1.0) * highlightAlpha);
+        ctx.rectangle_rounded(sX, sY, sW, sH, 3, 3);
+        ctx.fill();
+      }
+    }
+
+    if (i === last_stored_slot && (!isMuted || master_mode === 0)) {
       const barH = 2.5, barMargin = 4.0;
       const barY = sY + sH - barH - 1.5;
       const barX = sX + barMargin;
@@ -773,17 +1079,26 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.fill();
     }
 
+    // Slot Index Number
     ctx.select_font_face(font_name, "normal", "bold");
     ctx.set_font_size(Math.max(7, Math.min(10, sH * 0.28)));
-    ctx.set_source_rgba(highlightAlpha > 0.4 ? [1, 1, 1, 0.9] : [0.55, 0.58, 0.64, 0.8]);
-    ctx.move_to(sX + 4, sY + Math.max(8, sH * 0.28));
-    ctx.show_text(String(i + 1));
 
+    if (isMuted && master_mode > 0) {
+      ctx.set_source_rgba(0.45, 0.48, 0.52, 0.5);
+      ctx.move_to(sX + 4, sY + Math.max(8, sH * 0.28));
+      ctx.show_text(`${i + 1} H`);
+    } else {
+      ctx.set_source_rgba(highlightAlpha > 0.4 ? [1, 1, 1, 0.95] : [0.55, 0.58, 0.64, 0.8]);
+      ctx.move_to(sX + 4, sY + Math.max(8, sH * 0.28));
+      ctx.show_text(String(i + 1));
+    }
+
+    // Slot Name Text
     let dispTxt = slots[i] ? slots[i].name : "";
-    ctx.select_font_face(font_name, font_slants[font_style], (highlightAlpha > 0.4) ? "bold" : font_weights[font_style]);
+    ctx.select_font_face(font_name, font_slants[font_style], (highlightAlpha > 0.4 && (!isMuted || master_mode === 0)) ? "bold" : font_weights[font_style]);
     const curFontSize = Math.max(8, Math.min(text_size, sH * 0.45));
     ctx.set_font_size(curFontSize);
-    ctx.set_source_rgba(text_color);
+    ctx.set_source_rgba((isMuted && master_mode > 0) ? [text_color[0], text_color[1], text_color[2], 0.35] : text_color);
 
     dispTxt = fit_text_to_width(ctx, dispTxt, sW - 6);
     const tm = ctx.text_measure(dispTxt);
@@ -792,6 +1107,7 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.show_text(dispTxt);
   }
 
+  // Red Settings Dot (Top right)
   if (!is_preview && allow_popup === 1) {
     const dotR = Math.max(1.5, Math.min(2.8, Math.min(w, h) * 0.08));
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
@@ -806,9 +1122,9 @@ function paint() {
   const sz = mgraphics.size;
   draw_status_strip(mgraphics, sz[0], sz[1], false);
 }
-
 // =============================================================
-// 6. RECALL & STORE (SAFE MEMORY SNAPSHOT)
+// 6. RECALL, STORE & INPUT ENGINE (0-1 / ABSOLUTE / METRIC-POLY)
+// BLOCK 4 OF 6
 // =============================================================
 function recall_slot(idx) {
   if (!is_active_module() || idx < 0 || idx >= slots.length) return;
@@ -939,42 +1255,6 @@ function save_slot(idx) {
 
 function store_slot(idx) { save_slot(idx); }
 
-function msg_float(v) {
-  if (isDragging || !is_active_module()) return;
-  let f = parseFloat(v);
-  if (isNaN(f)) return;
-  const totalSlots = slots.length;
-  if (totalSlots < 1) return;
-
-  last_stored_slot = -1;
-  f = Math.max(1.0, Math.min(totalSlots, f));
-  morph_val = f;
-  is_morphing = 1;
-
-  const fPos = morph_val - 1.0;
-  const floorIdx = Math.floor(fPos);
-  const ceilIdx = Math.min(slots.length - 1, floorIdx + 1);
-  const frac = fPos - floorIdx;
-
-  const newWeights = new Array(slots.length).fill(0.0);
-  if (floorIdx < slots.length) newWeights[floorIdx] = 1.0 - frac;
-  if (ceilIdx < slots.length) newWeights[ceilIdx] += frac;
-  morph_weights = newWeights;
-
-  active_slot = Math.round(f) - 1;
-  target_edit_slot = active_slot;
-
-  dispatch_morph_to_controls(floorIdx, ceilIdx, frac);
-
-  if (!is_transmitting) {
-    is_transmitting = true;
-    try { outlet(0, f); } finally { is_transmitting = false; }
-  }
-
-  redraw_all();
-  broadcast_to_master();
-}
-
 function stamp_name_to_slot(slotIdx, chosenName) {
   if (slotIdx < 0 || slotIdx >= slots.length) return;
   slots[slotIdx].name = chosenName;
@@ -982,8 +1262,106 @@ function stamp_name_to_slot(slotIdx, chosenName) {
   if (paletteWindow && paletteWindow.visible) draw_palette();
 }
 
+// --- Universal Input Handler (Normalize 0-1 / Slot Numbers / Directional Range) ---
+function msg_float(v) {
+  if (isDragging || !is_active_module()) return;
+  let inVal = parseFloat(v);
+  if (isNaN(inVal)) return;
+
+  const totalSlots = slots.length;
+  if (totalSlots < 1) return;
+
+  last_stored_slot = -1;
+  is_morphing = 1;
+
+  let fPos = 0.0;
+
+  if (normalize === 1) {
+    // -----------------------------------------------------------
+    // NORMALIZE MODE (Gen-style universal 0.0 to 1.0 phase input)
+    // -----------------------------------------------------------
+    let normPhase = inVal;
+
+    // Handle wrapping phase or clamp
+    if (wrap === 1) {
+      normPhase = ((normPhase % 1.0) + 1.0) % 1.0;
+    } else {
+      normPhase = clamp(normPhase, 0.0, 1.0);
+    }
+
+    const sLow  = low_slot;
+    const sHigh = high_slot;
+    const isReverse = sLow > sHigh;
+
+    if (time_mode === 0) {
+      // POLY MODE: 0.0-1.0 phase is locked across the selected range
+      if (!isReverse) {
+        const slotSpan = wrap === 1 ? (sHigh - sLow + 1.0) : Math.max(0.0001, sHigh - sLow);
+        fPos = (sLow - 1.0) + normPhase * slotSpan;
+        if (wrap === 1 && fPos >= sHigh) fPos = (sLow - 1.0) + (fPos - sHigh);
+      } else {
+        // REVERSE: Runs backward from sLow down to sHigh!
+        const slotSpan = wrap === 1 ? (sLow - sHigh + 1.0) : Math.max(0.0001, sLow - sHigh);
+        fPos = (sLow - 1.0) - normPhase * slotSpan;
+        if (wrap === 1 && fPos < (sHigh - 1.0)) fPos = (sLow - 1.0) - (fPos - (sHigh - 1.0));
+      }
+    } else {
+      // METRIC MODE: Step duration is absolute; 1.0 input progress = 1 slot step
+      const stepProg = inVal * (wrap === 1 ? totalSlots : (totalSlots - 1));
+      if (!isReverse) {
+        fPos = (sLow - 1.0) + stepProg;
+        if (wrap === 1) fPos = ((fPos % totalSlots) + totalSlots) % totalSlots;
+        else fPos = clamp(fPos, 0.0, totalSlots - 1.0);
+      } else {
+        fPos = (sLow - 1.0) - stepProg;
+        if (wrap === 1) fPos = ((fPos % totalSlots) + totalSlots) % totalSlots;
+        else fPos = clamp(fPos, 0.0, totalSlots - 1.0);
+      }
+    }
+
+  } else {
+    // -----------------------------------------------------------
+    // ABSOLUTE MODE: Direct slot float input (1.0 to N.0)
+    // -----------------------------------------------------------
+    if (wrap === 1) {
+      let p = inVal - 1.0;
+      fPos = ((p % totalSlots) + totalSlots) % totalSlots;
+    } else {
+      fPos = clamp(inVal - 1.0, 0.0, totalSlots - 1.0);
+    }
+  }
+
+  // Calculate integer slots and fractional position
+  morph_val = fPos + 1.0;
+  const floorIdx = Math.floor(fPos);
+  const ceilIdx  = wrap === 1 ? ((floorIdx + 1) % totalSlots) : Math.min(totalSlots - 1, floorIdx + 1);
+  const frac     = fPos - floorIdx;
+
+  active_slot = Math.round(morph_val) - 1;
+  if (active_slot >= totalSlots) active_slot = 0;
+  if (active_slot < 0) active_slot = 0;
+  target_edit_slot = active_slot;
+
+  // Visual highlights: Smooth crossfade array
+  const newWeights = new Array(totalSlots).fill(0.0);
+  if (floorIdx < totalSlots) newWeights[floorIdx] = 1.0 - frac;
+  if (ceilIdx < totalSlots) newWeights[ceilIdx] = (newWeights[ceilIdx] || 0.0) + frac;
+  morph_weights = newWeights;
+
+  // Morph dials, sliders, and pfunction curves
+  dispatch_morph_to_controls(floorIdx, ceilIdx, frac);
+
+  if (!is_transmitting) {
+    is_transmitting = true;
+    try { outlet(0, morph_val); } finally { is_transmitting = false; }
+  }
+
+  redraw_all();
+  broadcast_to_master();
+}
+
 // =============================================================
-// 7. GESTURES & ONCLICK
+// 7. GESTURES & HIT-TESTING (SPATIAL "Y" + INSTANT MUTE ON TOUCH)
 // =============================================================
 function stop_hold_watchdog() {
   isMouseDown = 0;
@@ -1004,22 +1382,37 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   const b = isNaN(border_thickness) ? 1.2 : border_thickness;
   const inset = b * 0.5;
   const padX = 4, padY = 4;
-  const stripW = 14;
-  const stripX = inset + padX;
-  const stripY = inset + padY;
 
   const cols = Math.max(1, grid_cols);
   const rows_count = Math.max(1, grid_rows);
   const cellH = (h - b - padY * 2) / rows_count;
-  const stripH = (grid_rows > 1) ? ((cellH * grid_rows) - 3) : (cellH - 3);
+  const btnH  = (grid_rows > 1) ? ((cellH * grid_rows) - 3) : (cellH - 3);
 
-  // Strip hit -> Toggle Scanned Controls
-  if (x >= stripX - 3 && x <= stripX + stripW + 3 && y >= stripY && y <= stripY + stripH) {
+  mode_btn_w = Math.max(18, Math.round(btnH));
+  const modeX = inset + padX;
+  const modeY = inset + padY;
+  const scanX = modeX + mode_btn_w + btn_gap;
+  const scanY = modeY;
+
+  // 1. Direct Spatial Click on the 3 "Y" Spaces:
+  if (x >= modeX && x <= modeX + mode_btn_w && y >= modeY && y <= modeY + btnH) {
+    if (y < modeY + btnH * 0.5) {
+      set_master_mode(0); // Top wedge -> Normal Mode
+    } else if (x < modeX + mode_btn_w * 0.5) {
+      set_master_mode(1); // Bottom-left area -> All-Drag Mode
+    } else {
+      set_master_mode(2); // Bottom-right area -> All-Snap Mode
+    }
+    return;
+  }
+
+  // 2. Hit Scanner Button
+  if (x >= scanX - 2 && x <= scanX + scanner_btn_w + 2 && y >= scanY && y <= scanY + btnH) {
     toggle_clients_window();
     return;
   }
 
-  // Red Dot hit -> Settings
+  // 3. Hit Red Dot (Settings)
   if (allow_popup === 1) {
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
     const dotX = w - dotMargin, dotY = dotMargin;
@@ -1037,9 +1430,10 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
     return;
   }
 
-  const slotStartX = stripX + stripW + padX;
+  // 4. Slots & 10px Header Hit-Testing
+  const totalUtilityW = mode_btn_w + btn_gap + scanner_btn_w;
+  const slotStartX = inset + padX + totalUtilityW + padX;
   const availW = (w - b - padX) - slotStartX;
-  const availH = (h - b) - padY * 2;
   const cellW = availW / cols;
 
   if (x < slotStartX) return;
@@ -1051,8 +1445,27 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   const clickedSlot = rowHit * cols + colHit;
   if (clickedSlot < 0 || clickedSlot >= slots.length) return;
 
-  const now = new Date().getTime();
+  // CLICK ABOVE CELL (10px box) -> INVERT SCROLL STYLE (Glide <-> Snap)
+  const showCompStrip = master_mode > 0;
+  const compStripH = 10;
+  const baseY = inset + padY + rowHit * cellH;
 
+  if (showCompStrip && y >= baseY && y <= baseY + compStripH + 2) {
+    ensure_slot_behaviors();
+    slot_behaviors[clickedSlot] = (slot_behaviors[clickedSlot] === 1) ? 0 : 1;
+    redraw_all();
+    return;
+  }
+
+  // CLICK DIRECTLY ON CELL BODY
+  if (master_mode > 0) {
+    // IN MUTE MODES: Instant mute toggle on mousedown! Zero waiting.
+    toggle_slot_mute(clickedSlot);
+    return;
+  }
+
+  // Normal Mode (0): Preset recall & hold-to-save
+  const now = new Date().getTime();
   if (now - last_tap_time < double_tap_threshold && clickedSlot === last_tap_slot) {
     last_tap_time = 0;
     stop_hold_watchdog();
@@ -1077,10 +1490,7 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   if (allow_hold_save === 1) {
     holdTask = new Task(() => {
       if (isMouseDown === 1 && pendingSlot !== -1 && !isDragging && !has_dragged) {
-        const target = pendingSlot;
-        has_saved_on_hold = 1;
-        suppress_release_recall = 1;
-        save_slot(target);
+        save_slot(pendingSlot);
       }
     }, this);
     holdTask.schedule(hold_threshold);
@@ -1090,7 +1500,9 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
 function ondrag(x, y, button) {
   if (button === 0) {
     if (pendingSlot !== -1 && !has_dragged && !has_saved_on_hold && !suppress_release_recall) {
-      recall_slot(pendingSlot);
+      if (master_mode === 0) {
+        recall_slot(pendingSlot);
+      }
     }
     stop_hold_watchdog();
     return;
@@ -1138,10 +1550,20 @@ function broadcast_to_master() {
     morph_val: morph_val,
     morph_x: morph_x,
     morph_y: morph_y,
+    master_mode: master_mode,
+    slot_mutes: slot_mutes.slice(0),
+    slot_behaviors: slot_behaviors.slice(0),
+    low_slot: low_slot,
+    high_slot: high_slot,
+    time_mode: time_mode,
+    normalize: normalize,
+    wrap: wrap,
     slot_names: exportedNames,
     recall: idx => { recall_slot(idx); },
     morph: val => { msg_float(val); },
-    store: idx => { save_slot(idx); }
+    store: idx => { save_slot(idx); },
+    toggle_mute: idx => { toggle_slot_mute(idx); },
+    set_mode: m => { set_master_mode(m); }
   };
 
   if (statusBus.subscribers) {
@@ -1154,9 +1576,9 @@ function broadcast_to_master() {
 
   try { messnamed("touch_status_bus", "refresh"); } catch(e) {}
 }
-
 // =============================================================
 // 9. CLIENT OBJECTS INSPECTOR (DICTIONARY TREE + FLAT)
+// BLOCK 5 OF 6
 // =============================================================
 const WIN_W = 480;
 const WIN_H = 520;
@@ -1197,12 +1619,10 @@ function toggle_clients_window(v) {
   }
 }
 
-// Natural alphanumeric sorting comparison helper
 function naturalCompare(a, b) {
-  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+  return a.localeCompare(undefined, { numeric: true, sensitivity: "base" });
 }
 
-// Builds the linear visual rows based on View Mode (Dictionary Tree vs Flat)
 function build_clients_render_rows() {
   let keys = Object.keys(discoveredControls);
 
@@ -1211,7 +1631,6 @@ function build_clients_render_rows() {
   }
 
   if (client_view_mode === 1) {
-    // FLAT VIEW MODE
     return keys.map(k => ({
       type: "leaf",
       depth: 0,
@@ -1220,7 +1639,6 @@ function build_clients_render_rows() {
     }));
   }
 
-  // HIERARCHICAL DICTIONARY TREE MODE
   const root = { children: {} };
 
   for (let i = 0; i < keys.length; i++) {
@@ -1259,7 +1677,6 @@ function build_clients_render_rows() {
       const hasChildren = Object.keys(child.children).length > 0;
 
       if (hasChildren) {
-        // Container branch (renders as "name:")
         const isCollapsed = !!clients_collapsed_paths[child.path];
         rows.push({
           type: "branch",
@@ -1273,7 +1690,6 @@ function build_clients_render_rows() {
           walk(child, depth + 1);
         }
       } else {
-        // Leaf control
         rows.push({
           type: "leaf",
           depth: depth,
@@ -1291,9 +1707,8 @@ function build_clients_render_rows() {
 function toggle_all_tree_collapse() {
   const hasAnyCollapsed = Object.keys(clients_collapsed_paths).some(k => clients_collapsed_paths[k]);
   if (hasAnyCollapsed) {
-    clients_collapsed_paths = {}; // Expand all
+    clients_collapsed_paths = {};
   } else {
-    // Collapse all branches
     const keys = Object.keys(discoveredControls);
     for (let i = 0; i < keys.length; i++) {
       const parts = keys[i].split("::");
@@ -1340,7 +1755,6 @@ function draw_clients_window() {
     const itemW = rowW - (r.depth * 18);
 
     if (r.type === "branch") {
-      // Branch row (dictionary outline category)
       ctx.set_source_rgba(0.08, 0.09, 0.11, 0.85);
       ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
       ctx.fill();
@@ -1350,21 +1764,18 @@ function draw_clients_window() {
       ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
       ctx.stroke();
 
-      // Branch expand/collapse indicator (▼ / ►)
       ctx.select_font_face("Arial", "normal", "bold");
       ctx.set_font_size(9);
       ctx.set_source_rgba(highlight_color);
       ctx.move_to(indentX + 8, rY + rowH * 0.5 + 3.5);
       ctx.show_text(r.collapsed ? "►" : "▼");
 
-      // Dictionary category name with colon
       ctx.set_font_size(11);
       ctx.set_source_rgba(0.92, 0.94, 0.98, 1.0);
       const bText = fit_text_to_width(ctx, r.label, itemW - 32);
       ctx.move_to(indentX + 22, rY + rowH * 0.5 + 4.0);
       ctx.show_text(bText);
     } else {
-      // Leaf control row
       const isSelected = (r.fullKey === highlightedControlKey);
       const o = discoveredControls[r.fullKey];
       const liveVal = get_control_live_val(o);
@@ -1378,7 +1789,6 @@ function draw_clients_window() {
       ctx.rectangle_rounded(indentX, rY, itemW, rowH, 3, 3);
       ctx.stroke();
 
-      // Small control dot
       ctx.set_source_rgba(accent_bar_color);
       ctx.arc(indentX + 10, rY + rowH * 0.5, 2.5, 0, Math.PI * 2);
       ctx.fill();
@@ -1395,7 +1805,6 @@ function draw_clients_window() {
       ctx.move_to(indentX + 18, rY + rowH * 0.5 + 4.0);
       ctx.show_text(leafText);
 
-      // Live value box
       ctx.set_source_rgba(0.06, 0.07, 0.09, 0.95);
       ctx.rectangle_rounded(vBoxX, vBoxY, vBoxW, vBoxH, 3, 3);
       ctx.fill();
@@ -1414,7 +1823,6 @@ function draw_clients_window() {
     }
   }
 
-  // Scrollbar
   if (maxScroll > 0) {
     const sbTrackX = WIN_W - 12, sbTrackY = topListY, sbTrackH = viewH;
     ctx.set_source_rgba(0.06, 0.06, 0.08, 0.6);
@@ -1428,19 +1836,15 @@ function draw_clients_window() {
     ctx.fill();
   }
 
-  // -------------------------------------------------------------
-  // TOP HEADER BAR & CONTROLS / MODE SWITCHERS
-  // -------------------------------------------------------------
+  // Header Bar
   ctx.set_source_rgba(pop_bgcolor);
   ctx.rectangle(0, 0, WIN_W, HEADER_H);
   ctx.fill();
 
-  // Close red dot
   ctx.set_source_rgba(0.85, 0.2, 0.2, 1.0);
   ctx.arc(14, 16, 5.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Title with total scanned count
   ctx.select_font_face("Arial", "normal", "bold");
   ctx.set_font_size(10.5);
   ctx.set_source_rgba(0.92, 0.94, 0.98, 1.0);
@@ -1449,7 +1853,7 @@ function draw_clients_window() {
 
   const btnY = 8, btnH = 22;
 
-  // 1. View Mode Switcher Pill (TREE / FLAT)
+  // View Mode Switcher (TREE / FLAT)
   const vBtnX = 168, vBtnW = 54;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(vBtnX, btnY, vBtnW, btnH, 3, 3);
@@ -1467,7 +1871,7 @@ function draw_clients_window() {
   ctx.move_to(vBtnX + (vBtnW - vTm[0]) * 0.5, btnY + 15.0);
   ctx.show_text(vLbl);
 
-  // 2. Sort Mode Switcher Pill (A-Z / RAW)
+  // Sort Mode Switcher (A-Z / RAW)
   const sBtnX = 228, sBtnW = 46;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(sBtnX, btnY, sBtnW, btnH, 3, 3);
@@ -1483,7 +1887,7 @@ function draw_clients_window() {
   ctx.move_to(sBtnX + (sBtnW - sTm[0]) * 0.5, btnY + 15.0);
   ctx.show_text(sLbl);
 
-  // 3. Tree Expand/Collapse All Pill
+  // Tree Expand/Collapse All
   const fBtnX = 280, fBtnW = 34;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(fBtnX, btnY, fBtnW, btnH, 3, 3);
@@ -1498,7 +1902,7 @@ function draw_clients_window() {
   ctx.move_to(fBtnX + (fBtnW - fTm[0]) * 0.5, btnY + 15.0);
   ctx.show_text("±");
 
-  // 4. RESCAN Button
+  // RESCAN Button
   const rBtnX = 320, rBtnW = 66;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(rBtnX, btnY, rBtnW, btnH, 3, 3);
@@ -1513,7 +1917,7 @@ function draw_clients_window() {
   ctx.move_to(rBtnX + (rBtnW - rTm[0]) * 0.5, btnY + 15.0);
   ctx.show_text("RESCAN");
 
-  // 5. Scroll Step Arrows (▲ / ▼)
+  // Scroll Step Arrows
   const upX = 392, dwnX = 418, stepW = 22;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(upX, btnY, stepW, btnH, 3, 3);
@@ -1530,7 +1934,6 @@ function draw_clients_window() {
   ctx.move_to(upX + 7, btnY + 15.0); ctx.show_text("▲");
   ctx.move_to(dwnX + 7, btnY + 15.0); ctx.show_text("▼");
 
-  // Bottom dividing line
   ctx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
   ctx.set_line_width(1.0);
   ctx.move_to(8, HEADER_H); ctx.line_to(WIN_W - 8, HEADER_H); ctx.stroke();
@@ -1555,11 +1958,9 @@ function clientsWindowListenerCallback(event) {
     if (mbut === 0) { isClientsDragging = 0; return; }
 
     if (mbut === 1 && !isClientsDragging) {
-      // HEADER BAR HITS
       if (my <= HEADER_H) {
         if (mx < 24 && my < 24) { showClientsWindow = 0; toggle_clients_window(0); return; }
 
-        // Mode Switcher: Tree vs Flat
         if (mx >= 168 && mx <= 222 && my >= 8 && my <= 30) {
           client_view_mode = (client_view_mode === 0) ? 1 : 0;
           clientsScrollOffset = 0;
@@ -1567,7 +1968,6 @@ function clientsWindowListenerCallback(event) {
           return;
         }
 
-        // Sort Switcher: A-Z vs Raw
         if (mx >= 228 && mx <= 274 && my >= 8 && my <= 30) {
           client_sort_mode = (client_sort_mode === 0) ? 1 : 0;
           clientsScrollOffset = 0;
@@ -1575,13 +1975,11 @@ function clientsWindowListenerCallback(event) {
           return;
         }
 
-        // Expand / Collapse All
         if (mx >= 280 && mx <= 314 && my >= 8 && my <= 30) {
           toggle_all_tree_collapse();
           return;
         }
 
-        // RESCAN
         if (mx >= 320 && mx <= 386 && my >= 8 && my <= 30) {
           scan_local_controls();
           clientsScrollOffset = 0;
@@ -1589,14 +1987,12 @@ function clientsWindowListenerCallback(event) {
           return;
         }
 
-        // Up arrow
         if (mx >= 392 && mx <= 414 && my >= 8 && my <= 30) {
           clientsScrollOffset = clamp(clientsScrollOffset - (rowH + gap) * 3, 0, maxScroll);
           draw_clients_window();
           return;
         }
 
-        // Down arrow
         if (mx >= 418 && mx <= 440 && my >= 8 && my <= 30) {
           clientsScrollOffset = clamp(clientsScrollOffset + (rowH + gap) * 3, 0, maxScroll);
           draw_clients_window();
@@ -1606,7 +2002,6 @@ function clientsWindowListenerCallback(event) {
         return;
       }
 
-      // Scrollbar track click
       if (mx >= WIN_W - 18 && maxScroll > 0) {
         const thumbPct = clamp((my - topListY) / viewH, 0.0, 1.0);
         clientsScrollOffset = thumbPct * maxScroll;
@@ -1614,18 +2009,15 @@ function clientsWindowListenerCallback(event) {
         return;
       }
 
-      // LIST ITEMS CLICK
       if (my >= topListY) {
         const clickedIdx = Math.floor((my - (topListY - clientsScrollOffset)) / (rowH + gap));
         if (clickedIdx >= 0 && clickedIdx < rows.length) {
           const r = rows[clickedIdx];
           if (r.type === "branch") {
-            // Fold / Unfold Dictionary Branch
             clients_collapsed_paths[r.path] = !clients_collapsed_paths[r.path];
             draw_clients_window();
             return;
           } else {
-            // Select Leaf Control
             highlightedControlKey = r.fullKey;
             const o = discoveredControls[highlightedControlKey];
             post(`[Selected] ${highlightedControlKey} -> Live Value: ${get_control_live_val(o)}\n`);
@@ -1654,7 +2046,7 @@ function clientsWindowListenerCallback(event) {
 }
 
 // =============================================================
-// 10. SUB-WINDOWS (TICKER, PALETTE, COLOR PICKER, SETTINGS)
+// 10. SUB-WINDOWS (TICKER, PALETTE, COLOR PICKER)
 // =============================================================
 function getTickerWindow() {
   if (!tickerWindow) {
@@ -1817,9 +2209,6 @@ function paletteWindowListenerCallback(event) {
   }
 }
 
-// -------------------------------------------------------------
-// HSV Color Picker Sub-Window
-// -------------------------------------------------------------
 function getColorTarget(name) {
   if (name === "bg_color") return bg_color;
   if (name === "border_color") return border_color;
@@ -2006,10 +2395,12 @@ function colorWindowListenerCallback(event) {
     }
   }
 }
+// =============================================================
+// 11. 3-TAB SETTINGS INSPECTOR (STEPPER & ADVANCED SETTINGS)
+// BLOCK 6 OF 6 (FINAL)
+// =============================================================
+popup_window_fixed_h = 510; // Accommodates the advanced settings rows
 
-// -------------------------------------------------------------
-// 3-Tab Carousel Settings Inspector Window
-// -------------------------------------------------------------
 function getSettingsWindow() {
   if (!settingsWindow) {
     settingsWindow = new JitterObject("jit.window", `status_set_${uniqueID}`);
@@ -2024,8 +2415,16 @@ function get_visible_rows_map() {
   if (!show_settings_attrs) return [];
   const list = [];
 
+  const masterModeLabels = ["Normal", "All Drag", "All Snap"];
+
   if (active_mask_tab === 0) {
     list.push({ name: "Module Name / ID", val: module_name || "UNNAMED", is_name: true });
+    list.push({ name: "Master Mode", val: masterModeLabels[master_mode] || "Normal", is_toggle: true, target_id: 104 });
+    list.push({ name: "Normalize (Gen)", val: normalize ? "ON" : "OFF", is_toggle: true, target_id: 108 });
+    list.push({ name: "Time Mode", val: time_mode === 0 ? "Poly (Phase)" : "Metric (Step)", is_toggle: true, target_id: 109 });
+    list.push({ name: "Wrap Loop", val: wrap ? "ON" : "OFF", is_toggle: true, target_id: 105 });
+    list.push({ name: "Low Slot", val: low_slot, is_stepper: true, target_id: 106 });
+    list.push({ name: "High Slot", val: high_slot, is_stepper: true, target_id: 107 });
     list.push({ name: "Grid (Cols/Rows)", val: get_grid(), is_ticker: true, target_id: 100 });
     list.push({ name: "Hold to Save", val: allow_hold_save ? "ON" : "OFF", is_toggle: true, target_id: 101 });
     list.push({ name: "Hold Time", val: `${hold_threshold}ms`, pct: (hold_threshold - 200) / 800.0, is_slider: true, target_id: 102 });
@@ -2195,6 +2594,45 @@ function draw_settings_deferred() {
         pCtx.set_line_width(1.0);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.stroke();
+      } else if (r.is_stepper) {
+        // INLINE STEPPER WIDGET [ ◀ ] [ Val ] [ ▶ ]
+        const arrowW = 20;
+        const valW = valBoxW - arrowW * 2;
+
+        // Left Arrow
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX, vY, arrowW, vH, 2, 2);
+        pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + 6, rY + 16.5);
+        pCtx.show_text("◀");
+
+        // Value in center
+        pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.95);
+        pCtx.rectangle(valBoxX + arrowW, vY, valW, vH);
+        pCtx.fill();
+        pCtx.set_source_rgba(highlight_color);
+        pCtx.select_font_face("Arial", "normal", "bold");
+        pCtx.set_font_size(10);
+        const stTm = pCtx.text_measure(String(r.val));
+        pCtx.move_to(valBoxX + arrowW + (valW - stTm[0]) * 0.5, rY + 17);
+        pCtx.show_text(String(r.val));
+        pCtx.select_font_face("Arial", "normal", "normal");
+
+        // Right Arrow
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX + valBoxW - arrowW, vY, arrowW, vH, 2, 2);
+        pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + valBoxW - arrowW + 7, rY + 16.5);
+        pCtx.show_text("▶");
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(0.75);
+        pCtx.rectangle_rounded(valBoxX, vY, valBoxW, vH, 2, 2);
+        pCtx.stroke();
       } else if (r.is_ticker) {
         pCtx.set_source_rgba(attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], 0.35);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
@@ -2264,7 +2702,7 @@ function apply_slider_target(target_id, targetPct) {
 }
 
 function settingsWindowListenerCallback(event) {
-  if (event.eventname === "close") { showSettings = 0; return; }
+  if (event.eventname === "close") { showSettings = 0; stop_stepper_repeat(); return; }
   if (event.eventname === "mouse") {
     const a = arrayfromargs(event.args);
     const mx = a[0], my = a[1], mbut = a[2];
@@ -2295,6 +2733,7 @@ function settingsWindowListenerCallback(event) {
     if (mbut === 0) {
       active_pop_target = -1;
       stop_scrolling();
+      stop_stepper_repeat();
       return;
     }
 
@@ -2325,37 +2764,6 @@ function settingsWindowListenerCallback(event) {
       return;
     }
 
-    const prevMaxY = pr.y + prevH;
-    if (mbut && my >= pr.y && my <= prevMaxY && mx >= pr.x && mx <= pr.x + pr.w && active_pop_target === -1) {
-      active_pop_target = 50;
-      const localX = mx - pr.x;
-      const localY = my - pr.y;
-
-      const b = isNaN(border_thickness) ? 1.2 : border_thickness;
-      const inset = b * 0.5;
-      const padX = 4, padY = 4;
-      const cols = Math.max(1, grid_cols);
-      const rows_count = Math.max(1, grid_rows);
-
-      const slotStartX = inset + padX;
-      const availW = (pr.w - b - padX) - slotStartX;
-      const availH = (prevH - b) - padY * 2;
-      const cellW = availW / cols;
-      const cellH = availH / rows_count;
-
-      if (localX >= slotStartX) {
-        const colHit = Math.floor((localX - slotStartX) / cellW);
-        const rowHit = Math.floor((localY - (inset + padY)) / cellH);
-        if (colHit >= 0 && colHit < cols && rowHit >= 0 && rowHit < rows_count) {
-          const clickedSlot = rowHit * cols + colHit;
-          if (clickedSlot >= 0 && clickedSlot < slots.length && is_pop_tap) {
-            recall_slot(clickedSlot);
-          }
-        }
-      }
-      return;
-    }
-
     if (!has_rows) return;
 
     if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
@@ -2376,7 +2784,34 @@ function settingsWindowListenerCallback(event) {
         const r = rows[rIdx];
         const pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
 
-        if (r.is_slider || r.pct !== undefined) {
+        if (r.is_stepper) {
+          // STEPPER CLICKS & AUTO-REPEAT HOLD
+          const arrowW = 20;
+          if (is_pop_tap) {
+            if (mx >= valBoxX && mx <= valBoxX + arrowW) {
+              step_stepper_value(r.target_id, -1);
+              stepper_target_id = r.target_id;
+              stepper_dir = -1;
+            } else if (mx >= valBoxX + valBoxW - arrowW && mx <= valBoxX + valBoxW) {
+              step_stepper_value(r.target_id, 1);
+              stepper_target_id = r.target_id;
+              stepper_dir = 1;
+            }
+
+            // Start auto-repeat if held
+            if (stepper_dir !== 0 && !stepper_repeat_task) {
+              stepper_repeat_task = new Task(function() {
+                if (stepper_target_id !== -1 && is_mouse_down_anywhere) {
+                  step_stepper_value(stepper_target_id, stepper_dir);
+                } else {
+                  stop_stepper_repeat();
+                }
+              }, this);
+              stepper_repeat_task.interval = 80;
+              stepper_repeat_task.schedule(350); // Initial hold delay before repeat
+            }
+          }
+        } else if (r.is_slider || r.pct !== undefined) {
           active_pop_target = r.target_id;
           scroll_valBoxX = valBoxX;
           scroll_valBoxW = valBoxW;
@@ -2389,6 +2824,14 @@ function settingsWindowListenerCallback(event) {
             open_grid_ticker_window();
           } else if (r.target_id === 101) {
             set_allow_hold_save(allow_hold_save ? 0 : 1);
+          } else if (r.target_id === 104) {
+            toggle_master_mode();
+          } else if (r.target_id === 105) {
+            set_wrap(wrap ? 0 : 1);
+          } else if (r.target_id === 108) {
+            set_normalize(normalize ? 0 : 1);
+          } else if (r.target_id === 109) {
+            set_time_mode(time_mode ? 0 : 1);
           } else if (r.target_id === 201) {
             set_borders(borders ? 0 : 1);
           } else if (r.target_id === 202) {
@@ -2416,9 +2859,11 @@ function settingsWindowListenerCallback(event) {
 }
 
 // =============================================================
-// 11. INLETS, MESSAGES & PERSISTENCE
+// 12. INLETS, MESSAGES, ATTRIBUTES & PERSISTENCE
 // =============================================================
-function msg_int(v) { recall_slot(parseInt(v, 10) - 1); }
+function msg_int(v) { 
+  recall_slot(parseInt(v, 10) - 1); 
+}
 
 function set_name(v) {
   const oldName = module_name;
@@ -2480,10 +2925,38 @@ function set_slots_saved(str) {
     if (Array.isArray(arr) && arr.length > 0) {
       slots = [];
       for (let i = 0; i < arr.length; i++) slots.push({ name: String(arr[i]) });
+      ensure_slot_mutes();
+      ensure_slot_behaviors();
       redraw_all();
       return;
     }
   } catch(e) {}
+}
+
+function get_slot_behaviors() {
+  ensure_slot_behaviors();
+  return slot_behaviors.join(" ");
+}
+
+function set_slot_behaviors() {
+  let args = arrayfromargs(arguments);
+  while (args.length === 1 && Array.isArray(args[0])) args = args[0];
+  if (args.length === 0) return;
+
+  let values = [];
+  const str = args.join(" ").trim();
+  if (str.indexOf(",") !== -1) {
+    values = str.split(",").map(s => parseInt(s.trim(), 10));
+  } else {
+    values = str.split(/\s+/).map(s => parseInt(s.trim(), 10));
+  }
+
+  ensure_slot_behaviors();
+  for (let i = 0; i < values.length && i < slot_behaviors.length; i++) {
+    slot_behaviors[i] = Math.max(0, Math.min(1, values[i]));
+  }
+  redraw_all();
+  broadcast_to_master();
 }
 
 function set_name_bank_attr() {
@@ -2607,22 +3080,76 @@ function anything() {
   const args = arrayfromargs(arguments);
   const rawMsg = messagename.trim();
 
+  // Mode Commands
+  if (rawMsg === "master_mode" || rawMsg === "mode") {
+    if (args.length > 0) {
+      if (args[0] === "normal") set_master_mode(0);
+      else if (args[0] === "all_drag" || args[0] === "drag" || args[0] === "morph") set_master_mode(1);
+      else if (args[0] === "all_snap" || args[0] === "snap" || args[0] === "jump") set_master_mode(2);
+      else set_master_mode(args[0]);
+    } else {
+      toggle_master_mode();
+    }
+    return;
+  }
+
+  // Directional Range & Normalization Commands
+  if (rawMsg === "range" || rawMsg === "set_range") {
+    if (args.length >= 2) {
+      set_low_slot(args[0]);
+      set_high_slot(args[1]);
+    }
+    return;
+  }
+  if (rawMsg === "normalize") {
+    if (args.length > 0) set_normalize(args[0]);
+    return;
+  }
+  if (rawMsg === "time_mode") {
+    if (args.length > 0) {
+      if (args[0] === "poly" || args[0] === "phase") set_time_mode(0);
+      else if (args[0] === "metric" || args[0] === "tempo") set_time_mode(1);
+      else set_time_mode(args[0]);
+    }
+    return;
+  }
+  if (rawMsg === "wrap") {
+    if (args.length > 0) set_wrap(args[0]);
+    return;
+  }
+
+  // Cell Overrides & Muting
+  if (rawMsg === "mute" || rawMsg === "toggle_mute") {
+    if (args.length >= 1) toggle_slot_mute(parseInt(args[0], 10) - 1);
+    return;
+  }
+  if (rawMsg === "behavior" || rawMsg === "set_behavior") {
+    if (args.length >= 2) {
+      const slotIdx = parseInt(args[0], 10) - 1;
+      let bVal = (args[1] === "snap" || args[1] === "jump" || args[1] === 1) ? 1 : 0;
+      ensure_slot_behaviors();
+      if (slotIdx >= 0 && slotIdx < slot_behaviors.length) {
+        slot_behaviors[slotIdx] = bVal;
+        redraw_all();
+        broadcast_to_master();
+      }
+    }
+    return;
+  }
+
   if (rawMsg === "rename_pallet_slot" || rawMsg === "rename_palette_slot" || rawMsg === "rename") {
     rename_pallet_slot.apply(this, args);
     return;
   }
-
   if (rawMsg === "rename_slot" || rawMsg === "rename_slot_save") {
     rename_slot.apply(this, args);
     return;
   }
-
   if (rawMsg === "clients" || rawMsg === "clientwindow" || rawMsg === "print") {
     toggle_clients_window();
     return;
   }
   if (rawMsg === "scan") { scan_local_controls(); return; }
-
   if (rawMsg === "clear_names" || rawMsg === "wipe_names") { clear_names(); return; }
 
   const slashMatch = rawMsg.match(/^(\d+)\/(\d+)$/);
@@ -2659,6 +3186,13 @@ function save() {
   embedmessage("set_border_thickness", border_thickness);
   embedmessage("set_border_extension", border_extension);
   embedmessage("set_slot_names", get_slot_names());
+  embedmessage("set_master_mode", master_mode);
+  embedmessage("set_slot_behaviors", get_slot_behaviors());
+  embedmessage("set_normalize", normalize);
+  embedmessage("set_low_slot", low_slot);
+  embedmessage("set_high_slot", high_slot);
+  embedmessage("set_time_mode", time_mode);
+  embedmessage("set_wrap", wrap);
 
   const sList = slots.map(s => s.name);
   embedmessage("set_slots_saved", encodeURIComponent(JSON.stringify(sList)));
@@ -2666,6 +3200,7 @@ function save() {
 
 function notifydeleted() {
   stop_hold_watchdog();
+  stop_stepper_repeat();
   if (themeBus && themeBus.subscribers) delete themeBus.subscribers[uniqueID];
   if (statusBus && statusBus.clients && module_name) delete statusBus.clients[module_name];
   if (statusBus && statusBus.ping_listeners) delete statusBus.ping_listeners[uniqueID];
@@ -2697,6 +3232,15 @@ declareattribute("grid", { type: "symbol", label: "Grid Layout (Cols/Rows)", set
 declareattribute("borders", { type: "int", style: "onoff", label: "Show Outer Borders", setter: "set_borders", getter: "get_borders", category: "Geometry", embed: 1 });
 declareattribute("slot_names", { type: "symbol", label: "Slot Names", setter: "set_slot_names", getter: "get_slot_names", category: "Status Config", embed: 1 });
 declareattribute("popup_slots", { type: "symbol", label: "Popup Slots (Palette)", setter: "set_popup_slots", getter: "get_popup_slots", category: "Status Config", embed: 1 });
+
+// Advanced Performance & Composition Attributes
+declareattribute("master_mode", { type: "int", style: "enumindex", enumvals: ["Normal", "All Drag", "All Snap"], label: "Master Mode", setter: "set_master_mode", getter: "get_master_mode", category: "Composition", embed: 1 });
+declareattribute("slot_behaviors", { type: "symbol", label: "Slot Behaviors (0=Glide, 1=Snap)", setter: "set_slot_behaviors", getter: "get_slot_behaviors", category: "Composition", embed: 1 });
+declareattribute("normalize", { type: "int", style: "onoff", label: "Normalize Phase (0-1)", setter: "set_normalize", getter: "get_normalize", category: "Range & Timing", embed: 1 });
+declareattribute("low_slot", { type: "int", label: "Low Slot (Start Boundary)", setter: "set_low_slot", getter: "get_low_slot", category: "Range & Timing", embed: 1 });
+declareattribute("high_slot", { type: "int", label: "High Slot (End Boundary)", setter: "set_high_slot", getter: "get_high_slot", category: "Range & Timing", embed: 1 });
+declareattribute("time_mode", { type: "int", style: "enumindex", enumvals: ["Poly (Phase)", "Metric (Step)"], label: "Time Scaling Mode", setter: "set_time_mode", getter: "get_time_mode", category: "Range & Timing", embed: 1 });
+declareattribute("wrap", { type: "int", style: "onoff", label: "Circular Wrap Loop", setter: "set_wrap", getter: "get_wrap", category: "Range & Timing", embed: 1 });
 
 sync_grid_slots();
 redraw_all();

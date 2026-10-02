@@ -3,16 +3,41 @@
         "fileversion": 1,
         "appversion": {
             "major": 9,
-            "minor": 1,
-            "revision": 5,
+            "minor": 2,
+            "revision": 0,
             "architecture": "x64",
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 1482.0, 918.0 ],
+        "rect": [ 100.0, 100.0, 1107.0, 918.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
+            {
+                "box": {
+                    "bubble": 1,
+                    "bubbleside": 3,
+                    "id": "obj-4",
+                    "linecount": 2,
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 175.0, 364.5833194255829, 81.0, 39.0 ],
+                    "presentation_linecount": 2,
+                    "text": "change morphing"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-2",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 226.0, 229.0, 71.0, 23.0 ],
+                    "text": "loadmess 1"
+                }
+            },
             {
                 "box": {
                     "bubble": 1,
@@ -27,6 +52,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 0 ],
                         [ "set_borders", 0 ],
@@ -61,65 +87,20 @@
                         [ "set_allow_popup", 1 ],
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
-                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "set_border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
                         [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
                         [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "set_mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "set_attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
-                        [ "set_attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
-                        [ "set_attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0 ],
                         [ "set_unit_mode", 0 ],
-                        [ "allow_popup", 1 ],
-                        [ "attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
-                        [ "attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
-                        [ "attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
-                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "border_color", 0.5043478260869565, 0, 0, 1 ],
-                        [ "border_extension", 4.943820224719101 ],
-                        [ "border_radius", 0 ],
-                        [ "border_thickness", 1.6123595505617978 ],
-                        [ "borders", 0 ],
-                        [ "case_mode", 0 ],
-                        [ "curve_exponent", 0.35 ],
-                        [ "decimal_digits", 2 ],
-                        [ "dial_margin", 4 ],
-                        [ "font_name", "Arial" ],
-                        [ "font_size", 9 ],
-                        [ "font_style", 0 ],
-                        [ "handle_color", 1, 1, 1, 1 ],
-                        [ "handle_size", 5 ],
-                        [ "integer_digits", 1 ],
-                        [ "label_mode", 0 ],
-                        [ "label_text", "dial" ],
-                        [ "leading_zeros", 0 ],
-                        [ "max_val", 1 ],
-                        [ "min_val", 0 ],
-                        [ "mode", 0 ],
-                        [ "mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
-                        [ "mouse_mode", 1 ],
-                        [ "needle_thickness", 2 ],
-                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "popup_dot_color", 1, 0, 0, 1 ],
-                        [ "popup_mini_size", 190, 190 ],
-                        [ "ribbon_fill", 1 ],
-                        [ "rotary_mode", 0 ],
-                        [ "show_background", 0 ],
-                        [ "show_settings_attrs", 1 ],
-                        [ "slider_speed", 1 ],
-                        [ "step_amount", 0.05 ],
-                        [ "step_speed_ms", 20 ],
-                        [ "style", 0 ],
-                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "track_breadth", 4 ],
-                        [ "track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
-                        [ "unit_mode", 0 ]
+                        [ "set", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-51",
@@ -158,12 +139,13 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 221.0, 422.0, 117.0, 40.0 ],
+                    "patching_rect": [ 274.5, 423.0, 117.0, 40.0 ],
                     "text": "see storage pallet"
                 }
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 0 ],
                         [ "set_borders", 0 ],
@@ -198,65 +180,20 @@
                         [ "set_allow_popup", 1 ],
                         [ "set_show_settings_attrs", 1 ],
                         [ "set_popup_mini_size", 190, 190 ],
-                        [ "set_bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "set_border_color", 0.5043478260869565, 0, 0, 1 ],
+                        [ "set_bg_color", 0.16521739130434787, 0.1486956521739131, 0.1486956521739131, 0.46111111111111114 ],
+                        [ "set_border_color", 0.9130434782608696, 0.8420289855072465, 0.8420289855072465, 1 ],
                         [ "set_track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
                         [ "set_handle_color", 1, 1, 1, 1 ],
                         [ "set_text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "set_mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
+                        [ "set_mode_color", 0.9130434782608696, 0.6408212560386473, 0.09637681159420286, 1 ],
                         [ "set_popup_dot_color", 1, 0, 0, 1 ],
-                        [ "set_pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "set_attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
-                        [ "set_attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
-                        [ "set_attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
+                        [ "set_pop_bgcolor", 0.24347826086956526, 0.2297262479871176, 0.16096618357487924, 1 ],
+                        [ "set_attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
+                        [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
+                        [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.8765070762709539 ],
                         [ "set_unit_mode", 0 ],
-                        [ "allow_popup", 1 ],
-                        [ "attr_bg_color", 0.7130434782608696, 0.281256038647343, 0.281256038647343, 0.4722222222222222 ],
-                        [ "attr_border_color", 0.782608695652174, 0.4379710144927537, 0.4260869565217392, 1 ],
-                        [ "attr_slider_color", 0.8, 0.5911111111111111, 0.5911111111111111, 0.4722222222222222 ],
-                        [ "attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "bg_color", 0.025942028985507206, 0.025942028985507206, 0.02608695652173909, 0.46111111111111114 ],
-                        [ "border_color", 0.5043478260869565, 0, 0, 1 ],
-                        [ "border_extension", 4.943820224719101 ],
-                        [ "border_radius", 0 ],
-                        [ "border_thickness", 1.6123595505617978 ],
-                        [ "borders", 0 ],
-                        [ "case_mode", 0 ],
-                        [ "curve_exponent", 0.35 ],
-                        [ "decimal_digits", 2 ],
-                        [ "dial_margin", 4 ],
-                        [ "font_name", "Arial" ],
-                        [ "font_size", 9 ],
-                        [ "font_style", 0 ],
-                        [ "handle_color", 1, 1, 1, 1 ],
-                        [ "handle_size", 5 ],
-                        [ "integer_digits", 1 ],
-                        [ "label_mode", 0 ],
-                        [ "label_text", "dial" ],
-                        [ "leading_zeros", 0 ],
-                        [ "max_val", 1 ],
-                        [ "min_val", 0 ],
-                        [ "mode", 0 ],
-                        [ "mode_color", 0.8956521739130435, 0.41299516908212563, 0.41299516908212563, 1 ],
-                        [ "mouse_mode", 0 ],
-                        [ "needle_thickness", 2 ],
-                        [ "pop_bgcolor", 0.13, 0.13, 0.16, 1 ],
-                        [ "popup_dot_color", 1, 0, 0, 1 ],
-                        [ "popup_mini_size", 190, 190 ],
-                        [ "ribbon_fill", 1 ],
-                        [ "rotary_mode", 0 ],
-                        [ "show_background", 0 ],
-                        [ "show_settings_attrs", 1 ],
-                        [ "slider_speed", 1 ],
-                        [ "step_amount", 0.05 ],
-                        [ "step_speed_ms", 20 ],
-                        [ "style", 0 ],
-                        [ "text_color", 0.92, 0.94, 0.98, 1 ],
-                        [ "track_breadth", 4 ],
-                        [ "track_color", 0.4521739130434783, 0.4371014492753624, 0.4371014492753624, 0.4722222222222222 ],
-                        [ "unit_mode", 0 ]
+                        [ "set", 0 ]
                     ],
                     "filename": "touch.rdial.js",
                     "id": "obj-3",
@@ -367,6 +304,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_modes", "1 2 3 4 5 6 7 8 9 10 11 12" ],
                         [ "set_prefix", "Slot Number" ],
@@ -458,6 +396,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_val", 120 ],
                         [ "set_mode", 0 ],
@@ -588,6 +527,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 2 ],
                         [ "set_count", 3 ],
@@ -618,7 +558,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "set", 0, 1, 0 ],
+                        [ "set", 0, 0, 0 ],
                         [ "active_mask_tab", 2 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
@@ -727,12 +667,12 @@
                 "box": {
                     "bubble": 1,
                     "id": "obj-19",
-                    "linecount": 3,
+                    "linecount": 4,
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 544.0, 350.0, 240.0, 53.0 ],
-                    "text": "1. Click and \"hold\" to save preset\n2.Drag mouse to morph prestes\n3.Double click to open name palette"
+                    "patching_rect": [ 544.0, 350.0, 240.0, 68.0 ],
+                    "text": "1. Click and \"hold\" to save preset\n2.Drag mouse to morph prestes\n3.Double click to open name palette (in Normal mode)"
                 }
             },
             {
@@ -759,6 +699,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_active_mask_tab", 2 ],
                         [ "set_rescale_mode", 1 ],
@@ -798,7 +739,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.8420289855072465, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "list", 0, 0, 0, 130.95238095238096, 0.865979381443299, 0, 238.09523809523807, 0.29896907216494845, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
+                        [ "list", 0, 0, 0, 818.452380952381, 0.15463917525773196, 0, 907.7380952380952, 0.9175257731958762, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0, 1000, 0, 0 ],
                         [ "active_mask_tab", 2 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
@@ -857,6 +798,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_modes", "1 2 3 4 5 6 7 8 9 10 11 12" ],
                         [ "set_prefix", "Slot Number" ],
@@ -960,6 +902,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_slider_style", 0 ],
                         [ "set_mode", 0 ],
@@ -1000,7 +943,7 @@
                         [ "set_attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
                         [ "set_attr_slider_color", 1, 1, 0.5666666666666667, 0.5111111111111111 ],
                         [ "set_attr_text_color", 0.8608695652173913, 0.8417391304347827, 0.8417391304347827, 1 ],
-                        [ "msg_float", 0.8203592814371258 ],
+                        [ "msg_float", 0.041916167664670656 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1059,10 +1002,11 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_name", "honey_chicken" ],
                         [ "grid", "4/1" ],
-                        [ "set_active_mask_tab", 2 ],
+                        [ "set_active_mask_tab", 0 ],
                         [ "set_name_bank_attr", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
                         [ "set_allow_hold_save", 1 ],
                         [ "set_hold_threshold", 500 ],
@@ -1072,17 +1016,31 @@
                         [ "set_font_style", 0 ],
                         [ "set_text_size", 11 ],
                         [ "set_borders", 1 ],
-                        [ "set_border_radius", 4 ],
-                        [ "set_border_thickness", 1.2 ],
-                        [ "set_border_extension", 6 ],
+                        [ "set_border_radius", 0 ],
+                        [ "set_border_thickness", 1.6123595505617978 ],
+                        [ "set_border_extension", 4.943820224719101 ],
                         [ "set_slot_names", "s1, he, Lead 80s, Solo Boost" ],
+                        [ "set_master_mode", 0 ],
+                        [ "set_slot_behaviors", "1 1 1 1" ],
+                        [ "set_normalize", 0 ],
+                        [ "set_low_slot", 1 ],
+                        [ "set_high_slot", 4 ],
+                        [ "set_time_mode", 0 ],
+                        [ "set_wrap", 0 ],
                         [ "set_slots_saved", "%5B%22s1%22%2C%22he%22%2C%22Lead%2080s%22%2C%22Solo%20Boost%22%5D" ],
-                        [ "active_mask_tab", 2 ],
+                        [ "active_mask_tab", 0 ],
                         [ "borders", 1 ],
                         [ "grid", "4/1" ],
+                        [ "high_slot", 4 ],
+                        [ "low_slot", 1 ],
+                        [ "master_mode", 0 ],
                         [ "name", "honey_chicken" ],
+                        [ "normalize", 0 ],
                         [ "popup_slots", "Init Status, Clean Tone, Warm Crunch, Lead 80s, Heavy Drive, Solo Boost, Ambient Pad, Perc 3/8, Drum 2/4, Mute / Cut, Sub Bass, FX Riser" ],
-                        [ "slot_names", "s1, he, Lead 80s, Solo Boost" ]
+                        [ "slot_behaviors", "1 1 1 1" ],
+                        [ "slot_names", "s1, he, Lead 80s, Solo Boost" ],
+                        [ "time_mode", 0 ],
+                        [ "wrap", 0 ]
                     ],
                     "filename": "touch.status.js",
                     "id": "obj-39",
@@ -1103,6 +1061,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_slider_style", 0 ],
                         [ "set_mode", 0 ],
@@ -1143,7 +1102,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.8904471227305141 ],
+                        [ "msg_float", 0.034451580571881704 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1202,6 +1161,7 @@
             },
             {
                 "box": {
+                    "embed": 0,
                     "embedstate": [
                         [ "set_slider_style", 0 ],
                         [ "set_mode", 0 ],
@@ -1242,7 +1202,7 @@
                         [ "set_mask_geometry", 1 ],
                         [ "set_mask_colors", 1 ],
                         [ "set_mask_popup_colors", 1 ],
-                        [ "msg_float", 0.8428495673008116 ],
+                        [ "msg_float", 0 ],
                         [ "allow_popup", 1 ],
                         [ "attr_bg_color", 0.29565217391304344, 0.2940096618357488, 0.2940096618357488, 1 ],
                         [ "attr_border_color", 1, 0.9694444444444446, 0.08333333333333337, 1 ],
@@ -1346,18 +1306,6 @@
                     "parameter_enable": 0,
                     "patching_rect": [ 902.0, 313.0, 268.0, 23.0 ]
                 }
-            },
-            {
-                "box": {
-                    "attr": "valuepopup",
-                    "id": "obj-36",
-                    "maxclass": "attrui",
-                    "numinlets": 1,
-                    "numoutlets": 1,
-                    "outlettype": [ "" ],
-                    "parameter_enable": 0,
-                    "patching_rect": [ 328.0, 313.0, 150.0, 23.0 ]
-                }
             }
         ],
         "lines": [
@@ -1381,6 +1329,12 @@
             },
             {
                 "patchline": {
+                    "destination": [ "obj-39", 0 ],
+                    "source": [ "obj-2", 0 ]
+                }
+            },
+            {
+                "patchline": {
                     "destination": [ "obj-7", 0 ],
                     "source": [ "obj-22", 1 ]
                 }
@@ -1389,12 +1343,6 @@
                 "patchline": {
                     "destination": [ "obj-39", 0 ],
                     "source": [ "obj-33", 0 ]
-                }
-            },
-            {
-                "patchline": {
-                    "destination": [ "obj-39", 0 ],
-                    "source": [ "obj-36", 0 ]
                 }
             },
             {

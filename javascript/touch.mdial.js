@@ -349,18 +349,36 @@ function rgba_values(args, fallback) {
 }
 
 // Bpatcher-Proof Canvas Dimensions (Direct Box Bounds)
+// Presentation-Aware Canvas Dimensions
 function get_dimensions() {
+  // 1. In paint() and mgraphics contexts, mgraphics.size always reflects the active view (Presentation or Patching)
+  var sz = mgraphics.size;
+  if (sz && sz[0] > 0 && sz[1] > 0) {
+    current_w = sz[0];
+    current_h = sz[1];
+    return { w: current_w, h: current_h };
+  }
+
+  // 2. If called outside paint() (e.g. mouse clicks), check if patcher is currently in Presentation Mode
+  if (this.patcher && this.patcher.getattr && this.patcher.getattr("presentation") === 1) {
+    if (this.box) {
+      // presentation_rect in Max is [x, y, width, height]
+      var pr = this.box.getattr("presentation_rect");
+      if (pr && pr.length >= 4 && pr[2] > 0 && pr[3] > 0) {
+        current_w = pr[2];
+        current_h = pr[3];
+        return { w: current_w, h: current_h };
+      }
+    }
+  }
+
+  // 3. Fallback to standard patching rect [left, top, right, bottom]
   if (this.box && this.box.rect) {
     var r = this.box.rect;
     current_w = Math.max(1, r[2] - r[0]);
     current_h = Math.max(1, r[3] - r[1]);
-  } else {
-    var sz = mgraphics.size;
-    if (sz && sz[0] > 0 && sz[1] > 0) {
-      current_w = sz[0]; 
-      current_h = sz[1];
-    }
   }
+
   return { w: current_w, h: current_h };
 }
 
