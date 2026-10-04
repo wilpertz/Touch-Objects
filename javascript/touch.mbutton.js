@@ -162,6 +162,31 @@ function ensurePopupWindows() {
     colorListener = new JitterListener(colorWindow.name, colorWindowListenerCallback);
   }
 }
+// =============================================================
+// STEPPER AUTO-REPEAT ENGINE
+// =============================================================
+var stepper_repeat_task = null;
+var stepper_target_id   = -1;
+var stepper_dir         = 0;
+
+function step_stepper_value(target_id, dir) {
+  if (target_id === 101) {
+    set_count(count + dir);
+  } else if (target_id === 304) {
+    set_text_size(text_size + dir);
+  }
+  if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
+}
+
+
+function stop_stepper_repeat() {
+  stepper_target_id = -1;
+  stepper_dir = 0;
+  if (stepper_repeat_task) {
+    try { stepper_repeat_task.cancel(); } catch (e) {}
+    stepper_repeat_task = null;
+  }
+}
 
 function recycleMatrix(mat, w, h) {
   if (!mat) return new JitterMatrix(4, "char", w, h);
@@ -1110,7 +1135,8 @@ function get_visible_rows_map() {
   var list = [];
 
   if (active_mask_tab === 0) {
-    list.push({ name: "Button Count", val: count, pct: (count - 1) / 63.0, is_slider: true, target_id: 101 });
+    // Replaced is_slider with is_stepper:
+    list.push({ name: "Button Count", val: count, is_stepper: true, target_id: 101 });
     list.push({ name: "Orientation", val: direction === 1 ? "Vertical" : "Horizontal", is_toggle: true, target_id: 102 });
     list.push({ name: "Group Mode", val: group_mode === 1 ? "Live" : "Independent", is_toggle: true, target_id: 103 });
     list.push({ name: "Set All Modes", val: mode_names[global_mode], is_toggle: true, target_id: 104 });
@@ -1122,7 +1148,7 @@ function get_visible_rows_map() {
     list.push({ name: "Border Radius", val: border_radius.toFixed(1), pct: border_radius / 25.0, is_slider: true, target_id: 301 });
     list.push({ name: "Border Size", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 302 });
     list.push({ name: "Extension", val: border_extension.toFixed(1), pct: border_extension / 50.0, is_slider: true, target_id: 303 });
-    list.push({ name: "Font Size", val: text_size, pct: (text_size - 6) / 36.0, is_slider: true, target_id: 304 });
+     list.push({ name: "Font Size", val: text_size, is_stepper: true, target_id: 304 });
   } else if (active_mask_tab === 2) {
     list.push({ name: "Btn Color Off", val: btn_color_off, is_color: true, key: "btn_color_off" });
     list.push({ name: "Highlight (On)", val: btn_color_on, is_color: true, key: "btn_color_on" });
@@ -1338,6 +1364,45 @@ function draw_popup_to_window_deferred() {
         pCtx.set_line_width(1.0);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.stroke();
+      } else if (r.is_stepper) {
+        // INLINE STEPPER WIDGET [ ◀ ] [ Val ] [ ▶ ]
+        var arrowW = 20;
+        var valW = valBoxW - arrowW * 2;
+
+        // Left Arrow
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX, vY, arrowW, vH, 2, 2);
+        pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + 6, rY + 16.5);
+        pCtx.show_text("◀");
+
+        // Center Value
+        pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.95);
+        pCtx.rectangle(valBoxX + arrowW, vY, valW, vH);
+        pCtx.fill();
+        pCtx.set_source_rgba(btn_color_on);
+        pCtx.select_font_face("Arial", "normal", "bold");
+        pCtx.set_font_size(10);
+        var stTm = pCtx.text_measure(String(r.val));
+        pCtx.move_to(valBoxX + arrowW + (valW - (stTm ? stTm[0] : 10)) * 0.5, rY + 17);
+        pCtx.show_text(String(r.val));
+        pCtx.select_font_face("Arial", "normal", "normal");
+
+        // Right Arrow
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX + valBoxW - arrowW, vY, arrowW, vH, 2, 2);
+        pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color);
+        pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + valBoxW - arrowW + 7, rY + 16.5);
+        pCtx.show_text("▶");
+
+        pCtx.set_source_rgba(attr_border_color);
+        pCtx.set_line_width(0.75);
+        pCtx.rectangle_rounded(valBoxX, vY, valBoxW, vH, 2, 2);
+        pCtx.stroke();
       } else if (r.is_slider || r.pct !== undefined) {
         pCtx.set_source_rgba(0.12, 0.12, 0.14, 0.85);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
@@ -1453,6 +1518,7 @@ function windowListenerCallback(event) {
       }
       active_pop_target = -1;
       stop_scrolling();
+      stop_stepper_repeat(); // <-- ADD HERE
       return;
     }
 
@@ -1523,13 +1589,41 @@ function windowListenerCallback(event) {
       return;
     }
 
-    if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
+   if (mx >= rowX && mx <= rowX + rowW && my >= rowsStartY && my <= rowsStartY + (rows.length * 28)) {
       var rIdx = Math.floor((my - rowsStartY) / 28);
       if (rIdx >= 0 && rIdx < rows.length) {
         var r = rows[rIdx];
         var pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
 
-        if (r.is_slider || r.pct !== undefined) {
+        if (r.is_stepper) {
+          var arrowW = 20;
+          if (is_pop_tap) {
+            if (mx >= valBoxX && mx <= valBoxX + arrowW) {
+              step_stepper_value(r.target_id, -1);
+              stepper_target_id = r.target_id;
+              stepper_dir = -1;
+            } else if (mx >= valBoxX + valBoxW - arrowW && mx <= valBoxX + valBoxW) {
+              step_stepper_value(r.target_id, 1);
+              stepper_target_id = r.target_id;
+              stepper_dir = 1;
+            }
+
+            // Start auto-repeat if held
+            if (stepper_dir !== 0 && !stepper_repeat_task) {
+              stepper_repeat_task = new Task(function () {
+                if (stepper_target_id !== -1 && is_mouse_down_anywhere) {
+                  step_stepper_value(stepper_target_id, stepper_dir);
+                  if (stepper_repeat_task) {
+                    stepper_repeat_task.schedule(60); // Fast continuous repeat speed
+                  }
+                } else {
+                  stop_stepper_repeat();
+                }
+              }, this);
+              stepper_repeat_task.schedule(350); // Initial hold delay before repeat starts
+            }
+          }
+        } else if (r.is_slider || r.pct !== undefined) {
           active_pop_target = r.target_id;
           scroll_valBoxX = valBoxX;
           scroll_valBoxW = valBoxW;
@@ -2283,6 +2377,7 @@ function save() {
 }
 
 function notifydeleted() {
+  stop_stepper_repeat();
   if (render_task) {
     try { render_task.cancel(); } catch (e) {}
   }

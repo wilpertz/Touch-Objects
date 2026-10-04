@@ -2,7 +2,6 @@
 // touch.status.js - Max 9 v8ui / jsui
 // Local Preset Engine + Downward Scanner + Hierarchical Dictionary Inspector +
 // Multi-Curve Array Glider + 3-Way Composition Sequencer + Gen-Style Normalize
-// BLOCK 1 OF 6
 // ============================================================================
 
 autowatch = 1;
@@ -19,7 +18,6 @@ setoutletassist(1, "Outlet 1: Selected status info (set <name>)");
 setoutletassist(2, "Outlet 2: Storage notifications (stored, recalled, saved, mode)");
 
 const uniqueID = Math.floor(Math.random() * 1000000);
-
 let is_transmitting = false;
 
 // =============================================================
@@ -88,7 +86,6 @@ function scan_local_controls() {
         if (o !== this.box && o.varname) {
           const mclass = String(o.maxclass).toLowerCase();
           const vname = String(o.varname);
-
           if (!vname || vname === "v8ui" || vname.startsWith("v8ui_") || vname.startsWith("p_panel")) {
             // Skip utility wrappers
           } else if (mclass === "jsui" || mclass === "v8ui") {
@@ -100,7 +97,6 @@ function scan_local_controls() {
       o = o.nextobject;
     }
   }
-
   traverse(this.patcher, "");
 }
 
@@ -233,17 +229,13 @@ let name_bank = [
   "Drum 2/4", "Mute / Cut", "Sub Bass", "FX Riser"
 ];
 
-// --- Gen-Style Normalize, Directional Range & Timing Mode ---
-var normalize = 0;  // 0 = Absolute slot numbers (1.0 to N.0), 1 = Normalized phase (0.0 to 1.0 Gen style)
-var low_slot  = 1;  // Start slot boundary (supports reverse: low > high!)
-var high_slot = 4;  // End slot boundary
-var time_mode = 0;  // 0 = Poly Mode (Phase-locked 0-1 polyrhythm), 1 = Metric Mode (Step-locked step speed)
-var wrap      = 0;  // 0 = Clamp at ends, 1 = Circular wrap loop
+var normalize = 0;
+var low_slot  = 1;
+var high_slot = 4;
+var time_mode = 0;
+var wrap      = 0;
 
-function set_normalize(v) {
-  normalize = parseInt(v, 10) ? 1 : 0;
-  redraw_all();
-}
+function set_normalize(v) { normalize = parseInt(v, 10) ? 1 : 0; redraw_all(); }
 function get_normalize() { return normalize; }
 
 function set_low_slot(v) {
@@ -264,24 +256,17 @@ function set_high_slot(v) {
 }
 function get_high_slot() { return high_slot; }
 
-function set_time_mode(v) {
-  time_mode = parseInt(v, 10) ? 1 : 0;
-  redraw_all();
-}
+function set_time_mode(v) { time_mode = parseInt(v, 10) ? 1 : 0; redraw_all(); }
 function get_time_mode() { return time_mode; }
 
-function set_wrap(v) {
-  wrap = parseInt(v, 10) ? 1 : 0;
-  redraw_all();
-}
+function set_wrap(v) { wrap = parseInt(v, 10) ? 1 : 0; redraw_all(); }
 function get_wrap() { return wrap; }
 
-// --- Master 3-Way Mode & Composition Sequence States ---
-var master_mode    = 0;  // 0 = Normal, 1 = All Drag (Glide), 2 = All Snap (Jump)
-var slot_mutes     = []; // Dynamic boolean array (true = muted sustain)
-var slot_behaviors = []; // Transition rules: 0 = Glide (~), 1 = Snap (!)
+var master_mode    = 0;
+var slot_mutes     = [];
+var slot_behaviors = [];
 
-var mode_btn_w    = 18;  // Dynamically matches button height for 1:1 square
+var mode_btn_w    = 18;
 var scanner_btn_w = 16;
 var btn_gap       = 4;
 
@@ -335,17 +320,13 @@ function set_master_mode(m) {
 function get_master_mode() { return master_mode; }
 function toggle_master_mode() { set_master_mode((master_mode + 1) % 3); }
 
-// --- Stepper Auto-Repeat State (Inspector UI) ---
 var stepper_repeat_task = null;
 var stepper_target_id   = -1;
 var stepper_dir         = 0;
 
 function step_stepper_value(target_id, dir) {
-  if (target_id === 106) {
-    set_low_slot(low_slot + dir);
-  } else if (target_id === 107) {
-    set_high_slot(high_slot + dir);
-  }
+  if (target_id === 106) set_low_slot(low_slot + dir);
+  else if (target_id === 107) set_high_slot(high_slot + dir);
   if (showSettings && settingsWindow && settingsWindow.visible) draw_settings();
 }
 
@@ -413,11 +394,10 @@ const mask_tab_names = ["1. Performance", "2. Geometry / Labels", "3. Colors"];
 
 let showSettings       = 0;
 let popup_window_width = 280;
-let popup_window_fixed_h = 456;
+let popup_window_fixed_h = 510;
 let popup_mini_w       = 320;
 let popup_mini_h       = 110;
 
-// Subwindows
 let settingsWindow = null;
 let paletteWindow  = null;
 let tickerWindow   = null;
@@ -442,6 +422,7 @@ let showClientsWindow = 0;
 let active_color_target = "bg_color";
 let active_pop_target = -1;
 let is_mouse_down_anywhere = 0;
+let is_clients_mouse_down = 0;
 let picker_drag_zone = 0;
 let cur_h = 0.0, cur_s = 1.0, cur_v = 1.0, cur_a = 1.0;
 
@@ -524,9 +505,9 @@ function stop_scrolling() {
     try { scrollTask.cancel(); } catch(e) {}
   }
 }
+
 // =============================================================
 // 3. THEME BUS & TEXT HELPERS
-// BLOCK 2 OF 6
 // =============================================================
 const themeBus = new Global("touch_theme_bus");
 if (!themeBus.subscribers) themeBus.subscribers = {};
@@ -655,7 +636,6 @@ function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
   var effB = slotB_idx;
   var effectiveBlend = blendRatio;
 
-  // Evaluate composition rules in performance modes
   if (master_mode > 0) {
     const isMutedA = is_slot_muted(slotA_idx);
     const isMutedB = is_slot_muted(slotB_idx);
@@ -669,13 +649,10 @@ function dispatch_morph_to_controls(slotA_idx, slotB_idx, blendRatio) {
       effB = slotB_idx;
     }
 
-    const snapA = slot_behaviors[effA] === 1;
     const snapB = slot_behaviors[effB] === 1;
-
-    // TO THIS:
-if (snapB) {
-  effectiveBlend = (blendRatio < 0.5) ? 0.0 : 1.0;
-}
+    if (snapB) {
+      effectiveBlend = (blendRatio < 0.5) ? 0.0 : 1.0;
+    }
   }
 
   let dataA = null, dataB = null;
@@ -706,13 +683,10 @@ if (snapB) {
       const rawA = (typeof valA === "object" && valA !== null && valA.val !== undefined) ? valA.val : valA;
       const rawB = (typeof valB === "object" && valB !== null && valB.val !== undefined) ? valB.val : valB;
 
-      // 1. Single Numbers (vsliders, simple dials)
       if (typeof rawA === "number" && typeof rawB === "number") {
         const blended = lerp(rawA, rawB, effectiveBlend);
         if (typeof o.setvalueof === "function") o.setvalueof(blended);
         else o.message("float", blended);
-
-      // 2. Multi-Value Arrays (pfunction curves & multi-dials point-by-point glide)
       } else if (Array.isArray(rawA) && Array.isArray(rawB)) {
         const isButtonName = (k.toLowerCase().indexOf("button") !== -1 || k.toLowerCase().indexOf("toggle") !== -1);
         const isButtonA = isButtonName && rawA.length > 0 && rawA.every(n => Number(n) === 0 || Number(n) === 1);
@@ -723,7 +697,6 @@ if (snapB) {
           if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
           else o.message("list", snapTarget);
         } else {
-          // Smooth point-by-point array glide
           const maxLen = Math.max(rawA.length, rawB.length);
           const blendedArr = [];
           for (let i = 0; i < maxLen; i++) {
@@ -734,8 +707,6 @@ if (snapB) {
           if (typeof o.setvalueof === "function") o.setvalueof(blendedArr);
           else o.message("list", blendedArr);
         }
-
-      // 3. Fallback Snap for Strings / Non-interpolatables
       } else {
         const snapTarget = (effectiveBlend >= 0.5) ? rawB : rawA;
         if (typeof o.setvalueof === "function") o.setvalueof(snapTarget);
@@ -829,7 +800,6 @@ function calculate_2d_weights(localX, localY, totalW, totalH, is_preview) {
   const cellH  = availH / rows;
   const btnH   = (rows > 1) ? ((cellH * rows) - 3) : (cellH - 3);
 
-  // Dynamic square width synchronized with drawing
   mode_btn_w = Math.max(18, Math.round(btnH));
 
   const totalUtilityW = is_preview ? 0 : (mode_btn_w + btn_gap + scanner_btn_w);
@@ -842,9 +812,9 @@ function calculate_2d_weights(localX, localY, totalW, totalH, is_preview) {
 
   apply_normalized_xy(normX, normY);
 }
+
 // =============================================================
-// 5. VECTOR DRAW ENGINE (SOLID "Y" SPACES & 10px HEADER BOXES)
-// BLOCK 3 OF 6
+// 5. VECTOR DRAW ENGINE
 // =============================================================
 function drawCorners(ctx, x, y, w, h, r, ew, eh, col, thick) {
   ctx.set_source_rgba(col);
@@ -871,9 +841,8 @@ function draw_status_strip(ctx, w, h, is_preview) {
   ensure_slot_mutes();
   ensure_slot_behaviors();
 
-  // --- Telemetry Colors ---
-  const COLOR_GLIDE = [0.40, 0.75, 1.00, 0.90]; // Cyan for ~ Glide
-  const COLOR_SNAP  = [0.95, 0.65, 0.15, 0.90]; // Amber for ! Snap
+  const COLOR_GLIDE = [0.40, 0.75, 1.00, 0.90];
+  const COLOR_SNAP  = [0.95, 0.65, 0.15, 0.90];
 
   const b = isNaN(border_thickness) ? 1.2 : border_thickness;
   const inset = b * 0.5;
@@ -917,22 +886,16 @@ function draw_status_strip(ctx, w, h, is_preview) {
   const cellW         = availW / cols;
 
   if (!is_preview) {
-    // -----------------------------------------------------------
-    // 1. MASTER 3-WAY "Y" BUTTON
-    // -----------------------------------------------------------
     const modeX = inset + padX;
     const modeY = inset + padY;
     const midX  = modeX + mode_btn_w * 0.5;
     const midY  = modeY + btnH * 0.5;
 
-    // Background
     ctx.set_source_rgba(attr_bg_color);
     ctx.rectangle_rounded(modeX, modeY, mode_btn_w, btnH, btnR, btnR);
     ctx.fill();
 
-    // COLOR-MATCHED SECTOR FILLS
     if (master_mode === 0) {
-      // TOP WEDGE: Uses custom highlight_color
       ctx.set_source_rgba(highlight_color[0], highlight_color[1], highlight_color[2], 0.90);
       ctx.new_path();
       ctx.move_to(modeX, modeY);
@@ -940,9 +903,7 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.line_to(midX, midY);
       ctx.close_path();
       ctx.fill();
-
     } else if (master_mode === 1) {
-      // BOTTOM-LEFT WEDGE: Cyan (matches Glide ~)
       ctx.set_source_rgba(COLOR_GLIDE[0], COLOR_GLIDE[1], COLOR_GLIDE[2], 0.90);
       ctx.new_path();
       ctx.move_to(modeX, modeY);
@@ -951,9 +912,7 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.line_to(modeX, modeY + btnH);
       ctx.close_path();
       ctx.fill();
-
     } else if (master_mode === 2) {
-      // BOTTOM-RIGHT WEDGE: Amber (matches Snap !)
       ctx.set_source_rgba(COLOR_SNAP[0], COLOR_SNAP[1], COLOR_SNAP[2], 0.90);
       ctx.new_path();
       ctx.move_to(modeX + mode_btn_w, modeY);
@@ -964,22 +923,17 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.fill();
     }
 
-    // DRAW THE "Y" DIVIDER LINES
     ctx.set_source_rgba(0.08, 0.08, 0.10, 1.0);
     ctx.set_line_width(2.0);
     ctx.new_path(); ctx.move_to(modeX, modeY); ctx.line_to(midX, midY); ctx.stroke();
     ctx.new_path(); ctx.move_to(modeX + mode_btn_w, modeY); ctx.line_to(midX, midY); ctx.stroke();
     ctx.new_path(); ctx.move_to(midX, midY); ctx.line_to(midX, modeY + btnH); ctx.stroke();
 
-    // Outer border
     ctx.set_source_rgba(attr_border_color);
     ctx.set_line_width(1.0);
     ctx.rectangle_rounded(modeX, modeY, mode_btn_w, btnH, btnR, btnR);
     ctx.stroke();
 
-    // -----------------------------------------------------------
-    // 2. SCANNER BUTTON
-    // -----------------------------------------------------------
     const scanX = modeX + mode_btn_w + btn_gap;
     const scanY = modeY;
 
@@ -995,9 +949,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.arc(midSX, midSY + 6, 1.2, 0, Math.PI * 2); ctx.fill();
   }
 
-  // -------------------------------------------------------------
-  // 3. PRESET SLOTS & DYNAMIC TELEMETRY HIGHLIGHTS
-  // -------------------------------------------------------------
   const showCompStrip = master_mode > 0 && !is_preview;
   const compStripH    = 10;
 
@@ -1013,14 +964,12 @@ function draw_status_strip(ctx, w, h, is_preview) {
     const isMuted = is_slot_muted(i);
     const isSnap  = slot_behaviors[i] === 1;
 
-    // Header strip (10px box above cell)
     if (showCompStrip) {
       const hY = baseY;
       ctx.set_source_rgba(0.08, 0.09, 0.11, 0.9);
       ctx.rectangle_rounded(sX, hY, sW, compStripH, 2, 2);
       ctx.fill();
 
-      // Border: Cyan for Glide (~), Amber for Snap (!)
       ctx.set_source_rgba(isSnap ? COLOR_SNAP : COLOR_GLIDE);
       ctx.set_line_width(0.75);
       ctx.rectangle_rounded(sX, hY, sW, compStripH, 2, 2);
@@ -1034,7 +983,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.show_text(glyph);
     }
 
-    // Cell Highlight Alpha
     let highlightAlpha = 0.0;
     if (is_morphing && morph_weights.length === slots.length) {
       highlightAlpha = morph_weights[i] || 0.0;
@@ -1042,7 +990,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
       if (i === active_slot) highlightAlpha = 1.0;
     }
 
-    // Dynamic Color Determination
     let activeCol = highlight_color;
     if (master_mode > 0) {
       activeCol = isSnap ? COLOR_SNAP : COLOR_GLIDE;
@@ -1079,7 +1026,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.fill();
     }
 
-    // Slot Index Number
     ctx.select_font_face(font_name, "normal", "bold");
     ctx.set_font_size(Math.max(7, Math.min(10, sH * 0.28)));
 
@@ -1093,7 +1039,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
       ctx.show_text(String(i + 1));
     }
 
-    // Slot Name Text
     let dispTxt = slots[i] ? slots[i].name : "";
     ctx.select_font_face(font_name, font_slants[font_style], (highlightAlpha > 0.4 && (!isMuted || master_mode === 0)) ? "bold" : font_weights[font_style]);
     const curFontSize = Math.max(8, Math.min(text_size, sH * 0.45));
@@ -1107,7 +1052,6 @@ function draw_status_strip(ctx, w, h, is_preview) {
     ctx.show_text(dispTxt);
   }
 
-  // Red Settings Dot (Top right)
   if (!is_preview && allow_popup === 1) {
     const dotR = Math.max(1.5, Math.min(2.8, Math.min(w, h) * 0.08));
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
@@ -1122,9 +1066,9 @@ function paint() {
   const sz = mgraphics.size;
   draw_status_strip(mgraphics, sz[0], sz[1], false);
 }
+
 // =============================================================
-// 6. RECALL, STORE & INPUT ENGINE (0-1 / ABSOLUTE / METRIC-POLY)
-// BLOCK 4 OF 6
+// 6. RECALL, STORE & INPUT ENGINE
 // =============================================================
 function recall_slot(idx) {
   if (!is_active_module() || idx < 0 || idx >= slots.length) return;
@@ -1174,7 +1118,8 @@ function recall_slot(idx) {
     }
   }
 
-  if (slotData && slotData.name) {
+  // Only assign from dict if current slot has no name
+  if (!slots[active_slot].name && slotData && slotData.name) {
     slots[active_slot].name = slotData.name;
   }
 
@@ -1262,7 +1207,6 @@ function stamp_name_to_slot(slotIdx, chosenName) {
   if (paletteWindow && paletteWindow.visible) draw_palette();
 }
 
-// --- Universal Input Handler (Normalize 0-1 / Slot Numbers / Directional Range) ---
 function msg_float(v) {
   if (isDragging || !is_active_module()) return;
   let inVal = parseFloat(v);
@@ -1277,12 +1221,7 @@ function msg_float(v) {
   let fPos = 0.0;
 
   if (normalize === 1) {
-    // -----------------------------------------------------------
-    // NORMALIZE MODE (Gen-style universal 0.0 to 1.0 phase input)
-    // -----------------------------------------------------------
     let normPhase = inVal;
-
-    // Handle wrapping phase or clamp
     if (wrap === 1) {
       normPhase = ((normPhase % 1.0) + 1.0) % 1.0;
     } else {
@@ -1294,19 +1233,16 @@ function msg_float(v) {
     const isReverse = sLow > sHigh;
 
     if (time_mode === 0) {
-      // POLY MODE: 0.0-1.0 phase is locked across the selected range
       if (!isReverse) {
         const slotSpan = wrap === 1 ? (sHigh - sLow + 1.0) : Math.max(0.0001, sHigh - sLow);
         fPos = (sLow - 1.0) + normPhase * slotSpan;
         if (wrap === 1 && fPos >= sHigh) fPos = (sLow - 1.0) + (fPos - sHigh);
       } else {
-        // REVERSE: Runs backward from sLow down to sHigh!
         const slotSpan = wrap === 1 ? (sLow - sHigh + 1.0) : Math.max(0.0001, sLow - sHigh);
         fPos = (sLow - 1.0) - normPhase * slotSpan;
         if (wrap === 1 && fPos < (sHigh - 1.0)) fPos = (sLow - 1.0) - (fPos - (sHigh - 1.0));
       }
     } else {
-      // METRIC MODE: Step duration is absolute; 1.0 input progress = 1 slot step
       const stepProg = inVal * (wrap === 1 ? totalSlots : (totalSlots - 1));
       if (!isReverse) {
         fPos = (sLow - 1.0) + stepProg;
@@ -1318,11 +1254,7 @@ function msg_float(v) {
         else fPos = clamp(fPos, 0.0, totalSlots - 1.0);
       }
     }
-
   } else {
-    // -----------------------------------------------------------
-    // ABSOLUTE MODE: Direct slot float input (1.0 to N.0)
-    // -----------------------------------------------------------
     if (wrap === 1) {
       let p = inVal - 1.0;
       fPos = ((p % totalSlots) + totalSlots) % totalSlots;
@@ -1331,7 +1263,6 @@ function msg_float(v) {
     }
   }
 
-  // Calculate integer slots and fractional position
   morph_val = fPos + 1.0;
   const floorIdx = Math.floor(fPos);
   const ceilIdx  = wrap === 1 ? ((floorIdx + 1) % totalSlots) : Math.min(totalSlots - 1, floorIdx + 1);
@@ -1342,13 +1273,11 @@ function msg_float(v) {
   if (active_slot < 0) active_slot = 0;
   target_edit_slot = active_slot;
 
-  // Visual highlights: Smooth crossfade array
   const newWeights = new Array(totalSlots).fill(0.0);
   if (floorIdx < totalSlots) newWeights[floorIdx] = 1.0 - frac;
   if (ceilIdx < totalSlots) newWeights[ceilIdx] = (newWeights[ceilIdx] || 0.0) + frac;
   morph_weights = newWeights;
 
-  // Morph dials, sliders, and pfunction curves
   dispatch_morph_to_controls(floorIdx, ceilIdx, frac);
 
   if (!is_transmitting) {
@@ -1361,7 +1290,7 @@ function msg_float(v) {
 }
 
 // =============================================================
-// 7. GESTURES & HIT-TESTING (SPATIAL "Y" + INSTANT MUTE ON TOUCH)
+// 7. GESTURES & HIT-TESTING
 // =============================================================
 function stop_hold_watchdog() {
   isMouseDown = 0;
@@ -1394,25 +1323,18 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   const scanX = modeX + mode_btn_w + btn_gap;
   const scanY = modeY;
 
-  // 1. Direct Spatial Click on the 3 "Y" Spaces:
   if (x >= modeX && x <= modeX + mode_btn_w && y >= modeY && y <= modeY + btnH) {
-    if (y < modeY + btnH * 0.5) {
-      set_master_mode(0); // Top wedge -> Normal Mode
-    } else if (x < modeX + mode_btn_w * 0.5) {
-      set_master_mode(1); // Bottom-left area -> All-Drag Mode
-    } else {
-      set_master_mode(2); // Bottom-right area -> All-Snap Mode
-    }
+    if (y < modeY + btnH * 0.5) set_master_mode(0);
+    else if (x < modeX + mode_btn_w * 0.5) set_master_mode(1);
+    else set_master_mode(2);
     return;
   }
 
-  // 2. Hit Scanner Button
   if (x >= scanX - 2 && x <= scanX + scanner_btn_w + 2 && y >= scanY && y <= scanY + btnH) {
     toggle_clients_window();
     return;
   }
 
-  // 3. Hit Red Dot (Settings)
   if (allow_popup === 1) {
     const dotMargin = Math.max(3.5, Math.min(6.5, Math.min(w, h) * 0.15));
     const dotX = w - dotMargin, dotY = dotMargin;
@@ -1430,7 +1352,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
     return;
   }
 
-  // 4. Slots & 10px Header Hit-Testing
   const totalUtilityW = mode_btn_w + btn_gap + scanner_btn_w;
   const slotStartX = inset + padX + totalUtilityW + padX;
   const availW = (w - b - padX) - slotStartX;
@@ -1445,7 +1366,6 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
   const clickedSlot = rowHit * cols + colHit;
   if (clickedSlot < 0 || clickedSlot >= slots.length) return;
 
-  // CLICK ABOVE CELL (10px box) -> INVERT SCROLL STYLE (Glide <-> Snap)
   const showCompStrip = master_mode > 0;
   const compStripH = 10;
   const baseY = inset + padY + rowHit * cellH;
@@ -1457,14 +1377,11 @@ function onclick(x, y, button, cmd, shift, capslock, option, ctrl, pointerevent)
     return;
   }
 
-  // CLICK DIRECTLY ON CELL BODY
   if (master_mode > 0) {
-    // IN MUTE MODES: Instant mute toggle on mousedown! Zero waiting.
     toggle_slot_mute(clickedSlot);
     return;
   }
 
-  // Normal Mode (0): Preset recall & hold-to-save
   const now = new Date().getTime();
   if (now - last_tap_time < double_tap_threshold && clickedSlot === last_tap_slot) {
     last_tap_time = 0;
@@ -1576,9 +1493,9 @@ function broadcast_to_master() {
 
   try { messnamed("touch_status_bus", "refresh"); } catch(e) {}
 }
+
 // =============================================================
-// 9. CLIENT OBJECTS INSPECTOR (DICTIONARY TREE + FLAT)
-// BLOCK 5 OF 6
+// 9. CLIENT OBJECTS INSPECTOR
 // =============================================================
 const WIN_W = 480;
 const WIN_H = 520;
@@ -1606,6 +1523,7 @@ function toggle_clients_window(v) {
   if (showClientsWindow) {
     scan_local_controls();
     clientsScrollOffset = 0;
+    is_clients_mouse_down = 0;
     win.size = [WIN_W, WIN_H];
     win.title = `Scanned Controls: ${module_name || "UNNAMED"}`;
     if (this.box && this.box.rect) {
@@ -1616,11 +1534,12 @@ function toggle_clients_window(v) {
     draw_clients_window();
   } else {
     win.visible = 0;
+    is_clients_mouse_down = 0;
   }
 }
 
 function naturalCompare(a, b) {
-  return a.localeCompare(undefined, { numeric: true, sensitivity: "base" });
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 }
 
 function build_clients_render_rows() {
@@ -1836,7 +1755,6 @@ function draw_clients_window() {
     ctx.fill();
   }
 
-  // Header Bar
   ctx.set_source_rgba(pop_bgcolor);
   ctx.rectangle(0, 0, WIN_W, HEADER_H);
   ctx.fill();
@@ -1853,7 +1771,7 @@ function draw_clients_window() {
 
   const btnY = 8, btnH = 22;
 
-  // View Mode Switcher (TREE / FLAT)
+  // View Mode Switcher
   const vBtnX = 168, vBtnW = 54;
   ctx.set_source_rgba(attr_bg_color);
   ctx.rectangle_rounded(vBtnX, btnY, vBtnW, btnH, 3, 3);
@@ -1944,7 +1862,11 @@ function draw_clients_window() {
 }
 
 function clientsWindowListenerCallback(event) {
-  if (event.eventname === "close") { showClientsWindow = 0; return; }
+  if (event.eventname === "close") { 
+    showClientsWindow = 0; 
+    is_clients_mouse_down = 0;
+    return; 
+  }
   const a = arrayfromargs(event.args);
   const mx = a[0], my = a[1], mbut = a[2];
 
@@ -1955,11 +1877,21 @@ function clientsWindowListenerCallback(event) {
   const maxScroll = Math.max(0, totalContentH - viewH);
 
   if (event.eventname === "mouse") {
-    if (mbut === 0) { isClientsDragging = 0; return; }
+    const is_cli_tap = (mbut === 1 && is_clients_mouse_down === 0);
+    is_clients_mouse_down = mbut;
 
-    if (mbut === 1 && !isClientsDragging) {
+    if (mbut === 0) { 
+      isClientsDragging = 0; 
+      return; 
+    }
+
+    if (is_cli_tap) {
       if (my <= HEADER_H) {
-        if (mx < 24 && my < 24) { showClientsWindow = 0; toggle_clients_window(0); return; }
+        if (mx < 24 && my < 24) { 
+          showClientsWindow = 0; 
+          toggle_clients_window(0); 
+          return; 
+        }
 
         if (mx >= 168 && mx <= 222 && my >= 8 && my <= 30) {
           client_view_mode = (client_view_mode === 0) ? 1 : 0;
@@ -1968,6 +1900,7 @@ function clientsWindowListenerCallback(event) {
           return;
         }
 
+        // Reliable toggle for A-Z / RAW button
         if (mx >= 228 && mx <= 274 && my >= 8 && my <= 30) {
           client_sort_mode = (client_sort_mode === 0) ? 1 : 0;
           clientsScrollOffset = 0;
@@ -2395,12 +2328,10 @@ function colorWindowListenerCallback(event) {
     }
   }
 }
-// =============================================================
-// 11. 3-TAB SETTINGS INSPECTOR (STEPPER & ADVANCED SETTINGS)
-// BLOCK 6 OF 6 (FINAL)
-// =============================================================
-popup_window_fixed_h = 510; // Accommodates the advanced settings rows
 
+// =============================================================
+// 11. 3-TAB SETTINGS INSPECTOR
+// =============================================================
 function getSettingsWindow() {
   if (!settingsWindow) {
     settingsWindow = new JitterObject("jit.window", `status_set_${uniqueID}`);
@@ -2595,11 +2526,9 @@ function draw_settings_deferred() {
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.stroke();
       } else if (r.is_stepper) {
-        // INLINE STEPPER WIDGET [ ◀ ] [ Val ] [ ▶ ]
         const arrowW = 20;
         const valW = valBoxW - arrowW * 2;
 
-        // Left Arrow
         pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
         pCtx.rectangle_rounded(valBoxX, vY, arrowW, vH, 2, 2);
         pCtx.fill();
@@ -2608,7 +2537,6 @@ function draw_settings_deferred() {
         pCtx.move_to(valBoxX + 6, rY + 16.5);
         pCtx.show_text("◀");
 
-        // Value in center
         pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.95);
         pCtx.rectangle(valBoxX + arrowW, vY, valW, vH);
         pCtx.fill();
@@ -2620,7 +2548,6 @@ function draw_settings_deferred() {
         pCtx.show_text(String(r.val));
         pCtx.select_font_face("Arial", "normal", "normal");
 
-        // Right Arrow
         pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
         pCtx.rectangle_rounded(valBoxX + valBoxW - arrowW, vY, arrowW, vH, 2, 2);
         pCtx.fill();
@@ -2785,7 +2712,6 @@ function settingsWindowListenerCallback(event) {
         const pct = clamp((mx - valBoxX) / valBoxW, 0, 1);
 
         if (r.is_stepper) {
-          // STEPPER CLICKS & AUTO-REPEAT HOLD
           const arrowW = 20;
           if (is_pop_tap) {
             if (mx >= valBoxX && mx <= valBoxX + arrowW) {
@@ -2798,17 +2724,18 @@ function settingsWindowListenerCallback(event) {
               stepper_dir = 1;
             }
 
-            // Start auto-repeat if held
             if (stepper_dir !== 0 && !stepper_repeat_task) {
               stepper_repeat_task = new Task(function() {
                 if (stepper_target_id !== -1 && is_mouse_down_anywhere) {
                   step_stepper_value(stepper_target_id, stepper_dir);
+                  if (stepper_repeat_task) {
+                    stepper_repeat_task.schedule(60);
+                  }
                 } else {
                   stop_stepper_repeat();
                 }
               }, this);
-              stepper_repeat_task.interval = 80;
-              stepper_repeat_task.schedule(350); // Initial hold delay before repeat
+              stepper_repeat_task.schedule(350);
             }
           }
         } else if (r.is_slider || r.pct !== undefined) {
@@ -2894,7 +2821,8 @@ function get_slot_names() {
 }
 
 function set_slot_names() {
-  const args = arrayfromargs(arguments);
+  let args = arrayfromargs(arguments);
+  while (args.length === 1 && Array.isArray(args[0])) args = args[0];
   if (args.length === 0 || (args.length === 1 && String(args[0]).trim() === "")) {
     const nameList = get_slot_names();
     outlet(1, ["set", nameList]);
@@ -2913,9 +2841,33 @@ function set_slot_names() {
     slots[i].name = items[i];
   }
 
-  outlet(1, ["set", get_slot_names()]);
+  // Synchronize immediately to state dictionary & write to disk
+  const d = get_module_dict();
+  if (d) {
+    for (let i = 0; i < slots.length; i++) {
+      const key = `slot_${i}`;
+      let slotPayload = { name: slots[i].name, controls: {} };
+      if (d.contains(key)) {
+        try {
+          const raw = d.get(key);
+          const parsed = (typeof raw === "string") ? JSON.parse(raw) : raw;
+          if (parsed && typeof parsed === "object") slotPayload = parsed;
+        } catch(e) {}
+      }
+      slotPayload.name = slots[i].name;
+      d.set(key, JSON.stringify(slotPayload));
+    }
+    write_states_to_disk();
+  }
+
+  if (slots[active_slot]) {
+    outlet(1, ["set", slots[active_slot].name]);
+  }
+
   redraw_all();
+  if (paletteWindow && paletteWindow.visible) draw_palette();
   broadcast_to_master();
+  if (typeof notifyclients === "function") notifyclients();
 }
 
 function set_slots_saved(str) {
@@ -2927,6 +2879,25 @@ function set_slots_saved(str) {
       for (let i = 0; i < arr.length; i++) slots.push({ name: String(arr[i]) });
       ensure_slot_mutes();
       ensure_slot_behaviors();
+
+      const d = get_module_dict();
+      if (d) {
+        for (let i = 0; i < slots.length; i++) {
+          const key = `slot_${i}`;
+          let slotPayload = { name: slots[i].name, controls: {} };
+          if (d.contains(key)) {
+            try {
+              const raw = d.get(key);
+              const parsed = (typeof raw === "string") ? JSON.parse(raw) : raw;
+              if (parsed && typeof parsed === "object") slotPayload = parsed;
+            } catch(e) {}
+          }
+          slotPayload.name = slots[i].name;
+          d.set(key, JSON.stringify(slotPayload));
+        }
+        write_states_to_disk();
+      }
+
       redraw_all();
       return;
     }
@@ -3050,6 +3021,22 @@ function rename_slot() {
 
   slots[idx].name = newName;
 
+  const d = get_module_dict();
+  if (d) {
+    const key = `slot_${idx}`;
+    let slotPayload = { name: newName, controls: {} };
+    if (d.contains(key)) {
+      try {
+        const raw = d.get(key);
+        const parsed = (typeof raw === "string") ? JSON.parse(raw) : raw;
+        if (parsed && typeof parsed === "object") slotPayload = parsed;
+      } catch(e) {}
+    }
+    slotPayload.name = newName;
+    d.set(key, JSON.stringify(slotPayload));
+    write_states_to_disk();
+  }
+
   if (idx === active_slot) {
     outlet(1, ["set", newName]);
   }
@@ -3080,7 +3067,6 @@ function anything() {
   const args = arrayfromargs(arguments);
   const rawMsg = messagename.trim();
 
-  // Mode Commands
   if (rawMsg === "master_mode" || rawMsg === "mode") {
     if (args.length > 0) {
       if (args[0] === "normal") set_master_mode(0);
@@ -3093,7 +3079,6 @@ function anything() {
     return;
   }
 
-  // Directional Range & Normalization Commands
   if (rawMsg === "range" || rawMsg === "set_range") {
     if (args.length >= 2) {
       set_low_slot(args[0]);
@@ -3118,7 +3103,6 @@ function anything() {
     return;
   }
 
-  // Cell Overrides & Muting
   if (rawMsg === "mute" || rawMsg === "toggle_mute") {
     if (args.length >= 1) toggle_slot_mute(parseInt(args[0], 10) - 1);
     return;
@@ -3233,7 +3217,6 @@ declareattribute("borders", { type: "int", style: "onoff", label: "Show Outer Bo
 declareattribute("slot_names", { type: "symbol", label: "Slot Names", setter: "set_slot_names", getter: "get_slot_names", category: "Status Config", embed: 1 });
 declareattribute("popup_slots", { type: "symbol", label: "Popup Slots (Palette)", setter: "set_popup_slots", getter: "get_popup_slots", category: "Status Config", embed: 1 });
 
-// Advanced Performance & Composition Attributes
 declareattribute("master_mode", { type: "int", style: "enumindex", enumvals: ["Normal", "All Drag", "All Snap"], label: "Master Mode", setter: "set_master_mode", getter: "get_master_mode", category: "Composition", embed: 1 });
 declareattribute("slot_behaviors", { type: "symbol", label: "Slot Behaviors (0=Glide, 1=Snap)", setter: "set_slot_behaviors", getter: "get_slot_behaviors", category: "Composition", embed: 1 });
 declareattribute("normalize", { type: "int", style: "onoff", label: "Normalize Phase (0-1)", setter: "set_normalize", getter: "get_normalize", category: "Range & Timing", embed: 1 });

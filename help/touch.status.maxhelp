@@ -9,7 +9,7 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 100.0, 100.0, 1107.0, 918.0 ],
+        "rect": [ 100.0, 100.0, 1515.0, 914.0 ],
         "default_fontname": "SF Pro Text",
         "subpatcher_template": "wil.new.2026",
         "boxes": [
@@ -23,7 +23,6 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 175.0, 364.5833194255829, 81.0, 39.0 ],
-                    "presentation_linecount": 2,
                     "text": "change morphing"
                 }
             },
