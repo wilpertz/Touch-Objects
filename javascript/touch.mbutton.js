@@ -526,11 +526,24 @@ function output_state(changed_index) {
       }
     }
 
-    var full_list = [];
-    for (var s = 0; s < count; s++) {
-      full_list.push(states[s] > 0 ? 1 : 0);
+    if (group_mode === 1) {
+      // Live Mode: Find the active button and output its integer index (0, 1, 2...)
+      var activeIdx = 0;
+      for (var s = 0; s < count; s++) {
+        if (states[s] > 0) {
+          activeIdx = s;
+          break;
+        }
+      }
+      outlet(0, activeIdx);
+    } else {
+      // Independent Mode: Output the full list [0 1 0 0...]
+      var full_list = [];
+      for (var s = 0; s < count; s++) {
+        full_list.push(states[s] > 0 ? 1 : 0);
+      }
+      outlet(0, full_list);
     }
-    outlet(0, full_list);
   } finally {
     is_transmitting = false;
   }

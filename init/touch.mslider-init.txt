@@ -1,0 +1,2 @@
+
+max define touch.mslider v8ui @filename touch.mslider.js;

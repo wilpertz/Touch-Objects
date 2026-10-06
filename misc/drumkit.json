@@ -1,73 +1,11 @@
 {
-    "pattrstorage": {
-        "name": "drumkit",
-        "slots": {
-            "1": {
-                "id": 1,
-                "data": {
-                    "sound1": [ 0 ],
-                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
-                    "touch_status_712677": [ 1 ],
-                    "volume": [ 0.522407463654784 ],
-                    "wil.beatmaker_4[1]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[3]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "t.send.instancer.submaxpat::chans_out": [ 0, 0, 0, 0, 0, 0, 0, 0 ]
-                }
-            },
-            "2": {
-                "id": 2,
-                "data": {
-                    "sound1": [ 0 ],
-                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
-                    "touch_status_712677": [ 2 ],
-                    "volume": [ 0.522407463654784 ],
-                    "wil.beatmaker_4[1]::time_type": [ 1.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 1.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 8, 1, 0, 8, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 2, 2, 2, 2, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[3]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "t.send.instancer.submaxpat::chans_out": [ 1, 1, 1, 1, 0, 0, 0, 0 ]
-                }
-            },
-            "3": {
-                "id": 3,
-                "data": {
-                    "sound1": [ 0 ],
-                    "filtergraph~": [ 1, 0, 2, 1, 0, 0, 157.0755615234375, 2.1848912239074707, 1.7663471698760986 ],
-                    "touch_status_712677": [ 3 ],
-                    "volume": [ 0.522407463654784 ],
-                    "wil.beatmaker_4[1]::time_type": [ 1.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[1]::beat_sub::subdiv": [ 2.0 ],
-                    "wil.beatmaker_4[1]::beat_sub::proba": [ 3, 12, 1, 0, 12, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[2]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[2]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[2]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "wil.beatmaker_4[3]::time_type": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::bpm": [ 3 ],
-                    "wil.beatmaker_4[3]::beat_sub::subdiv": [ 0.0 ],
-                    "wil.beatmaker_4[3]::beat_sub::proba": [ 3, 4, 1, 0, 0, 2, 2, 2, 2 ],
-                    "t.send.instancer.submaxpat::chans_out": [ 1, 1, 1, 1, 1, 1, 1, 1 ]
-                }
-            }
-        }
-    }
+    "slot_0": "{\"name\":\"Off\",\"controls\":{\"preamp_1::preamp\":{\"val\":[-20,0]},\"vol_1::rdial~\":{\"val\":0},\"preamp_2::preamp\":{\"val\":[-20,0]},\"vol_2::rdial~\":{\"val\":0},\"preamp_3::preamp\":{\"val\":[-20,0]},\"vol_3::rdial~\":{\"val\":0.14535826538005478}}}",
+    "slot_1": "{\"name\":\"Beat 1\",\"controls\":{\"preamp_1::preamp\":{\"val\":[-20,0]},\"vol_1::rdial~\":{\"val\":83.4428684359179},\"preamp_2::preamp\":{\"val\":[-20,0]},\"vol_2::rdial~\":{\"val\":78.39971552048615},\"preamp_3::preamp\":{\"val\":[-20,0]},\"vol_3::rdial~\":{\"val\":44.16820896682416}}}",
+    "slot_2": "{\"name\":\"Beat 2\",\"controls\":{}}",
+    "slot_3": "{\"name\":\"Beat 3\",\"controls\":{}}",
+    "slot_4": "{\"name\":\"Beat4\",\"controls\":{}}",
+    "slot_5": "{\"name\":\"Beat 5\",\"controls\":{}}",
+    "slot_6": "{\"name\":\"Beat 6\",\"controls\":{}}",
+    "slot_7": "{\"name\":\"Beat7\",\"controls\":{}}",
+    "slot_8": "{\"name\":\"Beat 8\",\"controls\":{}}"
 }

@@ -75,6 +75,22 @@ function scan_local_controls() {
 
   function traverse(p, pathPrefix) {
     if (!p) return;
+
+    // 1. Check if this subpatch contains a statusmini chip
+    let miniName = "";
+    let checkObj = p.firstobject;
+    while (checkObj) {
+      if (checkObj.varname && (checkObj.maxclass === "jsui" || checkObj.maxclass === "v8ui")) {
+        const fn = String(checkObj.getattr("filename") || "");
+        if (fn.indexOf("statusmini") !== -1) {
+          miniName = String(checkObj.varname);
+          break;
+        }
+      }
+      checkObj = checkObj.nextobject;
+    }
+
+    // 2. Traverse objects
     let o = p.firstobject;
     while (o) {
       const sub = o.subpatcher();
@@ -89,7 +105,12 @@ function scan_local_controls() {
           if (!vname || vname === "v8ui" || vname.startsWith("v8ui_") || vname.startsWith("p_panel")) {
             // Skip utility wrappers
           } else if (mclass === "jsui" || mclass === "v8ui") {
-            const fullKey = pathPrefix ? `${pathPrefix}::${o.varname}` : o.varname;
+            let fullKey = pathPrefix ? `${pathPrefix}::${vname}` : vname;
+            
+            // If another control sits next to a mini, nest it inside the mini's tree branch!
+            if (miniName && vname !== miniName) {
+              fullKey = pathPrefix ? `${pathPrefix}::${miniName}::${vname}` : `${miniName}::${vname}`;
+            }
             discoveredControls[fullKey] = o;
           }
         }
@@ -99,7 +120,6 @@ function scan_local_controls() {
   }
   traverse(this.patcher, "");
 }
-
 function get_control_live_val(o) {
   if (!o) return "---";
   try {
