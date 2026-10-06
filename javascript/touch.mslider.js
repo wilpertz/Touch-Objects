@@ -198,6 +198,19 @@ function calculate_curve_shape(mode_idx, all_val, center_val, height_val, shape_
   }
   return out;
 }
+// Throttle engine: limits mc.line~ / outlet message bursts to 60fps (16ms) during drags
+var curve_output_pending = false;
+var curve_output_task = new Task(function() {
+  curve_output_pending = false;
+  output_all_values();
+}, this);
+
+function schedule_curve_output() {
+  if (!curve_output_pending) {
+    curve_output_pending = true;
+    curve_output_task.schedule(16);
+  }
+}
 
 // Master curve generation
 function generate_curve() {
@@ -206,7 +219,12 @@ function generate_curve() {
     vals[i] = cVals[i];
     target_vals[i] = vals[i];
   }
-  output_all_values();
+  // If user is actively dragging in the pod, throttle output to prevent audio dropouts
+  if (active_curve_dial !== -1) {
+    schedule_curve_output();
+  } else {
+    output_all_values();
+  }
   redraw_all();
 }
 
@@ -309,9 +327,7 @@ function mark_dirty() {
 
 function redraw_all() {
   mgraphics.redraw();
-  if (typeof notifyclients === "function") notifyclients();
   if (showSettings && popupWindow && popupWindow.visible) draw_popup_to_window();
-  if (showCurveWindow && curveWindow && curveWindow.visible) draw_curve_window();
 }
 
 function getScaledValue(idx) {
@@ -335,14 +351,30 @@ function getGainValue(idx) {
 function get_dimensions() {
   var sz = mgraphics.size;
   if (sz && sz[0] > 0 && sz[1] > 0) {
-    current_w = sz[0]; current_h = sz[1];
+    current_w = sz[0];
+    current_h = sz[1];
     return { w: current_w, h: current_h };
   }
-  if (this.box && this.box.rect) {
-    var r = this.box.rect;
-    current_w = Math.max(1, r[2] - r[0]);
-    current_h = Math.max(1, r[3] - r[1]);
+
+  // Only query patcher/box attributes if cached dimensions are uninitialized
+  if (current_w <= 10 || current_h <= 10) {
+    if (this.patcher && this.patcher.getattr && this.patcher.getattr("presentation") === 1) {
+      if (this.box) {
+        var pr = this.box.getattr("presentation_rect");
+        if (pr && pr.length >= 4 && pr[2] > 0 && pr[3] > 0) {
+          current_w = pr[2];
+          current_h = pr[3];
+          return { w: current_w, h: current_h };
+        }
+      }
+    }
+    if (this.box && this.box.rect) {
+      var r = this.box.rect;
+      current_w = Math.max(1, r[2] - r[0]);
+      current_h = Math.max(1, r[3] - r[1]);
+    }
   }
+
   return { w: current_w, h: current_h };
 }
 
@@ -609,13 +641,14 @@ function ondrag(x, y, button) {
 }
 
 function onmouseup() {
-  if (isMouseDown) {
-    outlet(3, 0); 
+  if (active_dial_pressed !== -1) {
+    outlet(3, 0); // Release index
+    if (typeof notifyclients === "function") notifyclients(); // Clean pattr update
   }
-  isMouseDown = false;
-  last_drag_idx = -1;
-  active_touch_idx = -1;
+  active_dial_pressed = -1;
+  is_dragging = 0;
   is_scrolling_drag = 0;
+  hold_gate_passed = 0;
   if (backgroundTask) {
     backgroundTask.cancel();
     backgroundTask = null;
@@ -1014,10 +1047,13 @@ function curveWindowListenerCallback(event) {
     var args = arrayfromargs(event.args);
     var mx = args[0], my = args[1], mbut = args[2];
     
-    if (mbut === 0) { 
-      active_curve_dial = -1; 
-      last_curve_mouse_y = 0; 
-      return; 
+    if (mbut === 0) {
+      if (active_curve_dial !== -1) {
+        output_all_values(); // Flush final values to audio thread on release
+      }
+      active_curve_dial = -1;
+      last_curve_mouse_y = 0;
+      return;
     }
 
     // Red Close Dot
@@ -1030,7 +1066,7 @@ function curveWindowListenerCallback(event) {
       else if (mx >= mBoxX + mBoxW - 30) gen_mode = (gen_mode + 1) % 4;
       else gen_mode = (gen_mode + 1) % 4;
       generate_curve();
-      draw_curve_window();
+      
       return;
     }
 
