@@ -290,6 +290,11 @@ function anything() {
   var msg = messagename.trim();
   var args = arrayfromargs(arguments);
 
+  // --- 0. DISMISS SPAT5 BINARY BUNDLES IMMEDIATELY ---
+  if (msg === "FullPacket") {
+    return;
+  }
+
   if (msg === "update" || msg === "theme_update" || msg === "refresh" || msg === "refresh_theme") {
     if (themeBus && themeBus.theme) onThemeUpdate(themeBus.theme);
     else loadThemeFromDict();
@@ -470,17 +475,20 @@ function draw_monitor_view(ctx, w, h, is_preview) {
   var rw = Math.max(1, w - b);
   var rh = Math.max(1, h - b);
 
-  if (show_background) {
+  if (Boolean(show_background)) {
     ctx.set_source_rgba(col_bg);
     ctx.rectangle(0, 0, w, h);
     ctx.fill();
   }
 
   var halfW = w * 0.5;
+  var halfH = h * 0.5;
 
   if (hud_display_mode === 0) {
+    // 0: Single Top View
     draw_viewport(ctx, 0, 0, w, h, "xy", w, is_preview);
-  } else {
+  } else if (hud_display_mode === 1) {
+    // 1: Left / Right Dual Ortho
     draw_viewport(ctx, 0, 0, halfW, h, "xy", halfW, is_preview);
     draw_viewport(ctx, halfW, 0, halfW, h, "xz", halfW, is_preview);
 
@@ -489,10 +497,20 @@ function draw_monitor_view(ctx, w, h, is_preview) {
     ctx.move_to(halfW, 0);
     ctx.line_to(halfW, h);
     ctx.stroke();
+  } else {
+    // 2: Top / Bottom Dual Ortho
+    draw_viewport(ctx, 0, 0, w, halfH, "xy", w, is_preview);
+    draw_viewport(ctx, 0, halfH, w, halfH, "xz", w, is_preview);
+
+    ctx.set_source_rgba(0.22, 0.22, 0.24, 1.0);
+    ctx.set_line_width(1.0);
+    ctx.move_to(0, halfH);
+    ctx.line_to(w, halfH);
+    ctx.stroke();
   }
 
   // Outer corner borders
-  if (show_borders === 1 && b > 0 && border_color && border_color[3] > 0.001) {
+  if (Boolean(show_borders) && b > 0 && border_color && border_color[3] > 0.001) {
     var extVal = isNaN(border_extension) ? 6.0 : border_extension;
     draw_corners(ctx, inset, inset, rw, rh, border_radius, extVal, extVal, border_color, b);
   }
@@ -536,8 +554,9 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
   ctx.line_to(cx, vy + vh);
   ctx.stroke();
 
-  // 2. Concentric Distance Rings (Clipped at divider when overlapping)
+  // 2. Grid (Circular or Cartesian)
   if (hud_grid_mode === 1) {
+    // 2A. Circular Concentric Rings
     ctx.set_source_rgba(col_ring);
     ctx.set_line_width(is_preview ? 0.6 : 0.85);
 
@@ -546,7 +565,7 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
       if (ringR <= 0.5) continue;
 
       ctx.new_path();
-      if (ringR <= distToDivider || hud_display_mode === 0) {
+      if (ringR <= distToDivider || hud_display_mode === 0 || hud_display_mode === 2) {
         ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
         ctx.stroke();
       } else {
@@ -561,6 +580,31 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
           ctx.arc(cx, cy, ringR, -Math.PI + theta, Math.PI - theta);
           ctx.stroke();
         }
+      }
+    }
+  } else if (hud_grid_mode === 2) {
+    // 2B. Cartesian Grid Lines
+    ctx.set_source_rgba(col_ring);
+    ctx.set_line_width(is_preview ? 0.6 : 0.85);
+
+    for (var g = 1; g <= num_rings; g++) {
+      var offset = R_step_px * g;
+      if (offset <= 0.5) continue;
+
+      // Horizontal lines
+      if (cy - offset >= vy) {
+        ctx.new_path(); ctx.move_to(vx, cy - offset); ctx.line_to(vx + vw, cy - offset); ctx.stroke();
+      }
+      if (cy + offset <= vy + vh) {
+        ctx.new_path(); ctx.move_to(vx, cy + offset); ctx.line_to(vx + vw, cy + offset); ctx.stroke();
+      }
+
+      // Vertical lines
+      if (cx - offset >= vx) {
+        ctx.new_path(); ctx.move_to(cx - offset, vy); ctx.line_to(cx - offset, vy + vh); ctx.stroke();
+      }
+      if (cx + offset <= vx + vw) {
+        ctx.new_path(); ctx.move_to(cx + offset, vy); ctx.line_to(cx + offset, vy + vh); ctx.stroke();
       }
     }
   }
@@ -599,8 +643,8 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
     }
   }
 
-  // 5. Draw Speakers (Never aggressively culled!)
-  if (hud_speakers_vis) {
+  // 5. Draw Speakers
+  if (Boolean(hud_speakers_vis)) {
     var spkScale = is_preview ? Math.max(10.0, speaker_size * 0.9) : speaker_size;
     for (var spkId in speakers) {
       var spk = speakers[spkId];
@@ -614,8 +658,8 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
     }
   }
 
-  // 6. Draw Sources (Never aggressively culled!)
-  if (hud_sources_visible) {
+  // 6. Draw Sources
+  if (Boolean(hud_sources_visible)) {
     var srcScale = is_preview ? Math.max(6.5, source_size * 0.9) : source_size;
     for (var srcId in sources) {
       var src = sources[srcId];
@@ -630,7 +674,7 @@ function draw_viewport(ctx, vx, vy, vw, vh, mode, dividerX, is_preview) {
   }
 
   // 7. Distance Scale Legend
-  if (show_scale_bar && vh >= 80) {
+  if (Boolean(show_scale_bar) && vh >= 80) {
     var barX2 = vx + vw - 16;
     var barX1 = barX2 - R_step_px;
     var barY  = vy + vh - 14;
@@ -680,20 +724,24 @@ function draw_speaker_node(ctx, x, y, label, size) {
 }
 
 function draw_source_node(ctx, x, y, label, radius) {
-  ctx.set_source_rgba(col_src_bg);
+  // Apply Source Emphasis scaling
+  var emphasis = clamp(hud_emphasis_pct / 100.0, 0.05, 1.0);
+  var effRadius = Math.max(3.0, radius * (0.35 + 0.65 * emphasis));
+
+  ctx.set_source_rgba([col_src_bg[0], col_src_bg[1], col_src_bg[2], (col_src_bg[3] || 1.0) * (0.2 + 0.8 * emphasis)]);
   ctx.new_path();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.arc(x, y, effRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.set_source_rgba(col_src_border);
+  ctx.set_source_rgba([col_src_border[0], col_src_border[1], col_src_border[2], (col_src_border[3] || 1.0) * (0.2 + 0.8 * emphasis)]);
   ctx.set_line_width(0.9);
   ctx.new_path();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.arc(x, y, effRadius, 0, Math.PI * 2);
   ctx.stroke();
 
-  if (radius >= 4.5) {
+  if (effRadius >= 4.0 && emphasis >= 0.25) {
     ctx.select_font_face("Arial", "normal", "bold");
-    ctx.set_font_size(Math.max(6, Math.min(11, radius * 1.05)));
+    ctx.set_font_size(Math.max(6, Math.min(11, effRadius * 1.05)));
     ctx.set_source_rgba(0.05, 0.05, 0.05, 1.0);
     var tm = ctx.text_measure(label);
     ctx.move_to(x - tm[0] * 0.5, y + tm[1] * 0.35);
@@ -849,6 +897,9 @@ function get_visible_rows_map() {
     // Row 8: Speakers Visible
     list.push({ name: "Speakers Visible", val: hud_speakers_vis ? "ON" : "OFF", is_toggle: true, target_id: 108 });
 
+    // Row 9: Speaker Shape
+    list.push({ name: "Speaker Shape", val: hud_speaker_shape === 0 ? "Square" : "Circle", is_toggle: true, target_id: 109 });
+
   } else if (active_mask_tab === 1) {
     list.push({ name: "Borders", val: show_borders ? "ON" : "OFF", is_toggle: true, target_id: 201 });
     list.push({ name: "Background", val: show_background ? "ON" : "OFF", is_toggle: true, target_id: 202 });
@@ -877,7 +928,9 @@ function get_popup_dimensions() {
   if (!show_settings_attrs) {
     return { w: Math.max(popup_mini_w, 200), h: Math.max(popup_mini_h, 130) };
   }
-  var fixedH = 28 + 80 + 8 + 22 + 8 + (8 * 28) + 16;
+  var rows = get_visible_rows_map();
+  var rowCount = Math.max(rows.length, 8);
+  var fixedH = 28 + 80 + 8 + 22 + 8 + (rowCount * 28) + 16;
   return { w: popup_window_width, h: fixedH };
 }
 
@@ -1022,7 +1075,7 @@ function draw_popup_to_window_deferred() {
     pCtx.move_to(navX + (navW - tabTm[0]) * 0.5, navY + 15);
     pCtx.show_text(tabTitle);
 
-    // 8 Attribute Rows
+    // Attribute Rows
     var rowsStartY = navY + navH + 8;
     var rowW = w - 24, rowX = 12;
     var midX = rowX + rowW * 0.5;
@@ -1065,7 +1118,7 @@ function draw_popup_to_window_deferred() {
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.fill();
 
-        // Themed Active Fill (attr_slider_color)
+        // Active Slider Fill
         var fillW = Math.max(0, Math.min(valBoxW, r.pct * valBoxW));
         pCtx.set_source_rgba(attr_slider_color);
         pCtx.rectangle(valBoxX, vY, fillW, vH);
@@ -1081,7 +1134,7 @@ function draw_popup_to_window_deferred() {
         pCtx.move_to(valBoxX + 6, rY + 17);
         pCtx.show_text(String(r.val));
       } else {
-        // Themed Toggle
+        // Toggle Button
         pCtx.set_source_rgba(attr_bg_color);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.fill();
@@ -1215,7 +1268,7 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // When Attributes are Hidden: Initiate Window Move or Corner Resize
+    // When Attributes are Hidden: Initiate Move or Resize
     if (!has_rows) {
       if (mx >= w - 18 && my >= h - 18) {
         is_resizing_window = 1;
@@ -1237,7 +1290,7 @@ function windowListenerCallback(event) {
       return;
     }
 
-    // Carousel Navigation Bar Hit (Only active in Full Attribute View)
+    // Carousel Navigation Bar Hit
     if (my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
       if (mx <= navX + btnW + 4) {
         active_mask_tab = (active_mask_tab - 1 + 3) % 3;
@@ -1263,13 +1316,14 @@ function windowListenerCallback(event) {
         } else {
           if (r.target_id === 101) hud_grid_mode = (hud_grid_mode + 1) % 3;
           else if (r.target_id === 103) hud_display_mode = (hud_display_mode + 1) % 3;
-          else if (r.target_id === 104) hud_zoom_lock = !hud_zoom_lock;
-          else if (r.target_id === 105) hud_sources_visible = !hud_sources_visible;
-          else if (r.target_id === 106) hud_sources_edit = !hud_sources_edit;
-          else if (r.target_id === 108) hud_speakers_vis = !hud_speakers_vis;
-          else if (r.target_id === 201) show_borders = !show_borders;
-          else if (r.target_id === 202) show_background = !show_background;
-          else if (r.target_id === 208) show_scale_bar = !show_scale_bar;
+          else if (r.target_id === 104) hud_zoom_lock = hud_zoom_lock ? 0 : 1;
+          else if (r.target_id === 105) hud_sources_visible = hud_sources_visible ? 0 : 1;
+          else if (r.target_id === 106) hud_sources_edit = hud_sources_edit ? 0 : 1;
+          else if (r.target_id === 108) hud_speakers_vis = hud_speakers_vis ? 0 : 1;
+          else if (r.target_id === 109) hud_speaker_shape = (hud_speaker_shape + 1) % 2;
+          else if (r.target_id === 201) show_borders = show_borders ? 0 : 1;
+          else if (r.target_id === 202) show_background = show_background ? 0 : 1;
+          else if (r.target_id === 208) show_scale_bar = show_scale_bar ? 0 : 1;
           else if (r.is_color) {
             ensurePopupWindows();
             active_color_target = r.key;
@@ -1290,7 +1344,7 @@ function windowListenerCallback(event) {
 }
 
 // ============================================================================
-// SUB-WINDOW: COLOR PICKER (HSV Matrix with Restored Reticles & Dynamic Title)
+// SUB-WINDOW: COLOR PICKER
 // ============================================================================
 function get_color_target(name) {
   if (name === "col_bg") return col_bg;
@@ -1361,6 +1415,7 @@ function applyPickerToTarget() {
     }
   }
   queue_draw();
+  draw_popup_to_window(); // Live update inspector swatches
 }
 
 function draw_color_picker_popup() {
@@ -1426,7 +1481,7 @@ function draw_color_picker_popup() {
   ctx.rectangle_rounded(svX, svY, svW, svH, 3, 3);
   ctx.fill();
 
-  // Sat/Val Reticle Ring
+  // Reticle Ring
   var svIndX = svX + cur_s * svW;
   var svIndY = svY + (1.0 - cur_v) * svH;
   ctx.set_source_rgba(cur_v > 0.4 ? [0, 0, 0, 0.9] : [1, 1, 1, 0.9]);
@@ -1456,7 +1511,7 @@ function draw_color_picker_popup() {
   ctx.arc(opIndX, opY + opH * 0.5, 4.5, 0, Math.PI * 2);
   ctx.stroke();
 
-  // 4. Preview Swatch at Bottom
+  // 4. Preview Swatch
   var swX = 10, swY = 196, swW = 180, swH = 34;
   ctx.set_source_rgba(curRGB[0], curRGB[1], curRGB[2], cur_a);
   ctx.rectangle_rounded(swX, swY, swW, swH, 3, 3);

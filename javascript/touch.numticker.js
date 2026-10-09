@@ -1,8 +1,8 @@
 // ============================================================================
 // touch.numticker.js - Max 9 v8ui / jsui
 // High-Precision Touch/Mouse Numeric Controller with Specialized Labelling,
-// 50/50 Attrui Inspector, 5-Tier Performance Masks, Full Popup Theme Engine,
-// Mode Color Sync, Dynamic Number Spacing (5%-35%), and Chained Tag Layout.
+// 5-Tab Carousel Inspector, Stepper Math (SSM x Base 1-9), Auto-Repeat Steppers,
+// Single-Click Precision Guard, Mode Color Sync, and Dynamic Number Spacing.
 // ============================================================================
 
 autowatch = 1;
@@ -23,14 +23,23 @@ var uniqueID = Math.floor(Math.random() * 1000000);
 var val = 0.0;
 var mode = 0;                  // 0 = Mouse, 1 = Touch
 var touch_type = 1;            // 0 = Sliders, 1 = Pad
-var step_size = 1.0;
 var hold_speed = 50.0;
 var allow_popup = 1;
 var integer_digits = 4;
 var decimal_digits = 2;
 var leading_zeros = 1;
 var speed_control = 1.0;
-var is_transmitting = false; //
+var is_transmitting = false;
+
+// Discrete Step Sizing (Base 1..9 x Multiplier 0.001..100)
+var step_multipliers = [0.001, 0.01, 0.1, 1.0, 10.0, 100.0];
+var step_mult_idx    = 3;      // Default: 1.0
+var step_base        = 1;      // Default: 1 (1 to 9, no zero)
+
+function get_effective_step() {
+  var mult = step_multipliers[step_mult_idx] !== undefined ? step_multipliers[step_mult_idx] : 1.0;
+  return step_base * mult;
+}
 
 // Spacing & Layout
 var number_spacing = 0.10;     // Digit gap ratio (0.05 to 0.35 -> 5% to 35% of font size)
@@ -60,11 +69,11 @@ var textcolor        = [0.95, 0.96, 0.98, 1.0];
 var decimal_color    = [0.93, 0.96, 0.22, 1.0];
 var border_color     = [0.42, 0.42, 0.48, 1.0];
 var highlight_color  = [1.00, 0.22, 0.25, 1.0];
-var mode_color       = [0.85, 0.85, 0.90, 1.0]; // Color Mode from Theme Master
+var mode_color       = [0.85, 0.85, 0.90, 1.0];
 var tag_color        = [0.85, 0.85, 0.90, 1.0];
 var popup_dot_color  = [0.85, 0.85, 0.85, 0.70];
 
-// Popup Attrui UI Colors (Full 5-Color Theme Suite)
+// Popup Attrui UI Colors
 var pop_bgcolor       = [0.12, 0.12, 0.15, 1.0];
 var attr_bg_color     = [0.22, 0.22, 0.22, 1.0];
 var attr_border_color = [0.28, 0.28, 0.32, 1.0];
@@ -72,19 +81,16 @@ var attr_slider_color = [0.50, 0.50, 0.50, 1.0];
 var attr_text_color   = [1.00, 1.00, 1.00, 1.0];
 
 // Tag Configuration
-var name_tag_on   = 1;         // Name Tag Visible
+var name_tag_on   = 1;
 var name_tag_text = "Tempo";
 var tag_position  = 2;         // 0 = Top, 1 = Bottom, 2 = Left, 3 = Right
 var name_tag_x    = 0;
 var name_tag_y    = 0;
 
-// Standard 5-Tier Popup Visibility Masks
+// Carousel Inspector State (5 Tabs)
 var show_settings_attrs = 1;
-var mask_performance   = 1;
-var mask_labels        = 1;
-var mask_geometry      = 1;
-var mask_colors        = 1;
-var mask_popup_colors  = 1;
+var active_mask_tab     = 0;
+var mask_tab_names      = ["1. Performance", "2. Geometry", "3. Labels", "4. Colors", "5. Popup Colors"];
 
 var popup_window_width = 270;
 var popup_mini_w       = 270;
@@ -94,6 +100,11 @@ var start_click_x      = 0;
 var start_click_y      = 0;
 var start_resize_w     = 270;
 var start_resize_h     = 95;
+
+// Stepper Repeat Engine
+var stepper_repeat_task = null;
+var stepper_target_id   = -1;
+var stepper_dir         = 0;
 
 // Interaction Tracking
 var active_col = -1;
@@ -117,7 +128,6 @@ var pop_mouse_down = 0;
 var mouse_is_down = 0;
 var hold_task = null;
 var hold_dir = 1;
-var hold_count = 0;
 
 var showSettings = 0;
 var showTouch = 0;
@@ -130,7 +140,7 @@ var active_color_target = "background_color";
 var popupWindow = new JitterObject("jit.window", "vsl_set_" + uniqueID);
 popupWindow.floating = 1; popupWindow.visible = 0; popupWindow.border = 1; popupWindow.grow = 0;
 popupWindow.title = "Touch Numticker Settings";
-popupWindow.size = [popup_window_width, 420];
+popupWindow.size = [popup_window_width, 360];
 
 var colorWindow = new JitterObject("jit.window", "vsl_col_" + uniqueID);
 colorWindow.floating = 1; colorWindow.visible = 0; colorWindow.border = 1; colorWindow.grow = 0;
@@ -257,8 +267,32 @@ bus.subscribers[uniqueID] = onBusMessage;
 loadThemeFromDict();
 
 // =============================================================
-// 4. SPECIALIZED LABELLING ENGINE
+// 4. STEPPER REPEAT LOGIC & LABELLING ENGINE
 // =============================================================
+function step_stepper_value(target_id, dir) {
+  if (target_id === 18) {
+    step_mult_idx = Math.max(0, Math.min(step_multipliers.length - 1, step_mult_idx + dir));
+  } else if (target_id === 10) {
+    step_base = Math.max(1, Math.min(9, step_base + dir));
+  } else if (target_id === 1) {
+    set_integer_digits(integer_digits + dir);
+  } else if (target_id === 2) {
+    set_decimal_digits(decimal_digits + dir);
+  } else if (target_id === 15) {
+    set_text_size(text_size + dir);
+  }
+  draw_popup_to_window();
+}
+
+function stop_stepper_repeat() {
+  stepper_target_id = -1;
+  stepper_dir = 0;
+  if (stepper_repeat_task) {
+    try { stepper_repeat_task.cancel(); } catch (e) {}
+    stepper_repeat_task = null;
+  }
+}
+
 function cleanQuotes(str) {
   if (!str || typeof str !== "string") return "";
   var s = str.trim();
@@ -333,23 +367,35 @@ function cancel_hold() {
   mouse_is_down = 0;
   if (hold_task) {
     try { hold_task.cancel(); } catch (e) {}
+    hold_task = null;
   }
-  hold_count = 0;
 }
 
-function hold_task_fn() {
-  if (mouse_is_down !== 1 || active_col !== -1 || active_pop_col !== -1 || mode === 1) {
-    cancel_hold();
-    return;
+// Starts auto-repeating only AFTER the 350ms hold threshold has passed
+function start_hold_repeater() {
+  if (hold_task) {
+    try { hold_task.cancel(); } catch (e) {}
+    hold_task = null;
   }
-  hold_count++;
-  if (hold_count === 1) {
-    hold_task.interval = Math.max(10.0, parseFloat(hold_speed) || 50.0);
-  }
-  val += hold_dir * step_size;
-  clampValue();
-  outlet(0, val);
-  redraw_all();
+
+  hold_task = new Task(function() {
+    if (mouse_is_down !== 1 || active_col !== -1 || active_pop_col !== -1 || mode === 1) {
+      cancel_hold();
+      return;
+    }
+    // Increment on held ticks
+    val = Math.round((val + hold_dir * get_effective_step()) * 1e8) / 1e8;
+    clampValue();
+    outlet(0, val);
+    redraw_all();
+
+    // Reschedule continuous repetition
+    if (hold_task && mouse_is_down === 1) {
+      hold_task.schedule(Math.max(10.0, parseFloat(hold_speed) || 50.0));
+    }
+  }, this);
+
+  hold_task.schedule(350); // Initial 350ms delay
 }
 
 function clampValue() {
@@ -449,7 +495,6 @@ function draw_ticker_full(ctx, width, height, is_preview) {
   ctx.set_source_rgba(background_color || [0.12, 0.12, 0.14, 1.0]);
   ctx.fill();
 
-  var ext = Math.max(0, (parseFloat(border_extension) || 0) * scaleRatio);
   var thick = Math.max(0.5, (parseFloat(border_thickness) || 1.0) * (is_preview ? Math.min(scaleRatio, 1.5) : 1.0));
   var inset = thick * 0.5;
   var rw = width - thick;
@@ -459,7 +504,7 @@ function draw_ticker_full(ctx, width, height, is_preview) {
   ctx.set_line_width(thick);
   ctx.set_source_rgba(border_color || [0.42, 0.42, 0.48, 1.0]);
 
-  // Top-Left Corner
+  // Top-Left
   ctx.new_path();
   ctx.move_to(inset, inset + r + ext); 
   ctx.line_to(inset, inset + r);
@@ -468,7 +513,7 @@ function draw_ticker_full(ctx, width, height, is_preview) {
   ctx.line_to(inset + r + ext, inset); 
   ctx.stroke();
 
-  // Top-Right Corner
+  // Top-Right
   ctx.new_path();
   ctx.move_to(inset + rw - r - ext, inset); 
   ctx.line_to(inset + rw - r, inset);
@@ -477,7 +522,7 @@ function draw_ticker_full(ctx, width, height, is_preview) {
   ctx.line_to(inset + rw, inset + r + ext); 
   ctx.stroke();
 
-  // Bottom-Right Corner
+  // Bottom-Right
   ctx.new_path();
   ctx.move_to(inset + rw, inset + rh - r - ext); 
   ctx.line_to(inset + rw, inset + rh - r);
@@ -486,7 +531,7 @@ function draw_ticker_full(ctx, width, height, is_preview) {
   ctx.line_to(inset + rw - r - ext, inset + rh); 
   ctx.stroke();
 
-  // Bottom-Left Corner
+  // Bottom-Left
   ctx.new_path();
   ctx.move_to(inset + r + ext, inset + rh); 
   ctx.line_to(inset + r, inset + rh);
@@ -538,7 +583,6 @@ function draw_ticker_full(ctx, width, height, is_preview) {
     }
   }
 
-  // Configurable 5% - 35% Digit Spacing
   var gap = curFontSize * number_spacing;
   var totalW = 0;
   for (var k = 0; k < tokens.length; k++) {
@@ -554,7 +598,6 @@ function draw_ticker_full(ctx, width, height, is_preview) {
     groupW = totalW + scaledTagGap + tagW;
   }
 
-  // Chained Layout Engine: Tag moves & Numbers follow consistently
   var baseStartX = Math.max(8, (width - groupW) * 0.5);
   var curX = baseStartX;
   var tx = baseStartX;
@@ -643,7 +686,7 @@ function paint() {
 }
 
 // =============================================================
-// 6. POPUP SETTINGS (50/50 ATTRUI DIVISION - 5 TIERS)
+// 6. POPUP SETTINGS (5-TAB CAROUSEL & STEPPERS)
 // =============================================================
 function get_hit_col_preview(mx) {
   var offset = 12;
@@ -663,34 +706,37 @@ function get_visible_rows() {
   if (!show_settings_attrs) return [];
   var rows = [];
 
-  if (mask_performance === 1) {
+  if (active_mask_tab === 0) {
+    // TAB 1: PERFORMANCE
     rows.push({ name: "Value", val: val.toFixed(decimal_digits), is_touch_trigger: true, target_id: 100 });
     rows.push({ name: "Mode", val: mode === 0 ? "Touch" : "Mouse", is_toggle: true, target_id: 9 });
     rows.push({ name: "Touch UI", val: touch_type === 0 ? "Sliders" : "Pad", is_toggle: true, target_id: 11 });
-    rows.push({ name: "Step Size", val: step_size.toFixed(2), pct: Math.min(1.0, step_size / 10.0), is_slider: true, target_id: 10 });
-    rows.push({ name: "Hold Speed", val: hold_speed.toFixed(0) + "ms", pct: Math.min(1.0, hold_speed / 200.0), is_slider: true, target_id: 12 });
-  }
 
-  if (mask_labels === 1) {
+    var multVal = step_multipliers[step_mult_idx];
+    var multStr = multVal < 1 ? String(multVal) : multVal.toFixed(0);
+    rows.push({ name: "Step Multiplier", val: multStr, is_stepper: true, target_id: 18 });
+    rows.push({ name: "Step Size", val: step_base, is_stepper: true, target_id: 10 });
+
+    rows.push({ name: "Int Digits", val: integer_digits, is_stepper: true, target_id: 1 });
+    rows.push({ name: "Dec Digits", val: decimal_digits, is_stepper: true, target_id: 2 });
+  } else if (active_mask_tab === 1) {
+    // TAB 2: GEOMETRY (Hold Speed relocated here)
+    rows.push({ name: "Hold Speed", val: hold_speed.toFixed(0) + "ms", pct: Math.min(1.0, hold_speed / 200.0), is_slider: true, target_id: 12 });
+    rows.push({ name: "Leading Zeros", val: leading_zeros ? "ON" : "OFF", is_toggle: true, target_id: 3 });
+    rows.push({ name: "Num Spacing", val: Math.round(number_spacing * 100) + "%", pct: Math.min(1.0, Math.max(0.0, (number_spacing - 0.05) / 0.30)), is_slider: true, target_id: 16 });
+    rows.push({ name: "Radius", val: border_radius.toFixed(1), pct: border_radius / 25.0, is_slider: true, target_id: 4 });
+    rows.push({ name: "Thickness", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 7 });
+    rows.push({ name: "Extensions", val: border_extension.toFixed(1), pct: border_extension / 50.0, is_slider: true, target_id: 8 });
+  } else if (active_mask_tab === 2) {
+    // TAB 3: LABELS
     rows.push({ name: "Tag Visible", val: name_tag_on ? "ON" : "OFF", is_toggle: true, target_id: 5 });
     rows.push({ name: "Tag Position", val: ["Top", "Bottom", "Left", "Right"][tag_position], is_toggle: true, target_id: 6 });
     rows.push({ name: "Tag Gap", val: tag_gap.toFixed(0) + "px", pct: Math.min(1.0, tag_gap / 40.0), is_slider: true, target_id: 17 });
     rows.push({ name: "Prefix Style", val: label_mode_names[label_mode], is_toggle: true, target_id: 13 });
     rows.push({ name: "Prefix Case", val: case_mode_names[case_mode], is_toggle: true, target_id: 14 });
-  }
-
-  if (mask_geometry === 1) {
-    rows.push({ name: "Num Spacing", val: Math.round(number_spacing * 100) + "%", pct: Math.min(1.0, Math.max(0.0, (number_spacing - 0.05) / 0.30)), is_slider: true, target_id: 16 });
-    rows.push({ name: "Font Size", val: text_size, pct: Math.min(1.0, Math.max(0.0, (text_size - 6) / 18)), is_slider: true, target_id: 15 });
-    rows.push({ name: "Int Digits", val: integer_digits, pct: (integer_digits - 1) / 11, is_slider: true, target_id: 1 });
-    rows.push({ name: "Dec Digits", val: decimal_digits, pct: decimal_digits / 8, is_slider: true, target_id: 2 });
-    rows.push({ name: "Leading Zeros", val: leading_zeros ? "ON" : "OFF", is_toggle: true, target_id: 3 });
-    rows.push({ name: "Radius", val: border_radius.toFixed(1), pct: border_radius / 25.0, is_slider: true, target_id: 4 });
-    rows.push({ name: "Thickness", val: border_thickness.toFixed(1), pct: border_thickness / 10.0, is_slider: true, target_id: 7 });
-    rows.push({ name: "Extensions", val: border_extension.toFixed(1), pct: border_extension / 50.0, is_slider: true, target_id: 8 });
-  }
-
-  if (mask_colors === 1) {
+    rows.push({ name: "Font Size", val: text_size, is_stepper: true, target_id: 15 });
+  } else if (active_mask_tab === 3) {
+    // TAB 4: COMPONENT COLORS
     rows.push({ name: "Mode Color", val: mode_color, is_color: true, col: mode_color, key: "mode_color" });
     rows.push({ name: "BG Color", val: background_color, is_color: true, col: background_color, key: "background_color" });
     rows.push({ name: "Border Color", val: border_color, is_color: true, col: border_color, key: "border_color" });
@@ -698,9 +744,8 @@ function get_visible_rows() {
     rows.push({ name: "Popup Dot", val: popup_dot_color, is_color: true, col: popup_dot_color, key: "popup_dot_color" });
     rows.push({ name: "Decimal Col", val: decimal_color, is_color: true, col: decimal_color, key: "decimal_color" });
     rows.push({ name: "Highlight", val: highlight_color, is_color: true, col: highlight_color, key: "highlight_color" });
-  }
-
-  if (mask_popup_colors === 1) {
+  } else if (active_mask_tab === 4) {
+    // TAB 5: POPUP COLORS
     rows.push({ name: "Popup BG", val: pop_bgcolor, is_color: true, col: pop_bgcolor, key: "pop_bgcolor" });
     rows.push({ name: "Attr BG", val: attr_bg_color, is_color: true, col: attr_bg_color, key: "attr_bg_color" });
     rows.push({ name: "Attr Border", val: attr_border_color, is_color: true, col: attr_border_color, key: "attr_border_color" });
@@ -712,11 +757,9 @@ function get_visible_rows() {
 }
 
 function get_popup_dimensions() {
+  if (!show_settings_attrs) return { w: popup_mini_w, h: popup_mini_h };
   var rows = get_visible_rows();
-  if (!show_settings_attrs || rows.length === 0) {
-    return { w: popup_mini_w, h: popup_mini_h };
-  }
-  var calculated_h = 28 + 42 + 12 + rows.length * 28 + 14;
+  var calculated_h = 28 + 42 + 8 + 22 + 8 + (rows.length * 28) + 16;
   return { w: popup_window_width, h: calculated_h };
 }
 
@@ -804,37 +847,69 @@ function draw_popup_to_window_deferred() {
 
   if (has_rows) {
     var divY = prevY + prevH + 8;
-    pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
+    pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
     pCtx.set_line_width(1.0);
     pCtx.move_to(10, divY); pCtx.line_to(w - 10, divY); pCtx.stroke();
 
-    var sY = divY + 8;
-    var rowX = 12, rowW = w - 24;
-    var midX = rowX + rowW * 0.5;
+    // Carousel Navigation Bar
+    var navY = divY + 6, navH = 22, navW = w - 24, navX = 12;
+    pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.85);
+    pCtx.rectangle_rounded(navX, navY, navW, navH, 3, 3);
+    pCtx.fill();
+    pCtx.set_source_rgba(attr_border_color);
+    pCtx.set_line_width(1.0);
+    pCtx.rectangle_rounded(navX + 0.5, navY + 0.5, navW - 1, navH - 1, 3, 3);
+    pCtx.stroke();
+
+    var btnW = 24;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(navX + 1, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.select_font_face("Arial", "normal", "bold");
+    pCtx.set_font_size(10);
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(navX + 9, navY + 15); pCtx.show_text("<");
+
+    var rBtnX = navX + navW - btnW - 1;
+    pCtx.set_source_rgba(attr_bg_color);
+    pCtx.rectangle_rounded(rBtnX, navY + 1, btnW, navH - 2, 2, 2);
+    pCtx.fill();
+    pCtx.set_source_rgba(attr_text_color);
+    pCtx.move_to(rBtnX + 9, navY + 15); pCtx.show_text(">");
+
+    var tabTitle = mask_tab_names[active_mask_tab] || "Category";
+    var tabTm = pCtx.text_measure(tabTitle);
+    pCtx.set_source_rgba(border_color);
+    pCtx.move_to(navX + (navW - tabTm[0]) * 0.5, navY + 15);
+    pCtx.show_text(tabTitle);
+
+    var rowsStartY = navY + navH + 8;
+    var rowW = w - 24, rowX = 12;
+    var midX = 12 + rowW * 0.5;
     var valBoxX = midX + 4;
     var valBoxW = rowW * 0.5 - 8;
 
     pCtx.select_font_face(clean_font_name(font), font_slant, font_weight);
 
     for (var i = 0; i < rows.length; i++) {
-      var r = rows[i], rY = sY + i * 28;
+      var r = rows[i], rY = rowsStartY + i * 28;
 
       pCtx.set_source_rgba(attr_bg_color);
       pCtx.rectangle(rowX, rY, rowW, 26);
       pCtx.fill();
 
-      // Left 50%: Name
+      // Left: Name
       pCtx.set_source_rgba(attr_text_color);
       pCtx.set_font_size(10);
       pCtx.move_to(rowX + 6, rY + 17);
       pCtx.show_text(r.name);
 
       // Center Divider Notch
-      pCtx.set_source_rgba(border_color[0], border_color[1], border_color[2], 0.35);
+      pCtx.set_source_rgba(attr_border_color[0], attr_border_color[1], attr_border_color[2], 0.35);
       pCtx.set_line_width(1.0);
       pCtx.move_to(midX, rY + 3); pCtx.line_to(midX, rY + 23); pCtx.stroke();
 
-      // Right 50%: Value / Slider / Swatch
+      // Right: Value / Slider / Swatch / Stepper
       var vY = rY + 4, vH = 18;
 
       if (r.is_color) {
@@ -846,6 +921,31 @@ function draw_popup_to_window_deferred() {
         pCtx.set_line_width(1.0);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
         pCtx.stroke();
+      } else if (r.is_stepper) {
+        var arrowW = 20;
+        var valW = valBoxW - arrowW * 2;
+
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX, vY, arrowW, vH, 2, 2); pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color); pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + 6, rY + 16.5); pCtx.show_text("◀");
+
+        pCtx.set_source_rgba(0.08, 0.08, 0.10, 0.95);
+        pCtx.rectangle(valBoxX + arrowW, vY, valW, vH); pCtx.fill();
+        pCtx.set_source_rgba(highlight_color);
+        pCtx.select_font_face("Arial", "normal", "bold"); pCtx.set_font_size(10);
+        var stTm = pCtx.text_measure(String(r.val));
+        pCtx.move_to(valBoxX + arrowW + (valW - (stTm ? stTm[0] : 10)) * 0.5, rY + 17);
+        pCtx.show_text(String(r.val));
+        pCtx.select_font_face(clean_font_name(font), font_slant, font_weight);
+
+        pCtx.set_source_rgba(0.18, 0.19, 0.22, 1.0);
+        pCtx.rectangle_rounded(valBoxX + valBoxW - arrowW, vY, arrowW, vH, 2, 2); pCtx.fill();
+        pCtx.set_source_rgba(attr_text_color); pCtx.set_font_size(8);
+        pCtx.move_to(valBoxX + valBoxW - arrowW + 7, rY + 16.5); pCtx.show_text("▶");
+
+        pCtx.set_source_rgba(attr_border_color); pCtx.set_line_width(0.75);
+        pCtx.rectangle_rounded(valBoxX, vY, valBoxW, vH, 2, 2); pCtx.stroke();
       } else if (r.is_slider || r.pct !== undefined) {
         pCtx.set_source_rgba(0.12, 0.12, 0.14, 0.85);
         pCtx.rectangle(valBoxX, vY, valBoxW, vH);
@@ -858,7 +958,7 @@ function draw_popup_to_window_deferred() {
 
         pCtx.set_source_rgba(attr_border_color);
         pCtx.set_line_width(1.0);
-        pCtx.rectangle(valBoxX, vY, valBoxW, vH);
+        pCtx.rectangle(valBoxX, vY, fillW, vH);
         pCtx.stroke();
 
         pCtx.set_source_rgba(attr_text_color);
@@ -916,7 +1016,7 @@ function hsvToRgb(h, s, v) {
   var p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
   switch (i % 6) {
     case 0: r = v; g = t; b = p; break; case 1: r = q; g = v; b = p; break;
-    case 2: r = p; g = v; b = t; break; case 3: r = p; g = q; b = v; break;
+    case 2: r = p; g = v; b = t; break; case 3: r = p; g = v; b = p; break;
     case 4: r = t; g = p; b = v; break; case 5: r = v; g = p; b = q; break;
   }
   return [r, g, b];
@@ -1373,7 +1473,7 @@ var touchListener = new JitterListener(touchWindow.name, function(event) {
 });
 
 var windowListener = new JitterListener(popupWindow.name, function(event) {
-  if (event.eventname === "close") { showSettings = 0; is_resizing_window = 0; return; }
+  if (event.eventname === "close") { showSettings = 0; is_resizing_window = 0; stop_stepper_repeat(); return; }
   if (event.eventname === "mouse") {
     var args = arrayfromargs(event.args);
     var mx = args[0], my = args[1], mbut = args[2];
@@ -1386,7 +1486,12 @@ var windowListener = new JitterListener(popupWindow.name, function(event) {
 
     if (mbut === 0) {
       is_resizing_window = 0;
-      cancel_hold(); active_pop_target = -1; active_pop_col = -1; active_pop_slider = -1; return;
+      cancel_hold(); 
+      active_pop_target = -1; 
+      active_pop_col = -1; 
+      active_pop_slider = -1; 
+      stop_stepper_repeat();
+      return;
     }
 
     if (is_resizing_window && !has_rows) {
@@ -1427,14 +1532,22 @@ var windowListener = new JitterListener(popupWindow.name, function(event) {
         }
 
         if (is_pop_tap) {
-          cancel_hold(); mouse_is_down = 1;
-          pop_click_start_x = mx; pop_click_start_y = my; lastPopY = my; active_pop_col = -1;
+          cancel_hold(); 
+          mouse_is_down = 1;
+          pop_click_start_x = mx; 
+          pop_click_start_y = my; 
+          lastPopY = my; 
+          active_pop_col = -1;
           hold_dir = (localX >= (w - 24) * 0.5) ? 1 : -1;
-          val += hold_dir * step_size; clampValue(); outlet(0, val); redraw_all();
 
-          if (!hold_task) hold_task = new Task(hold_task_fn, this);
-          hold_task.interval = 350;
-          hold_task.repeat();
+          // Single clean step
+          val = Math.round((val + hold_dir * get_effective_step()) * 1e8) / 1e8;
+          clampValue(); 
+          outlet(0, val); 
+          redraw_all();
+
+          // Scheduled repeater (starts only after 350ms hold)
+          start_hold_repeater();
           return;
         }
 
@@ -1453,7 +1566,24 @@ var windowListener = new JitterListener(popupWindow.name, function(event) {
 
     if (!has_rows) return;
 
-    var sY = 28 + 42 + 16;
+    // Carousel Navigation Bar Hits
+    var divY = 28 + (has_rows ? 42 : (h - 28 - 10)) + 8;
+    var navY = divY + 6, navH = 22, navW = w - 24, navX = 12;
+    var btnW = 24, rBtnX = navX + navW - btnW - 1;
+
+    if (is_pop_tap && my >= navY && my <= navY + navH && mx >= navX && mx <= navX + navW) {
+      if (mx <= navX + btnW + 4) {
+        active_mask_tab = (active_mask_tab - 1 + 5) % 5;
+      } else if (mx >= rBtnX - 4) {
+        active_mask_tab = (active_mask_tab + 1) % 5;
+      } else {
+        active_mask_tab = (active_mask_tab + 1) % 5;
+      }
+      update_popup_dimensions();
+      return;
+    }
+
+    var rowsStartY = navY + navH + 8;
     var rowW = w - 24;
     var midX = 12 + rowW * 0.5;
     var valBoxX = midX + 4;
@@ -1462,11 +1592,7 @@ var windowListener = new JitterListener(popupWindow.name, function(event) {
     if (active_pop_slider !== -1 && active_pop_slider < rows.length) {
       var rAct = rows[active_pop_slider];
       var pctDrag = Math.max(0.0, Math.min(1.0, (mx - valBoxX) / valBoxW));
-      if (rAct.target_id === 10) set_step_size(pctDrag * 10.0);
-      else if (rAct.target_id === 12) set_hold_speed(Math.max(10, Math.round(pctDrag * 200)));
-      else if (rAct.target_id === 15) set_text_size(Math.round(6 + pctDrag * 18));
-      else if (rAct.target_id === 1) set_integer_digits(Math.round(1 + pctDrag * 11));
-      else if (rAct.target_id === 2) set_decimal_digits(Math.round(pctDrag * 8));
+      if (rAct.target_id === 12) set_hold_speed(Math.max(10, Math.round(pctDrag * 200)));
       else if (rAct.target_id === 4) set_border_radius(pctDrag * 25);
       else if (rAct.target_id === 7) set_border_thickness(pctDrag * 10);
       else if (rAct.target_id === 8) set_border_extension(pctDrag * 50);
@@ -1476,19 +1602,43 @@ var windowListener = new JitterListener(popupWindow.name, function(event) {
       return;
     }
 
-    var rIdx = Math.floor((my - sY) / 28);
+    var rIdx = Math.floor((my - rowsStartY) / 28);
     if (rIdx >= 0 && rIdx < rows.length) {
       cancel_hold();
       var r = rows[rIdx];
       var pct = Math.max(0, Math.min(1, (mx - valBoxX) / valBoxW));
 
+      if (r.is_stepper) {
+        var arrowW = 20;
+        if (is_pop_tap) {
+          if (mx >= valBoxX && mx <= valBoxX + arrowW) {
+            step_stepper_value(r.target_id, -1);
+            stepper_target_id = r.target_id;
+            stepper_dir = -1;
+          } else if (mx >= valBoxX + valBoxW - arrowW && mx <= valBoxX + valBoxW) {
+            step_stepper_value(r.target_id, 1);
+            stepper_target_id = r.target_id;
+            stepper_dir = 1;
+          }
+
+          if (stepper_dir !== 0 && !stepper_repeat_task) {
+            stepper_repeat_task = new Task(function () {
+              if (stepper_target_id !== -1 && pop_mouse_down) {
+                step_stepper_value(stepper_target_id, stepper_dir);
+                if (stepper_repeat_task) stepper_repeat_task.schedule(60);
+              } else {
+                stop_stepper_repeat();
+              }
+            }, this);
+            stepper_repeat_task.schedule(350);
+          }
+        }
+        return;
+      }
+
       if (r.is_slider || r.pct !== undefined) {
         active_pop_slider = rIdx;
-        if (r.target_id === 10) set_step_size(pct * 10.0);
-        else if (r.target_id === 12) set_hold_speed(Math.max(10, Math.round(pct * 200)));
-        else if (r.target_id === 15) set_text_size(Math.round(6 + pct * 18));
-        else if (r.target_id === 1) set_integer_digits(Math.round(1 + pct * 11));
-        else if (r.target_id === 2) set_decimal_digits(Math.round(pct * 8));
+        if (r.target_id === 12) set_hold_speed(Math.max(10, Math.round(pct * 200)));
         else if (r.target_id === 4) set_border_radius(pct * 25);
         else if (r.target_id === 7) set_border_thickness(pct * 10);
         else if (r.target_id === 8) set_border_extension(pct * 50);
@@ -1554,14 +1704,15 @@ function onclick(x, y, but, cmd, shift, capslock, option, ctrl) {
   cancel_hold();
   mouse_is_down = 1;
   hold_dir = (x >= cached_nX + (cached_nW - cached_nX) * 0.5) ? 1 : -1;
-  val += hold_dir * step_size;
+
+  // Single clean step
+  val = Math.round((val + hold_dir * get_effective_step()) * 1e8) / 1e8;
   clampValue();
   outlet(0, val);
   redraw_all();
 
-  if (!hold_task) hold_task = new Task(hold_task_fn, this);
-  hold_task.interval = 350;
-  hold_task.repeat();
+  // Scheduled repeater (starts only after 350ms hold)
+  start_hold_repeater();
 }
 
 function ondrag(x, y, but, cmd, shift, capslock, option, ctrl) {
@@ -1593,10 +1744,6 @@ function onmouseup() { cancel_hold(); active_col = -1; redraw_all(); }
 // =============================================================
 // 11. GETTERS & SETTERS
 // =============================================================
-
-// =============================================================
-// ROBUST PATTR HOOKS FOR NUMTICKER
-// =============================================================
 function getvalueof() {
   return val;
 }
@@ -1612,7 +1759,7 @@ function output_val() {
 }
 
 function setvalueof() {
-  if (is_transmitting) return; // <-- Loop guard
+  if (is_transmitting) return;
   var args = arrayfromargs(arguments);
   while (args.length === 1 && Array.isArray(args[0])) {
     args = args[0];
@@ -1636,6 +1783,47 @@ function msg_float(v) {
 function msg_int(v) { msg_float(v); }
 function set_val(v) { val = Number(v); clampValue(); redraw_all(); }
 function set(v) { set_val(v); }
+
+function get_step_multiplier() { return step_multipliers[step_mult_idx]; }
+function set_step_multiplier(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p)) {
+    for (var i = 0; i < step_multipliers.length; i++) {
+      if (Math.abs(step_multipliers[i] - p) < 0.00001) {
+        step_mult_idx = i;
+        break;
+      }
+    }
+    redraw_all();
+  }
+}
+
+function get_step_base() { return step_base; }
+function set_step_base(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) {
+    step_base = Math.max(1, Math.min(9, p));
+    redraw_all();
+  }
+}
+
+function get_step_size() { return get_effective_step(); }
+function set_step_size(v) {
+  var p = parseFloat(v);
+  if (!isNaN(p) && p > 0) {
+    step_base = Math.max(1, Math.min(9, Math.round(p)));
+    redraw_all();
+  }
+}
+
+function get_active_mask_tab() { return active_mask_tab; }
+function set_active_mask_tab(v) {
+  var p = parseInt(v, 10);
+  if (!isNaN(p)) {
+    active_mask_tab = Math.max(0, Math.min(4, p));
+    update_popup_dimensions();
+  }
+}
 
 function get_number_spacing() { return number_spacing; }
 function set_number_spacing(v) {
@@ -1664,13 +1852,9 @@ function set_mode(v) { mode = parseInt(v, 10); cancel_hold(); redraw_all(); }
 function get_touch_type() { return touch_type; }
 function set_touch_type(v) { touch_type = parseInt(v, 10); redraw_all(); }
 
-function get_step_size() { return step_size; }
-function set_step_size(v) { step_size = parseFloat(v); redraw_all(); }
-
 function get_hold_speed() { return hold_speed; }
 function set_hold_speed(v) {
   hold_speed = Math.max(5.0, parseFloat(v) || 50.0);
-  if (hold_task && hold_task.running && hold_count > 0) hold_task.interval = hold_speed;
 }
 
 function get_integer_digits() { return integer_digits; }
@@ -1769,21 +1953,6 @@ function set_font() { var a = arrayfromargs(arguments); font = a.join(" "); redr
 function get_text_size() { return text_size; }
 function set_text_size(v) { text_size = Math.max(6, parseInt(v, 10)); redraw_all(); }
 
-function get_mask_performance() { return mask_performance; }
-function set_mask_performance(v) { mask_performance = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
-
-function get_mask_labels() { return mask_labels; }
-function set_mask_labels(v) { mask_labels = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
-
-function get_mask_geometry() { return mask_geometry; }
-function set_mask_geometry(v) { mask_geometry = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
-
-function get_mask_colors() { return mask_colors; }
-function set_mask_colors(v) { mask_colors = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
-
-function get_mask_popup_colors() { return mask_popup_colors; }
-function set_mask_popup_colors(v) { mask_popup_colors = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
-
 function get_show_settings_attrs() { return show_settings_attrs; }
 function set_show_settings_attrs(v) { show_settings_attrs = parseInt(v, 10) ? 1 : 0; update_popup_dimensions(); }
 
@@ -1806,7 +1975,15 @@ function anything() {
     return;
   }
 
-  // Theme Master & Patcher message aliases
+  if (key === "step_multiplier" || key === "step_mult" || key === "ssm") {
+    if (args.length > 0) set_step_multiplier(args[0]);
+    return;
+  }
+  if (key === "step_base" || key === "step_size_base") {
+    if (args.length > 0) set_step_base(args[0]);
+    return;
+  }
+
   if (key === "bg_color" || key === "bgcolor") key = "background_color";
   if (key === "corner_radius") key = "border_radius";
   if (key === "bordersize" || key === "border_size") key = "border_thickness";
@@ -1832,15 +2009,17 @@ function anything() {
 // =============================================================
 // 12. MAX INSPECTOR ATTRIBUTE DECLARATIONS
 // =============================================================
+declareattribute("active_mask_tab", { type: "int", style: "enumindex", enumvals: ["1. Performance", "2. Geometry", "3. Labels", "4. Colors", "5. Popup Colors"], label: "Inspector Tab", setter: "set_active_mask_tab", getter: "get_active_mask_tab", category: "Popup", embed: 1 });
 declareattribute("mode", { type: "int", style: "enumindex", enumvals: ["Touch", "Mouse"], label: "Interaction Mode", category: "Performance", getter: "get_mode", setter: "set_mode", embed: 1 });
 declareattribute("touch_type", { type: "int", style: "enumindex", enumvals: ["Sliders", "Pad"], label: "Touch Interface Type", category: "Performance", getter: "get_touch_type", setter: "set_touch_type", embed: 1 });
-declareattribute("step_size", { type: "float", label: "Step Size", category: "Performance", getter: "get_step_size", setter: "set_step_size", embed: 1 });
-declareattribute("hold_speed", { type: "float", label: "Hold Speed (ms)", category: "Performance", getter: "get_hold_speed", setter: "set_hold_speed", embed: 1 });
+declareattribute("step_multiplier", { type: "float", label: "Step Multiplier (SSM)", category: "Performance", getter: "get_step_multiplier", setter: "set_step_multiplier", embed: 1 });
+declareattribute("step_base", { type: "int", label: "Step Size Base (1-9)", category: "Performance", getter: "get_step_base", setter: "set_step_base", embed: 1 });
+declareattribute("hold_speed", { type: "float", label: "Hold Speed (ms)", category: "Geometry", getter: "get_hold_speed", setter: "set_hold_speed", embed: 1 });
 
-declareattribute("integer_digits", { type: "int", label: "Integer Digits", category: "Setup", getter: "get_integer_digits", setter: "set_integer_digits", embed: 1 });
-declareattribute("decimal_digits", { type: "int", label: "Decimal Digits", category: "Setup", getter: "get_decimal_digits", setter: "set_decimal_digits", embed: 1 });
-declareattribute("leading_zeros", { type: "int", style: "onoff", label: "Leading Zeros", category: "Setup", getter: "get_leading_zeros", setter: "set_leading_zeros", embed: 1 });
-declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Settings Popup", category: "Setup", getter: "get_allow_popup", setter: "set_allow_popup", embed: 1 });
+declareattribute("integer_digits", { type: "int", label: "Integer Digits", category: "Performance", getter: "get_integer_digits", setter: "set_integer_digits", embed: 1 });
+declareattribute("decimal_digits", { type: "int", label: "Decimal Digits", category: "Performance", getter: "get_decimal_digits", setter: "set_decimal_digits", embed: 1 });
+declareattribute("leading_zeros", { type: "int", style: "onoff", label: "Leading Zeros", category: "Geometry", getter: "get_leading_zeros", setter: "set_leading_zeros", embed: 1 });
+declareattribute("allow_popup", { type: "int", style: "onoff", label: "Allow Settings Popup", category: "Popup", getter: "get_allow_popup", setter: "set_allow_popup", embed: 1 });
 
 declareattribute("name_tag_on", { type: "int", style: "onoff", label: "Name Tag Visible", category: "Labels", getter: "get_name_tag_on", setter: "set_name_tag_on", embed: 1 });
 declareattribute("name_tag_text", { type: "symbol", label: "Tag Text", category: "Labels", getter: "get_name_tag_text", setter: "set_name_tag_text", embed: 1 });
@@ -1857,8 +2036,8 @@ declareattribute("border_radius", { type: "float", label: "Border Radius", categ
 declareattribute("border_thickness", { type: "float", label: "Border Thickness", category: "Geometry", getter: "get_border_thickness", setter: "set_border_thickness", embed: 1 });
 declareattribute("border_extension", { type: "float", label: "Border Extension", category: "Geometry", getter: "get_border_extension", setter: "set_border_extension", embed: 1 });
 
-declareattribute("font", { type: "symbol", style: "font", label: "Font Face", category: "Typography", getter: "get_font", setter: "set_font", embed: 1 });
-declareattribute("text_size", { type: "int", label: "Canvas Font Size", category: "Typography", getter: "get_text_size", setter: "set_text_size", embed: 1 });
+declareattribute("font", { type: "symbol", style: "font", label: "Font Face", category: "Labels", getter: "get_font", setter: "set_font", embed: 1 });
+declareattribute("text_size", { type: "int", label: "Canvas Font Size", category: "Labels", getter: "get_text_size", setter: "set_text_size", embed: 1 });
 
 declareattribute("mode_color", { type: "rgba", style: "rgba", label: "Mode / Tag Color", category: "Colors", getter: "get_mode_color", setter: "set_mode_color", embed: 1 });
 declareattribute("background_color", { type: "rgba", style: "rgba", label: "Background Color", category: "Colors", getter: "get_background_color", setter: "set_background_color", embed: 1 });
@@ -1874,13 +2053,6 @@ declareattribute("attr_border_color", { type: "rgba", style: "rgba", label: "Att
 declareattribute("attr_slider_color", { type: "rgba", style: "rgba", label: "Attr Slider Color", category: "Popup Colors", getter: "get_attr_slider_color", setter: "set_attr_slider_color", embed: 1 });
 declareattribute("attr_text_color", { type: "rgba", style: "rgba", label: "Attr Text Color", category: "Popup Colors", getter: "get_attr_text_color", setter: "set_attr_text_color", embed: 1 });
 
-declareattribute("show_settings_attrs", { type: "int", style: "onoff", label: "Show Attributes List", category: "Popup Masks", getter: "get_show_settings_attrs", setter: "set_show_settings_attrs", embed: 1 });
-declareattribute("mask_performance", { type: "int", style: "onoff", label: "1. Show Performance", category: "Popup Masks", getter: "get_mask_performance", setter: "set_mask_performance", embed: 1 });
-declareattribute("mask_labels", { type: "int", style: "onoff", label: "2. Show Labels", category: "Popup Masks", getter: "get_mask_labels", setter: "set_mask_labels", embed: 1 });
-declareattribute("mask_geometry", { type: "int", style: "onoff", label: "3. Show Geometry", category: "Popup Masks", getter: "get_mask_geometry", setter: "set_mask_geometry", embed: 1 });
-declareattribute("mask_colors", { type: "int", style: "onoff", label: "4. Show Colors", category: "Popup Masks", getter: "get_mask_colors", setter: "set_mask_colors", embed: 1 });
-declareattribute("mask_popup_colors", { type: "int", style: "onoff", label: "5. Show Popup Colors", category: "Popup Masks", getter: "get_mask_popup_colors", setter: "set_mask_popup_colors", embed: 1 });
-
 // =============================================================
 // 13. PERSISTENCE & CLEANUP
 // =============================================================
@@ -1888,7 +2060,8 @@ function save() {
   embedmessage("set_val", val);
   embedmessage("set_mode", mode);
   embedmessage("set_touch_type", touch_type);
-  embedmessage("set_step_size", step_size);
+  embedmessage("set_step_multiplier", step_multipliers[step_mult_idx]);
+  embedmessage("set_step_base", step_base);
   embedmessage("set_hold_speed", hold_speed);
   embedmessage("set_text_size", text_size);
   embedmessage("set_integer_digits", integer_digits);
@@ -1926,22 +2099,14 @@ function save() {
   embedmessage("set_attr_slider_color", attr_slider_color[0], attr_slider_color[1], attr_slider_color[2], attr_slider_color[3]);
   embedmessage("set_attr_text_color", attr_text_color[0], attr_text_color[1], attr_text_color[2], attr_text_color[3]);
 
+  embedmessage("set_active_mask_tab", active_mask_tab);
   embedmessage("set_show_settings_attrs", show_settings_attrs);
-  embedmessage("set_mask_performance", mask_performance);
-  embedmessage("set_mask_labels", mask_labels);
-  embedmessage("set_mask_geometry", mask_geometry);
-  embedmessage("set_mask_colors", mask_colors);
-  embedmessage("set_mask_popup_colors", mask_popup_colors);
-
   embedmessage("set_popup_mini_size", popup_mini_w, popup_mini_h);
 }
 
 function notifydeleted() {
+  stop_stepper_repeat();
   cancel_hold();
-  if (hold_task) {
-    try { hold_task.cancel(); } catch (e) {}
-    hold_task = null;
-  }
   if (render_task) {
     try { render_task.cancel(); } catch (e) {}
     render_task = null;
@@ -1957,11 +2122,6 @@ function notifydeleted() {
   try { if (colorListener) colorListener.subjectname = ""; } catch (e) {}
   try { if (touchListener) touchListener.subjectname = ""; } catch (e) {}
 
-  try { if (popupWindow) popupWindow.visible = 0; } catch (e) {}
-  try { if (colorWindow) colorWindow.visible = 0; } catch (e) {}
-  try { if (touchWindow) touchWindow.visible = 0; } catch (e) {}
-
-  // Explicitly free C++ window peers
   try { if (popupWindow) popupWindow.free(); } catch (e) {}
   try { if (colorWindow) colorWindow.free(); } catch (e) {}
   try { if (touchWindow) touchWindow.free(); } catch (e) {}

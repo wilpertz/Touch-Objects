@@ -678,6 +678,14 @@ function set_button_state_direct(cellIdx, val, silent) {
 // =============================================================
 // 7. INLET MESSAGE PARSER
 // =============================================================
+// =============================================================
+// 7. INLET MESSAGE PARSER
+// =============================================================
+function loadbang() {
+  // Do NOT output any states on load.
+  // Only redraw the UI to reflect saved visual state.
+  redraw_all();
+}
 function bang() {
   var targetIdx = 0;
   var cellMode = button_modes[targetIdx] !== undefined ? button_modes[targetIdx] : global_mode;
