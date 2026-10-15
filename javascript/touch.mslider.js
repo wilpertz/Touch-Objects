@@ -641,12 +641,13 @@ function ondrag(x, y, button) {
 }
 
 function onmouseup() {
-  if (active_dial_pressed !== -1) {
+  if (isMouseDown || active_touch_idx !== -1) {
     outlet(3, 0); // Release index
     if (typeof notifyclients === "function") notifyclients(); // Clean pattr update
   }
-  active_dial_pressed = -1;
-  is_dragging = 0;
+  isMouseDown = false;
+  active_touch_idx = -1;
+  last_drag_idx = -1;
   is_scrolling_drag = 0;
   hold_gate_passed = 0;
   if (backgroundTask) {
